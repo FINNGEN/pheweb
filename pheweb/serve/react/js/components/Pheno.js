@@ -88,12 +88,7 @@ class Pheno extends React.Component {
 					[locus_id]:response
 				}
 			}):
-			this.setState({
-				locus_groups: {
-					...this.state.locus_groups,
-					[locus_id]:[]
-				}
-			})
+			0
 		})
 		.catch(this.error_alert)
 	}
