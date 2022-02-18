@@ -71,23 +71,10 @@
     "typescript-plugin-css-modules": "^3.4.0"
   },
   "scripts": {
-<<<<<<< HEAD
     "watch": "npm-watch",
     "test": "react-scripts test --env=jsdom",
     "start": "react-scripts start",
     "build": "react-scripts build && cp -R build/* ../static/",
-=======
-<<<<<<< HEAD
-    "build": "react-scripts  build",
-    "start": "react-scripts start",
-    "test": "react-scripts test --env=jsdom",
-=======
-    "watch": "npm-watch",
-    "test": "react-scripts test --env=jsdom",
-    "start": "react-scripts start",
-    "build": "react-scripts build && cp -R build/* ../static/",
->>>>>>> f062d381 (fix:build)
->>>>>>> stellakeppo-187-integrate-lavaa
     "eject": "react-scripts eject"
   },
   "author": "",
