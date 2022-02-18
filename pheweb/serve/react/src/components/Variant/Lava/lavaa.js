@@ -14,6 +14,13 @@ function Lavaa (props) {
   const [ready, setReady] = useState(false) // set the initial state to be not ready
 
   const data = props.dataprop
+  const colorByCategory = props.colorByCategory^M
+
+  data.forEach((d)=> {
+    d.n_case = d.n_case | d.num_case | d.af_alt_cases | d.maf_alt_cases;
+    d.n_control = d.n_control | d.num_control | d.af_alt_controls | d.maf_alt_controls;
+  })
+
 
   useEffect(() => {
 
@@ -312,9 +319,10 @@ function Lavaa (props) {
         var yScale = d3.scaleLog()
         var yScale2 = d3.scaleLog()
         var yScale3 = d3.scaleLog()
-        const colorScale = d3.scaleOrdinal().range(d3.schemeTableau10)
+        /*const colorScale = d3.scaleOrdinal().range(d3.schemeTableau10)*/
+        const colorScale = (v) => colorByCategory[v]^M
         const colorValue = d => d.category //Color value by category
-        const colorScale2 = d3.scaleOrdinal().range(d3.schemeTableau10)
+        /*const colorScale2 = d3.scaleOrdinal().range(d3.schemeTableau10)*/
         //getting max and min y (p-value) values
         var max = d3.max(data, function (d) {
           return d.pval
@@ -421,7 +429,10 @@ function Lavaa (props) {
           .style('stroke-dasharray', ('3, 3'))
           .style('stroke-width', 0.5)
         //set up the tooltip
-        var tip = d3.tip().attr('class', 'd3-tip').offset([-5, 0]).html((event, d) => {
+        var tip = d3.tip()
+          .attr('class', 'd3-tip')
+          .offset([-5, 0])
+          .html((event, d) => {
           return d.category + '<br>' + '<br>' + d.phenostring + '<br>' + '<br>' + 'p-value: ' + d.pval + '<br>' + 'beta value: ' + d.beta + '<br>' + 'cases / controls: ' + d.n_case + ' / ' + d.n_control + '<br>' + 'pip: ' + d.pip
         })
         svg.call(tip)
@@ -680,7 +691,8 @@ function Lavaa (props) {
           caseCol.selectAll('p').data((removeDuplicates(selection2))).enter().append('div').attr('class', 'myScroll').style('overflow-x', 'auto').append('p').attr('class', 'info').attr('x', 10).attr('y', function (d, i) {
             return i * 12
           }).html(function (d) {
-            return d.n_case + ' / ' + d.n_control
+            return d.n_case + ' / ' + d.n_case
+    
           })
           setSelection(selection2)
         })
@@ -2201,7 +2213,7 @@ function Lavaa (props) {
           </div>
 
           <div id="downloadImg-block">
-            <button id="download" onClick={() => {downloadImgClick()}}>download image</button>
+            <button id="download" class="button_styled" onClick={() => {downloadImgClick()}}>download image</button>
             <div className="reportIssue">
               <div className="reportIcon">?</div>
               <a id="report"

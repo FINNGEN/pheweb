@@ -19,6 +19,7 @@
     "@types/react-test-renderer": "^16.9.3",
     "@types/react-tooltip": "^4.2.4",
     "@types/uuid": "^8.3.3",
+    "babel-jest": "^27.5.1",
     "bootstrap": "^4.6.1",
     "d3": "^6.2.0",
     "d3-tip": "^0.9.1",
@@ -70,10 +71,23 @@
     "typescript-plugin-css-modules": "^3.4.0"
   },
   "scripts": {
+<<<<<<< HEAD
     "watch": "npm-watch",
     "test": "react-scripts test --env=jsdom",
     "start": "react-scripts start",
     "build": "react-scripts build && cp -R build/* ../static/",
+=======
+<<<<<<< HEAD
+    "build": "react-scripts  build",
+    "start": "react-scripts start",
+    "test": "react-scripts test --env=jsdom",
+=======
+    "watch": "npm-watch",
+    "test": "react-scripts test --env=jsdom",
+    "start": "react-scripts start",
+    "build": "react-scripts build && cp -R build/* ../static/",
+>>>>>>> f062d381 (fix:build)
+>>>>>>> stellakeppo-187-integrate-lavaa
     "eject": "react-scripts eject"
   },
   "author": "",
@@ -116,6 +130,10 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "resolutions": {
+  "//": "See https://github.com/facebook/create-react-app/issues/11773",
+  "react-error-overlay": "6.0.9"
   },
   "watch": {
     "build": {
