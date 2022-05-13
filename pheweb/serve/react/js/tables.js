@@ -604,7 +604,13 @@ const lofTableCols = [{
     accessor: 'variants',
     Cell: props => props.value.split(',').map(v => v.trim().replace(/^chr/, '').replace(/_/g, ':')).join(', '),
     minWidth: 200
-}, { ... pval_column , minWidth: 70, accessor: 'p_value',
+}, {
+    Header: () => (<span title="p-value" style={{textDecoration: 'underline'}}>p-value</span>),
+    accessor: 'p_value',
+    filterMethod: (filter, row) => Math.abs(row[filter.id]) < +filter.value,
+    Cell: props => (props.value == pval_sentinel)?` << ${pval_sentinel}`:props.value.toExponential(1),
+    minWidth: 80,
+    id: 'pval'
 }, {
     Header: () => (<span title="effect size beta" style={{textDecoration: 'underline'}}>beta</span>),
     accessor: 'beta',
