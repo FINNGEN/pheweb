@@ -331,8 +331,8 @@ const phenoTableCols = {'GBMA': [...phenoTableCommonCols[0], ...phenoTableCommon
 					       (Number(props.original.ukbb.beta) < 0) ? <span style={{color: 'red', float: 'left', paddingRight: '5px'}} className="glyphicon glyphicon-triangle-bottom" aria-hidden="true"></span> :
 					       <span></span>} {Number(props.original.ukbb.pval).toExponential(1)}</div> : 'NA',
     minWidth: 110
-}					
-       ]:[])				    
+}
+       ]:[])
 ],
 'FINNGEN_QUANT': [...phenoTableCommonCols[0],{
     Header: () => (<span title="INFO score in FinnGen" style={{textDecoration: 'underline'}}>INFO FG</span>),
@@ -421,7 +421,7 @@ const csTableCols = [{
     Cell: props => props.value,
     minWidth: 50,
 }, { ... pval_column , minWidth: 50,
-}, { ... mlogp_column, accessor: 'lead_mlogp',  minWidth: 50, 
+}, { ... mlogp_column, accessor: 'lead_mlogp',  minWidth: 50,
 }, {
     Header: () => (<span title="effect size (beta)" style={{textDecoration: 'underline'}}>effect size (beta)</span>),
     accessor: 'lead_beta',
@@ -485,7 +485,7 @@ const csTableCols = [{
 					       <span></span>} {Number(props.value).toExponential(1)}</div> : props.value,
       minWidth: 60 }
     ]:[])
-		     
+
 
 ]
 
@@ -500,7 +500,7 @@ accessor: 'variant',
 Cell: props => (<a href={"/variant/" +props.value.replace("chr","").replace(/_/g,"-")} target="_blank">{props.value.replace("chr","").replace(/_/g,":")}</a>),
 minWidth: 60,
 }, { ... pval_column , minWidth: 50,
-}, { ... mlogp_column, minWidth: 50, 
+}, { ... mlogp_column, minWidth: 50,
 }, {
 Header: () => (<span title="effect size" style={{textDecoration: 'underline'}}>effect size</span>),
 accessor: 'beta',
@@ -604,7 +604,7 @@ const lofTableCols = [{
     accessor: 'variants',
     Cell: props => props.value.split(',').map(v => v.trim().replace(/^chr/, '').replace(/_/g, ':')).join(', '),
     minWidth: 200
-}, { ... pval_column , minWidth: 70,
+}, { ... pval_column , minWidth: 70, accessor: 'p_value',
 }, {
     Header: () => (<span title="effect size beta" style={{textDecoration: 'underline'}}>beta</span>),
     accessor: 'beta',
