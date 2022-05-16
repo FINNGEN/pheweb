@@ -623,7 +623,7 @@ const lofTableCols = [{
     accessor: 'variants',
     Cell: props => props.value.split(',').map(v => v.trim().replace(/^chr/, '').replace(/_/g, ':')).join(', '),
     minWidth: 200
-}, { ... pval_column , minWidth: 70,
+}, { ... pval_column , minWidth: 70, accessor:  'p_value'
 }, {
     Header: () => (<span title="effect size beta" style={{textDecoration: 'underline'}}>beta</span>),
     accessor: 'beta',
