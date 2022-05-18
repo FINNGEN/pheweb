@@ -477,6 +477,7 @@ def _ensure_conf():
                 "maf_cases",
                 {
                     "type": float,
+                    "nullable": True,
                     "range": [0, 1],
                     "sigfigs": 2,
                     "tooltip_underscoretemplate": "AF cases: <%= d.maf_cases.toFixed(4) %><br>",
@@ -488,6 +489,7 @@ def _ensure_conf():
                 "maf_controls",
                 {
                     "type": float,
+                    "nullable": True,
                     "range": [0, 1],
                     "sigfigs": 2,
                     "tooltip_underscoretemplate": "AF controls: <%= d.maf_controls.toFixed(4) %><br>",
