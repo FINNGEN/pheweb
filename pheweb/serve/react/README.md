@@ -1,15 +1,35 @@
-# Set up your api
+# Quick pheweb setup
+
+## Build UI
+
+Build javascript front end
+
+```
+npm run build
+```
+
+## Serve pheweb
+
+Start pheweb server
+
+```
+pheweb serve
+```
+
+
+# UI Development
+## Set up your api
 
 There are thre options described below running it locally, via
 port forwarding pointing to an existing server.
 
-## Local API server
+### Local API server
 Run api server
 ```
 	run_pheweb.py pheweb serve --port 9999 --num-workers=3
 ```
 
-## ssh port forward
+### ssh port forward
 on port 9999
 
 ```
@@ -23,7 +43,7 @@ edit public/config.js
 Set the root property under application to your rest end point
 
 
-# Run UI
+## Run UI
 
 Pull recent version
 
