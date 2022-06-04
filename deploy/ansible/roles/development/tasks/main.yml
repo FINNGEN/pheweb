@@ -9,21 +9,23 @@
   apt:
     state: latest
     name:
+      - direnv
+      - gfortran
       - git
+      - gnupg
+      - kubectl
+      - libblas-dev
+      - libblas3
+      - liblapack-dev
+      - liblapack3
       - nfs-common
       - nginx
-      - direnv
-      - virtualenv
-      - rsync
-      - kubectl
       - pwgen
       - python-pip
       - python3-pip
-      - libblas3
-      - liblapack3
-      - liblapack-dev
-      - libblas-dev
-      - gfortran
+      - rsync
+      - software-properties-common
+      - virtualenv
 
 - name: nfs_dev create mount directory
   become: true
@@ -80,22 +82,46 @@
   ansible.builtin.debug:
     var: ansible_facts
 
-- name: work directory
-  become: true
-  file:
-    path: "{{ansible_env.PWD}}/Work"
-    state: directory
-  become: true
-  become_user: "{{ ansible_env.SUDO_USER }}"
+- name: node setup
+  ansible.builtin.get_url:
+    url: https://deb.nodesource.com/setup_16.x
+    dest: /tmp/setup_16.x
 
-- name: checkout phweb
-  ansible.builtin.git:
-    repo: https://github.com/FINNGEN/pheweb
-    dest: "{{ansible_env.PWD}}/Work/pheweb"
-  become: true
-  become_user: "{{ ansible_env.SUDO_USER }}"
+- name: node setup
+  ansible.builtin.shell:
+    cmd: cat /tmp/setup_16.x | sh -s -- -y
 
-- name: install pheweb
-  shell: cd {{ansible_env.PWD}}/Work/pheweb; pip3 install .
+- name: Install npm
   become: true
-  become_user: "{{ ansible_env.SUDO_USER }}"
+  apt:
+    state: latest
+    name:
+      - nodejs
+
+# - name: work directory
+#   become: true
+#   file:
+#     path: "{{ansible_env.PWD}}/Work"
+#     state: directory
+#   become: false
+
+# - name: checkout phweb
+#   ansible.builtin.git:
+#     repo: https://github.com/FINNGEN/pheweb
+#     dest: "{{ansible_env.PWD}}/Work/pheweb"
+#   become: false
+
+
+# - name: install pheweb
+#   shell: cd {{ansible_env.PWD}}/Work/pheweb; pip3 install .
+#   become: false
+
+- name: install node
+  ansible.builtin.shell:
+    cmd: /usr/bin/npm install
+    chdir: "{{ansible_env.PWD}}/Work/pheweb/pheweb/serve/react"
+
+- name: install node
+  ansible.builtin.shell:
+    cmd: /usr/bin/npm run build
+    chdir: "{{ansible_env.PWD}}/Work/pheweb/pheweb/serve/react"
