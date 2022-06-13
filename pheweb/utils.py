@@ -154,7 +154,7 @@ def get_gene_tuples(include_ensg=False):
 
     with open(common_filepaths["genes"], encoding="utf-8") as file:
         for row in csv.reader(file, delimiter="\t"):
-            assert row[0] in chrom_order, row[0]
+            assert row[0] in chrom_order, f"Chromosome {row[0]} in {common_filepaths['genes']} not a valid chromosome."
             if include_ensg:
                 yield row[0], int(row[1]), int(row[2]), row[3], row[4]
             else:
@@ -164,6 +164,7 @@ def get_gene_tuples(include_ensg=False):
 chrom_order_list = [str(i) for i in range(1, 22 + 1)] + ["X", "Y", "MT"]
 chrom_order = {chromosome: index for index, chromosome in enumerate(chrom_order_list)}
 chrom_order["23"] = 22
+chrom_order["M"] = 24
 chrom_aliases = {"23": "X", "24": "Y", "25": "MT", "M": "MT"}
 CHROMOSOME_NORMAL = {"X": "23", "Y": "24", "M": "25", "MT": "25"}
 
