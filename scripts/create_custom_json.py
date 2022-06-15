@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-import json
 import pandas as pd
 import subprocess
 import shlex
@@ -35,21 +34,17 @@ def run():
 
     # Check mapping is ok and filter for missing values
     print('Checking mapping...')
-    mapping = pd.read_csv(args.in_mapping_file, sep=args.sep)
-    missing_cols = [col for col in REQUIRED_COLS if col not in mapping.columns]
-    if len(missing_cols) > 0:
-        raise Exception('Missing required columns: ' + ', '.join(missing_cols))
+    mapping = pd.read_csv(args.in_mapping_file, sep=args.sep, usecols=REQUIRED_COLS)
     mapping.dropna(axis=0, how='any', inplace=True)
-    mapping['n_cases'] = mapping[n_cases_cols].sum(axis=1)
-    mapping['n_controls'] = mapping[n_controls_cols].sum(axis=1)
-    mapping['uk_file'] = mapping[args.phenotype_col] + '.gz'
+    mapping.rename(columns={'name': 'phenostring', args.phenotype_col: 'phenocode'}, inplace=True)
+    mapping['num_cases'] = mapping[n_cases_cols].sum(axis=1)
+    mapping['num_controls'] = mapping[n_controls_cols].sum(axis=1)
 
-    # Generate json configs for meta-analysis
+    # Generate custom json config for pheweb
     print('Generating custom json...')
-    custom_json_list = [{'phenostring':name,'num_cases':cases,'num_controls':controls,'uk_file':link,'name':pheno,'description':name,'category':category} for (name,category,pheno,cases,controls,link) in zip(mapping['name'],mapping['category'],mapping[args.phenotype_col],mapping['n_cases'],mapping['n_controls'],mapping['uk_file'])]
-    with open(args.out_json, 'w') as out_file:
-        json.dump(custom_json_list, out_file, indent=4)
+    mapping.to_json(args.out_json, orient='records')
 
+    # Transfer json to bucket if arg set
     if args.bucket is not None:
         print(f'Transferring custom json to bucket {args.bucket} ...')
         cmd = f'gsutil cp {args.out_json} {args.bucket}'
