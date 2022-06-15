@@ -41,8 +41,8 @@ def get_rsid_reader(rsids_f):
                 assert line.rstrip('\r\n').split('\t') == '#CHROM POS ID REF ALT QUAL FILTER INFO'.split(), repr(line)
             else:
                 fields = line.rstrip('\r\n').split('\t')
-                if len(fields) != 5:
-                    raise PheWebError('Line has wrong number of fields: {!r} - {!r}'.format(line, fields))
+                if len(fields) < 5:
+                    raise PheWebError('Line has less than the required 5 fields: {!r} - {!r}'.format(line, fields))
                 chrom, pos, rsid, ref, alt_group = fields[0], int(fields[1]), fields[2], fields[3], fields[4]
                 if chrom not in chrom_order:
                     try:
