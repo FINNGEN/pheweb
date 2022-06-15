@@ -14,8 +14,9 @@ python3 create_custom_json.py --phenotype_col phenocode --n_cases_col num_cases 
 ***In case you need to update genes and their coordinates (used for gene page to gather best associations for each pheno and thus generally used as the set of gene names )***
 
 Get bed file e.g. v38 gene annotations from gencode and upload to a bucket and change bed gene annotation to point to this file
-```
-curl https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_38/gencode.v38.annotation.gff3.gz | zcat |  awk ' BEGIN{FS=OFS="\t"} $3=="gene"{ gsub("chr","",$1); gsub("M","MT",$1); split($9,a,";"); for(e in a) { split(a[e],b,"=");elems[b[1]]=b[2] }; print $1,$4,$5,elems["gene_name"],elems["gene_id"]; }' > gencode.v38.genes.bed
+
+```bash
+curl https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_40/gencode.v40.annotation.gff3.gz | zcat | awk ' BEGIN{FS=OFS="\t"} $3=="gene" { gsub("chr","",$1); gsub("M","MT",$1); split($9,a,";"); for(e in a) { split(a[e],b,"=");elems[b[1]]=b[2] }; if ((elems["gene_type"] == "protein_coding" || elems["gene_type"] ~ /_gene$/) && elems["ID"] !~ /_PAR_/) {print $1,$4,$5,elems["gene_name"],elems["gene_id"]; }}' > gencode.v40.genes.bed
 ```
 
 ***Copy imported data to destination***
@@ -53,7 +54,7 @@ Example of such mapping file:
 
 ```sh
 (base) jmehton@lm0-945-22724 r7 % head FinnGen_pan-UKBB_EstBB_mapping.tsv | column -t -s $'\t'
-name                                                  category                                                fg_phenotype                       ukbb_phenotype  estbb_phenotype  fg_n_cases  ukbb_n_cases  estbb_n_cases  fg_n_controls  ukbb_n_controls  estbb_n_controls
+name                                                category                                                fg_phenotype                       ukbb_phenotype  estbb_phenotype  fg_n_cases  ukbb_n_cases  estbb_n_cases  fg_n_controls  ukbb_n_controls  estbb_n_controls
 Malignant neoplasm of breast                          II Neoplasms, from cancer register (ICD-O-3)            C3_BREAST                          174.11          c03              13178       11807         1686           160568         205913           127984
 Malignant neoplasm of prostate                        II Neoplasms, from cancer register (ICD-O-3)            C3_PROSTATE                        185             c04              10414       7691          1470           124994         169762           66507
 Malignant neoplasm                                    II Neoplasms, from cancer register (ICD-O-3)            C3_CANCER                          204             c37              60459       65783         11047          248695         414840           180604
