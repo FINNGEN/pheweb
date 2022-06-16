@@ -1,0 +1,23 @@
+{
+    "import_pheweb.docker" : "eu.gcr.io/phewas-development/pheweb:jm-dev",
+    "import_pheweb.summary_files":"gs://r9_data_green/ukbb_estbb_meta/conf/pheweb.sumstat_files.test.txt",
+    "import_pheweb.bed_file" : "gs://common_resources/gencode.v40.genes.bed",
+    "import_pheweb.rsids_file" : "gs://common_resources/dbsnp_hg38p13_b153_numerical.vcf.gz",
+    "import_pheweb.disk" : 100,
+    "import_pheweb.matrix.cpu" : 2,
+    "import_pheweb.mem" : 32,
+    "import_pheweb.sites_file" : "gs://r8_data_green/sites.tsv",
+    "import_pheweb.custom_json" : "gs://r9_data_green/ukbb_estbb_meta/conf/pheweb_import.custom.test.2.json",
+    "import_pheweb.fields" : ["category", "num_cases", "num_controls", "phenocode", "phenostring", "fg_n_cases", "ukbb_n_cases", "estbb_n_cases", "fg_n_controls", "ukbb_n_controls", "estbb_n_controls"],
+    "import_pheweb.output_url" : ["gs://r9_data_green/ukbb_estbb_meta/test"],
+    "import_pheweb.file_affix" : "_meta_out_filtered.tsv",
+    "import_pheweb.preprocess.chrom_column" : "#CHR",
+    "import_pheweb.preprocess.pos_column" : "POS",
+    "import_pheweb.preprocess.ref_column" : "REF",
+    "import_pheweb.preprocess.alt_column" : "ALT",
+    "import_pheweb.preprocess.pval_column" : "all_inv_var_meta_p",
+    "import_pheweb.preprocess.mlogp_column" : "all_inv_var_meta_mlogp",
+    "import_pheweb.preprocess.beta_column" : "all_inv_var_meta_beta",
+    "import_pheweb.preprocess.se_beta_column" : "all_inv_var_meta_sebeta",
+    "import_pheweb.preprocess.exclude" : "rsid,SNP,leave_UKBB_inv_var_meta_beta,leave_FINNGEN_inv_var_meta_het_p,leave_UKBB_inv_var_meta_het_p,leave_ESTBB_inv_var_meta_het_p,leave_ESTBB_inv_var_meta_beta,leave_ESTBB_inv_var_meta_sebeta,all_meta_N,leave_ESTBB_inv_var_meta_p,leave_FINNGEN_inv_var_meta_mlogp,leave_UKBB_N,leave_FINNGEN_N,leave_ESTBB_N,leave_FINNGEN_inv_var_meta_beta,leave_FINNGEN_inv_var_meta_p,leave_ESTBB_inv_var_meta_mlogp,leave_UKBB_inv_var_meta_mlogp,leave_FINNGEN_inv_var_meta_sebeta,leave_UKBB_inv_var_meta_p,leave_UKBB_inv_var_meta_sebeta"
+  }
