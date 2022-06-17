@@ -37,7 +37,7 @@ def get_gene_aliases() -> Dict[str, str]:
     # NOTE: "canonical" refers to the canonical symbol for a gene
     genes = [{'canonical': canonical, 'ensg':ensg} for _,_,_,canonical,ensg in get_gene_tuples_with_ensg()]
     assert len({g['ensg'] for g in genes}) == len(genes)
-    assert len({g['canonical'] for g in genes}) == len(genes)
+    #assert len({g['canonical'] for g in genes}) == len(genes) # Duplicate canonical symbols possible
     #for g in genes:
     #    assert re.match(r'^ENSG[R0-9]+(?:\.[0-9]+(?:_[0-9]+)?(?:_PAR_[XY])?)?$', g['ensg']), g
         #assert re.match(r'^[-\._a-zA-Z0-9]+$', g['canonical']), (g['canonical'], [ord(c) for c in g['canonical']], g)
