@@ -732,12 +732,14 @@ class TabixGnomadDao(GnomadDB):
         return annotations
 
 def extend_pheno_result(pr : PhenoResult,
-                        record_offset : int,
-                        field_offsets,
+                        pheno : str,
+                        fields,
+                        header_idx,
                         row):
-    for key, offset in field_offsets.items():
-        if not hasattr(pr, key):
-            setattr(pr, key, row[record_offset+offset])
+    for h in fields:
+        h = h + "@" + pheno
+        if not hasattr(pr, h):
+            setattr(pr, h, row[header_idx[h]])
     return pr
 
 class TabixResultDao(ResultDB):
@@ -746,20 +748,19 @@ class TabixResultDao(ResultDB):
         self.matrix_path = matrix_path
         self.pheno_map = phenos(0)
         self.tabix_file = pysam.TabixFile(self.matrix_path, parser=None)
+        self.header_idx = {h:i for i,h in enumerate(self.tabix_file.header[0].split('\t'))}
         self.phenos = [
-            (header.split("@")[1], p_col_idx)
-            for p_col_idx, header in enumerate(self.tabix_file.header[0].split("\t"))
+            header.split("@")[1]
+            for header in self.header_idx
             if header.startswith("pval")
         ]
-        self.header_offset = {}
-        i = 0
+        self.header_fields = []
         for header in self.tabix_file.header[0].split("\t"):
             s = header.split("@")
             if "@" in header:
                 if p is not None and s[1] != p:
                     break
-                self.header_offset[s[0]] = i
-                i = i + 1
+                self.header_fields.append(s[0])
             p = s[1] if len(s) > 1 else None
         self.tabix_files = defaultdict(
             lambda: pysam.TabixFile(self.matrix_path, parser=None)
@@ -794,67 +795,67 @@ class TabixResultDao(ResultDB):
             phenores = []
             for pheno in self.phenos:
 
-                pval = split[pheno[1]]
-                beta = split[pheno[1] + self.header_offset["beta"]]
+                pval = split[self.header_idx["pval@" + pheno]]
+                beta = split[self.header_idx["beta@" + pheno]]
                 maf = (
-                    split[pheno[1] + self.header_offset["maf"]]
-                    if "maf" in self.header_offset
+                    split[self.header_idx["maf@" + pheno]]
+                    if "maf" in self.header_fields
                     else None
                 )
                 maf = (
-                    split[pheno[1] + self.header_offset["af_alt"]]
-                    if "af_alt" in self.header_offset
+                    split[self.header_idx["af_alt@" + pheno]]
+                    if "af_alt" in self.header_fields
                     else maf
                 )
                 maf_case = (
-                    split[pheno[1] + self.header_offset["maf_cases"]]
-                    if "maf_cases" in self.header_offset
+                    split[self.header_idx["maf_cases@" + pheno]]
+                    if "maf_cases" in self.header_fields
                     else None
                 )
                 maf_case = (
-                    split[pheno[1] + self.header_offset["af_alt_cases"]]
-                    if "af_alt_cases" in self.header_offset
+                    split[self.header_idx["af_alt_cases@" + pheno]]
+                    if "af_alt_cases" in self.header_fields
                     else maf_case
                 )
                 maf_control = (
-                    split[pheno[1] + self.header_offset["maf_controls"]]
-                    if "maf_controls" in self.header_offset
+                    split[self.header_idx["maf_controls@" + pheno]]
+                    if "maf_controls" in self.header_fields
                     else None
                 )
                 mlogp = (
-                    split[pheno[1] + self.header_offset["mlogp"]]
-                    if "mlogp" in self.header_offset
+                    split[self.header_idx["mlogp@" + pheno]]
+                    if "mlogp" in self.header_fields
                     else None
                 )
                 maf_control = (
-                    split[pheno[1] + self.header_offset["af_alt_controls"]]
-                    if "af_alt_controls" in self.header_offset
+                    split[self.header_idx["af_alt_controls@" + pheno]]
+                    if "af_alt_controls" in self.header_fields
                     else maf_control
                 )
                 pr = PhenoResult(
-                    pheno[0],
-                    self.pheno_map[pheno[0]]["phenostring"],
-                    self.pheno_map[pheno[0]]["category"],
-                    self.pheno_map[pheno[0]]["category_index"]
-                    if "category_index" in self.pheno_map[pheno[0]]
+                    pheno,
+                    self.pheno_map[pheno]["phenostring"],
+                    self.pheno_map[pheno]["category"],
+                    self.pheno_map[pheno]["category_index"]
+                    if "category_index" in self.pheno_map[pheno]
                     else None,
                     pval,
                     beta,
                     maf,
                     maf_case,
                     maf_control,
-                    self.pheno_map[pheno[0]]["num_cases"]
-                    if "num_cases" in self.pheno_map[pheno[0]]
+                    self.pheno_map[pheno]["num_cases"]
+                    if "num_cases" in self.pheno_map[pheno]
                     else 0,
-                    self.pheno_map[pheno[0]]["num_controls"]
-                    if "num_controls" in self.pheno_map[pheno[0]]
+                    self.pheno_map[pheno]["num_controls"]
+                    if "num_controls" in self.pheno_map[pheno]
                     else 0,
                     mlogp,
-                    self.pheno_map[pheno[0]]["num_samples"]
-                    if "num_samples" in self.pheno_map[pheno[0]]
+                    self.pheno_map[pheno]["num_samples"]
+                    if "num_samples" in self.pheno_map[pheno]
                     else "NA",
                 )
-                pr = extend_pheno_result(pr,pheno[1],self.header_offset,split)
+                pr = extend_pheno_result(pr, pheno, self.header_fields, self.header_idx, split)
                 pr = phenores.append(pr)
             result.append((v, phenores))
         return result
