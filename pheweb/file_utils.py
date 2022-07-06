@@ -456,7 +456,7 @@ class _vfw:
             for field in conf.parse.fields:
                 if field in variant:
                     fields.append(field)
-            extra_fields = list(set(variant.keys()) - set(fields))
+            extra_fields = [f for f in variant.keys() if f not in fields]
             if extra_fields:
                 if not self._allow_extra_fields:
                     raise PheWebError(
