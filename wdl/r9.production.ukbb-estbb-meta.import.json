@@ -8,8 +8,8 @@
   "import_pheweb.custom_json" : "gs://r9_data_green/ukbb_meta/conf/pheweb_import.custom.json" ,
   "import_pheweb.fields" : ["phenostring","num_cases","num_controls","uk_file","description","category"],
   "import_pheweb.output_url" :
-  [ "gs://r9_data_green/production/meta/metaresults-est-ukbb" ,
-    "nfs://10.132.0.83/data/nfs/pheweb/metaresults-est-ukbb" ] ,
+  [ "gs://r9_data_green/production/meta/metaresults-est-ukbb-2022-07-06" ,
+    "nfs://10.132.0.83/data/nfs/pheweb/metaresults-est-ukbb-2022-07-06" ] ,
   "import_pheweb.preprocess.chrom_column" :  "#CHR" ,
   "import_pheweb.preprocess.pos_column" : "POS" ,
   "import_pheweb.preprocess.ref_column" : "REF" ,
