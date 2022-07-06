@@ -748,20 +748,20 @@ class TabixResultDao(ResultDB):
         self.matrix_path = matrix_path
         self.pheno_map = phenos(0)
         self.tabix_file = pysam.TabixFile(self.matrix_path, parser=None)
-        self.header_idx = {h:i for i,h in enumerate(self.tabix_file.header[0].split('\t'))}
+        self.header_idx = defaultdict(
+            lambda: None,
+            {h:i for i,h in enumerate(self.tabix_file.header[0].split('\t'))}
+        )
         self.phenos = [
             header.split("@")[1]
             for header in self.header_idx
             if header.startswith("pval")
         ]
-        self.header_fields = []
-        for header in self.tabix_file.header[0].split("\t"):
-            s = header.split("@")
-            if "@" in header:
-                if p is not None and s[1] != p:
-                    break
-                self.header_fields.append(s[0])
-            p = s[1] if len(s) > 1 else None
+        self.header_fields = set([
+            header.split("@")[0]
+            for header in self.header_idx
+            if "@" in header
+        ])
         self.tabix_files = defaultdict(
             lambda: pysam.TabixFile(self.matrix_path, parser=None)
         )
