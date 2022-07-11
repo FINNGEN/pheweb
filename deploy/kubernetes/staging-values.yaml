@@ -1,12 +1,12 @@
 # Default values are found in values.yaml
 
-replicaCount: 1
+replicaCount: 2
 
 pheweb:
   cloudSQLCredentialFile: /etc/gcp/cloud-sql-credentials.json
   cloudSQLProxyInstances: phewas-development:europe-west1:dev-db1=tcp:3306
   deployment: staging
-  directory: /mnt/r9/pheweb
+  directory: /mnt/r9/staging
   mount: /mnt/r9
   release: r9
   secretName: development-staging-secrets
@@ -17,4 +17,4 @@ persistentVolume:
   server: 10.248.24.170
 
 image:
-  tag: ci-dec97a579de7b47e884616e945f8daaae8e70871
+  tag: ci-72aee9015a6cfa1f9891bc8f2a5e38eb6db83adb
