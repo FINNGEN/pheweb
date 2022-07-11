@@ -17,4 +17,4 @@ persistentVolume:
   server: 10.248.24.170
 
 image:
-  tag: ci-72aee9015a6cfa1f9891bc8f2a5e38eb6db83adb
+  tag: wip-ac733c5dcb3f8e1b56d0f73b677dad9369060d17
