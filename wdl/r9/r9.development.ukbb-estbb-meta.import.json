@@ -4,7 +4,7 @@
   "import_pheweb.disk" : 8000 ,
   "import_pheweb.matrix.cpu" : 8 ,
   "import_pheweb.mem" : 64 ,
-  "import_pheweb.sites_file" : "gs://phewas-development/pheweb/import/full/sites.tsv",
+  "import_pheweb.sites_file" : "gs://r9_data_green/production/import/sites.tsv",
   "import_pheweb.custom_json" : "gs://r9_data_green/ukbb_meta/conf/pheweb_import.custom.json" ,
   "import_pheweb.fields" : ["phenostring","num_cases","num_controls","uk_file","description","category"],
   "import_pheweb.output_url" :
