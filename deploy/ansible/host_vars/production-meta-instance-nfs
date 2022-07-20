@@ -4,6 +4,6 @@ share_directory: /data/nfs
 # directory to put pheweb data on the nfs server
 pheweb_directory: /data/nfs/pheweb
 # path to fetch pheweb data
-bucket_directory: gs://r9_data_green/development/meta
+bucket_directory: gs://r9_data_green/production/meta
 # release
 release: meta
