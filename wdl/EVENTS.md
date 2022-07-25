@@ -106,7 +106,7 @@ gsutil cp - gs://r9_data_green/genes-without-M-b38-v39.bed
 	The summary statistics were reimported
 
 	cromshell submit import.wdl ./r9/r9.production.ukbb-estbb-meta.import.json
-	68a2e71c-9c78-46fa-8bbe-73eee3d0ecc5
+	c100cffb-8a48-413d-900f-d25186b59fc7
 
 	cromshell submit import.wdl ./r9/r9.production.ukbb-meta.import.json
-	e176880c-9712-42f3-bd1b-1f779ba89630
+	3c631220-4f83-4477-87dc-89fa8214189f
