@@ -14,9 +14,7 @@ interface Props { variantData : Variant.Data }
 
 const VariantLavaaPlot = ({ variantData } : Props) => {
   const { colorByCategory } = useContext<Partial<VariantState>>(VariantContext)
-  const display = lavaa?.display ?? true;
   let result
-
   if(lavaa.display){
     result = (colorByCategory)?<Fragment>
       <Lavaa dataprop={variantData.results} colorByCategory={colorByCategory} />
