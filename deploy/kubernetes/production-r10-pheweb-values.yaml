@@ -1,3 +1,4 @@
+
 # Default values are found in values.yaml
 
 replicaCount: 3
@@ -5,17 +6,16 @@ replicaCount: 3
 pheweb:
   cloudSQLCredentialFile: /etc/gcp/cloud-sql-credentials.json
   cloudSQLProxyInstances: phewas-development:europe-west1:dev-db1=tcp:3306
-  directory: /mnt/nfs/pheweb/metaresults-ukbb
-  ipName: finngen-metaresults-ukbb-ip
+  directory: /mnt/nfs/pheweb/r10/demopheno
+  ipName: finngen-r10-ip
   mount: /mnt/nfs
-  release: r9
-  secretName: production-meta-ukbb-secrets
-  subdomain: metaresults-ukbb
-  
-image: # pheweb image
-  tag: ci-bbf315009580ab1b2f006ee0bb0976a4b3dada06
-  
+  release: r10
+  secretName: production-r10-secrets
+  subdomain: r10
+image:
+  tag: wip-ae66aa84c118deca3ca7475183fe073747914692
+
 persistentVolume:
   path: /data/nfs
-  server: 10.132.0.83
+  server: 10.132.0.169
   storage: 11T

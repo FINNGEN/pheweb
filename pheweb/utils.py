@@ -164,6 +164,9 @@ def get_gene_tuples(include_ensg=False):
 chrom_order_list = [str(i) for i in range(1, 22 + 1)] + ["X", "Y", "MT"]
 chrom_order = {chromosome: index for index, chromosome in enumerate(chrom_order_list)}
 chrom_order["23"] = 22
+chrom_order["24"] = 23
+chrom_order["25"] = 24
+
 chrom_aliases = {"23": "X", "24": "Y", "25": "MT", "M": "MT"}
 CHROMOSOME_NORMAL = {"X": "23", "Y": "24", "M": "25", "MT": "25"}
 
@@ -234,7 +237,7 @@ def beta_to_m_log_p(beta: float, se_beta: float) -> float:
     """
     if se_beta == 0:
         raise ValueError(f"m log p-value value undefined {beta} {se_beta}")
-    return abs((stats.norm.logsf(beta / se_beta) + math.log(2)) / math.log(10))
+    return abs((stats.norm.logsf(abs(beta) / se_beta) + math.log(2)) / math.log(10))
 
 
 @contextlib.contextmanager

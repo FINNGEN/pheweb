@@ -5,6 +5,14 @@
 
 the wdl to use is 'import.wdl'.
 
+## Versioning
+
+There is a variable that is prefixed by version_ that needs to
+be set appropriately to ensure the version import.wdl and json
+match.  For example `version_r9_1` is a boolean variable that
+has to be set in the configuration json to run the wdl.  Check 
+the history of import.wdl to find the appropriate version.
+
 ## Parameters
 ### Required parameters
 
@@ -13,7 +21,7 @@ the wdl to use is 'import.wdl'.
 **pheweb.summary_files** : file containing the list of summary files
 
 **pheweb.bed_file** : the bed file
-
+      
 **pheweb.disk** : disk space needed for the whole export
 
 **pheweb.matrix.cpu** : cpu's need for the matrix step
@@ -78,8 +86,9 @@ the following storage options are supported
 **NOTE** For nfs directories have to be created prior to runing the import
 
 ```
-mkdir -p {cache,generated-by-pheweb/{sites,resources,pheno_gz,manhattan,qq}} ; chmod -R ugo+wrx .
+mkdir -p {cache,generated-by-pheweb/{sites,resources,pheno_gz,manhattan,qq}}
 ```
+
 **import_pheweb.post_import**
 
 Optional commands to run after import e.g.

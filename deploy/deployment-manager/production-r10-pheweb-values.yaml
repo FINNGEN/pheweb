@@ -3,22 +3,16 @@ imports:
 - path: phweb-kubernetes.jinja
 
 resources:
-- name: meta-phweb-nfs
+- name: phweb-instance-nfs-template
   type: phweb-instance-nfs.jinja
   properties:
-    release: meta
+    release: r10
     environment: production
-    nfsDiskSizeGb: 3000
+    nfsDiskSizeGb: 3500
     serviceAccount: pheweb@phewas-development.iam.gserviceaccount.com
 
-- name: meta-ukbb-phweb-kubernetes
+- name: phweb-kubernetes-template
   type: phweb-kubernetes.jinja
   properties:
-    release: meta-ukbb
-    environment: production
-
-- name: meta-est-ukbb-phweb-kubernetes
-  type: phweb-kubernetes.jinja
-  properties:
-    release: meta-est-ukbb
+    release: r10
     environment: production

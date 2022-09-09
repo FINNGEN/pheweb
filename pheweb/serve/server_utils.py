@@ -1,5 +1,4 @@
 
-
 from ..file_utils import MatrixReader, IndexedVariantFileReader
 
 import re
