@@ -14,7 +14,7 @@ def run():
     parser.add_argument('--bucket', action='store', type=str, help='GCS bucket path')
     parser.add_argument('--sep', action='store', type=str, default='\t', help='in_mapping_file field separator. Default: "\\t"')
     parser.add_argument('--study_prefixes', action='store', type=str, help='Study identifiers in column names as prefixes. Separate multiple identifiers by comma, e.g. "fg,ukbb,estbb".')
-    parser.add_argument('--phenotype_col', action='store', type=str, default='\t', help='Phenotype column in in_mapping_file. Default: "phenotype"')
+    parser.add_argument('--phenotype_col', action='store', type=str, default='phenocode', help='Phenotype column in in_mapping_file. Default: "phenocode"')
     parser.add_argument('--n_cases_col', action='store', type=str, default='n_cases', help='n_cases column in in_mapping_file. Default: "n_cases"')
     parser.add_argument('--n_controls_col', action='store', type=str, default='n_controls', help='n_controls column in in_mapping_file. Default: "n_controls"')
 
@@ -22,7 +22,7 @@ def run():
     args = parser.parse_args()
 
     # Generate lists of required columns from input arguments
-    REQUIRED_COLS = ['name', 'category', args.phenotype_col]
+    REQUIRED_COLS = [args.phenotype_col]
     if args.study_prefixes is None:
         n_cases_cols = [args.n_cases_col]
         n_controls_cols = [args.n_controls_col]
@@ -39,14 +39,22 @@ def run():
     missing_cols = [col for col in REQUIRED_COLS if col not in mapping.columns]
     if len(missing_cols) > 0:
         raise Exception('Missing required columns: ' + ', '.join(missing_cols))
+    if not 'name' in mapping.columns:
+        print('Missing "name" column. Using phenotype name.')
+        mapping['name'] = mapping[args.phenotype_col]
+    if not 'category' in mapping.columns:
+        print('Missing "category" column. Setting category as "NA".')
+        mapping['category'] = 'NA'
+    if not 'category_index' in mapping.columns:
+        print('Missing "category_index" column. Setting category_index as "0".')
+        mapping['category_index'] = 0
     mapping.dropna(axis=0, how='any', inplace=True)
     mapping['n_cases'] = mapping[n_cases_cols].sum(axis=1)
     mapping['n_controls'] = mapping[n_controls_cols].sum(axis=1)
-    mapping['uk_file'] = mapping[args.phenotype_col] + '.gz'
 
     # Generate json configs for meta-analysis
     print('Generating custom json...')
-    custom_json_list = [{'phenostring':name,'num_cases':cases,'num_controls':controls,'uk_file':link,'name':pheno,'description':name,'category':category} for (name,category,pheno,cases,controls,link) in zip(mapping['name'],mapping['category'],mapping[args.phenotype_col],mapping['n_cases'],mapping['n_controls'],mapping['uk_file'])]
+    custom_json_list = [{'phenostring':name,'num_cases':cases,'num_controls':controls,'phenocode':pheno,'category':category,'category_index':category_index} for (name,category,pheno,cases,controls,category_index) in zip(mapping['name'],mapping['category'],mapping[args.phenotype_col],mapping['n_cases'],mapping['n_controls'],mapping['category_index'])]
     with open(args.out_json, 'w') as out_file:
         json.dump(custom_json_list, out_file, indent=4)
 
