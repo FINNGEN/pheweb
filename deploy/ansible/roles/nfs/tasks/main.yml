@@ -20,7 +20,7 @@
     group: nogroup
     mode: '0777'
     state: directory
-  
+
 - name: nfs - create export configuration
   template:
     src: exports
@@ -41,19 +41,11 @@
   ansible.builtin.command:
   args:
     cmd: gsutil -m rsync -R "{{bucket_directory}}" "{{pheweb_directory}}"
-
-- name: nfs - make tmp directory
-  ansible.builtin.file:
-    path: "{{pheweb_directory}}/generated-by-pheweb/tmp"
-    owner: nobody
-    group: nogroup
-    mode: '0777'
-    state: directory
+  when: bucket_directory is defined
 
 - name: nfs - restart nfs server
   service: name=nfs-kernel-server state=restarted
 
 - name: r4 specific tasks
   import_tasks: r4.yaml
-  when: release == "r4"
-
+  when: release is defined and release == "r4"
