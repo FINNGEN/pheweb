@@ -1,0 +1,3 @@
+---
+share_directory: /data/nfs
+pheweb_directory: /data/nfs/pheweb/userresults
