@@ -1,14 +1,14 @@
 resources:
 
-- name: red-{{ properties["environment"] }}-{{ properties["release"] }}-cromwell-storage
+- name: {{ properties["environment"] }}-{{ properties["release"] }}-cromwell-storage
   type: storage.v1.bucket
   properties:
     kind: storage#bucket
-    name: red-{{ properties["environment"] }}-{{ properties["release"] }}-cromwell-storage
+    name: {{ properties["environment"] }}-{{ properties["release"] }}-cromwell-storage
     location: europe-west1
     storageClass: STANDARD
 
-- name: red-{{ properties["environment"] }}-{{ properties["release"] }}-cromwell-instance
+- name: {{ properties["environment"] }}-{{ properties["release"] }}-cromwell-instance
   type: compute.v1.instance
   properties:
     zone: europe-west1-b
