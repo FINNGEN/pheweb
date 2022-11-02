@@ -12,7 +12,7 @@ resources:
   type: compute.v1.instance
   properties:
     zone: europe-west1-b
-    machineType: https://www.googleapis.com/compute/v1/projects/phewas-development/zones/europe-west1-b/machineTypes/e2-medium
+    machineType: https://www.googleapis.com/compute/v1/projects/phewas-development/zones/europe-west1-b/machineTypes/e2-standard-2
     serviceAccounts:
       - email: {{ properties["serviceAccount"] }}
         scopes:
