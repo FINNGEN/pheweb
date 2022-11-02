@@ -1,0 +1,6 @@
+---
+- name: setup cromwell server
+  hosts: all
+  roles:
+    - role: cromwell
+      become: yes

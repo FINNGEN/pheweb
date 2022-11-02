@@ -32,10 +32,11 @@
     db_user: "cromwell"
     db_name: "cromwell"
     db_host: "localhost"
-    cromwell_zone : "europe-west1-b"
-    cromwell_project: "phewas-development"
-    cromwell_bucket: "gs://dev-cromwell-1/"
-    docker_image: "broadinstitute/cromwell:84-dbe3a31"
+    cromwell_zone: "europe-west1-b"
+    cromwell_project: "{{ cromwell_project }}"
+    cromwell_task_zone: "TODO array"
+    cromwell_bucket: "{{ cromwell_bucket }}"
+    docker_image: "{{ docker_image | default('broadinstitute/cromwell:84-dbe3a31') }}"
     docker_name: "cromwell"
     db_password: "{{ lookup('password', '/dev/null length=15 chars=ascii_letters') }}"
 
@@ -54,15 +55,16 @@
     login_host: 'localhost'
     login_user: 'root'
     login_password: ''
-#    login_unix_socket: /var/run/mysqld/mysqld.sock
     state: present
 
 - name: Create user with password, all database privileges
   community.mysql.mysql_user:
     state: present
-    name: "{{db_name}}"
+    name: "{{db_user}}"
+    host: localhost
     password: "{{db_password}}"
-    priv: "{{ db_name }}.*:ALL"
+    priv:
+      "{{ db_name }}.*:ALL"
 
 - name: add group cromwell
   become: yes
@@ -139,15 +141,17 @@
     group: cromwell
 
 - name: create a data container
-  docker_container:
+  community.docker.docker_container:
     name: "{{docker_name}}"
     image: "{{docker_image}}"
+    restart_policy: "on-failure"
+    restart_retries: 10
+    network_mode: host
     volumes:
       - "/opt/cromwell/app-config:/app-config"
       - "/opt/cromwell/cromwell-working-dir/cromwell-executions:/cromwell-working-dir/cromwell-executions"
     ports:
       - "80:8000"
-    network_mode: host
     entrypoint:
       - /opt/java/openjdk/bin/java
       - -Xmx8G
