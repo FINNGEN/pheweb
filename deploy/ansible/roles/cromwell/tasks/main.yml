@@ -7,12 +7,8 @@
     name:
       - python3
       - python3-pip
-      - python-pip
       - python3-setuptools
-      - python-setuptools
-      - python-docker
-      - python3-pymysql
-      - python-pymysql
+      - python3-docker
 
 - name: pip install
   ansible.builtin.pip:
@@ -25,7 +21,7 @@
     update_cache: yes
     name:
       - mariadb-server
-      - python-mysqldb
+      - python3-pymysql
 
 - name: setting database facts
   ansible.builtin.set_fact:
@@ -118,6 +114,21 @@
     name: cromwell
     groups: cromwell,docker
     state: present
+
+# docker strangeness
+- name: docker fix create dir
+  file:
+    path: /sys/fs/cgroup/systemd
+    state: directory
+
+# docker strangeness
+- name: docker fix mount dir
+  ansible.posix.mount:
+    fstype: "cgroup"
+    opts: "none,name=systemd"
+    src: "cgroup"
+    path: "/sys/fs/cgroup/systemd"
+    state: "mounted"
 
 - name: Creates cromwell root directory
   file:
