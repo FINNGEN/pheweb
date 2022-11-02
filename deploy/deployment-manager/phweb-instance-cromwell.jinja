@@ -1,0 +1,38 @@
+resources:
+
+- name: red-{{ properties["environment"] }}-{{ properties["release"] }}-cromwell-storage
+  type: storage.v1.bucket
+  properties:
+    kind: storage#bucket
+    name: red-{{ properties["environment"] }}-{{ properties["release"] }}-cromwell-storage
+    location: europe-west1
+    storageClass: STANDARD
+
+- name: red-{{ properties["environment"] }}-{{ properties["release"] }}-cromwell-instance
+  type: compute.v1.instance
+  properties:
+    zone: europe-west1-b
+    machineType: https://www.googleapis.com/compute/v1/projects/finngen-refinery-dev/zones/europe-west1-b/machineTypes/e2-medium
+    serviceAccounts:
+      - email: {{ properties["serviceAccount"] }}
+        scopes:
+          - https://www.googleapis.com/auth/cloud-platform
+    disks:
+    - deviceName: boot
+      type: PERSISTENT
+      boot: true
+      autoDelete: true
+      initializeParams:
+        sourceImage: https://www.googleapis.com/compute/v1/projects/debian-cloud/global/images/family/debian-10
+      labels:
+        product: {{ properties["release"] }}-pheweb-cromwell
+
+    networkInterfaces:
+    - subnetwork: https://www.googleapis.com/compute/v1/projects/finngen-refinery-dev/regions/europe-west1/subnetworks/default
+      accessConfigs:
+      - name: External NAT
+        networkTier: PREMIUM
+        type: ONE_TO_ONE_NAT
+    startRestricted: false
+    labels:
+      product: {{ properties["release"] }}-pheweb-cromwell
