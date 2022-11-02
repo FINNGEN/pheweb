@@ -12,7 +12,7 @@ resources:
   type: compute.v1.instance
   properties:
     zone: europe-west1-b
-    machineType: https://www.googleapis.com/compute/v1/projects/finngen-refinery-dev/zones/europe-west1-b/machineTypes/e2-medium
+    machineType: https://www.googleapis.com/compute/v1/projects/phewas-development/zones/europe-west1-b/machineTypes/e2-medium
     serviceAccounts:
       - email: {{ properties["serviceAccount"] }}
         scopes:
@@ -28,7 +28,7 @@ resources:
         product: {{ properties["release"] }}-pheweb-cromwell
 
     networkInterfaces:
-    - subnetwork: https://www.googleapis.com/compute/v1/projects/finngen-refinery-dev/regions/europe-west1/subnetworks/default
+    - subnetwork: https://www.googleapis.com/compute/v1/projects/phewas-development/regions/europe-west1/subnetworks/default
       accessConfigs:
       - name: External NAT
         networkTier: PREMIUM
