@@ -3,7 +3,7 @@ resources:
 - name: {{ properties["environment"] }}-{{ properties["release"] }}-pheweb-nfs
   type: gcp-types/file-v1beta1:projects.locations.instances
   properties:
-    parent: projects/phewas-development/locations/europe-west1-b
+    parent: projects/{{ env["project"] }}/locations/europe-west1-b
     instanceId: {{ properties["environment"] }}-{{ properties["release"] }}-pheweb-nfs
     tier: STANDARD
     description: >-

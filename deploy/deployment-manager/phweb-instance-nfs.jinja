@@ -4,7 +4,7 @@ resources:
   type: compute.v1.instance
   properties:
     zone: europe-west1-b
-    machineType: https://www.googleapis.com/compute/v1/projects/phewas-development/zones/europe-west1-b/machineTypes/e2-medium
+    machineType: https://www.googleapis.com/compute/v1/projects/{{ env["project"] }}/zones/europe-west1-b/machineTypes/e2-medium
     serviceAccounts:
       - email: {{ properties["serviceAccount"] }}
         scopes:
@@ -19,9 +19,9 @@ resources:
       labels:
         product: {{ properties["release"] }}-pheweb-nfs
       diskSizeGb: {{ properties["nfsDiskSizeGb"]}}
-    
+
     networkInterfaces:
-    - network: https://www.googleapis.com/compute/v1/projects/phewas-development/global/networks/default
+    - network: https://www.googleapis.com/compute/v1/projects/{{ env["project"] }}/global/networks/default
       accessConfigs:
       - name: External NAT
         networkTier: PREMIUM

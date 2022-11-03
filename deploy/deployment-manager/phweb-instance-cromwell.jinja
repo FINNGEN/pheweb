@@ -12,7 +12,7 @@ resources:
   type: compute.v1.instance
   properties:
     zone: europe-west1-b
-    machineType: https://www.googleapis.com/compute/v1/projects/phewas-development/zones/europe-west1-b/machineTypes/e2-standard-2
+    machineType: https://www.googleapis.com/compute/v1/projects/{{ env["project"] }}/zones/europe-west1-b/machineTypes/e2-standard-2
     serviceAccounts:
       - email: {{ properties["serviceAccount"] }}
         scopes:
@@ -28,11 +28,14 @@ resources:
         product: {{ properties["release"] }}-pheweb-cromwell
 
     networkInterfaces:
-    - subnetwork: https://www.googleapis.com/compute/v1/projects/phewas-development/regions/europe-west1/subnetworks/default
+    - subnetwork: https://www.googleapis.com/compute/v1/projects/{{ env["project"] }}/regions/europe-west1/subnetworks/default
       accessConfigs:
       - name: External NAT
         networkTier: PREMIUM
         type: ONE_TO_ONE_NAT
+      network: https://www.googleapis.com/compute/v1/projects/{{ env["project"] }}/global/networks/default
+      networkIP: {{  properties["ipAddress"] }}
+
     startRestricted: false
     labels:
       product: {{ properties["release"] }}-pheweb-cromwell

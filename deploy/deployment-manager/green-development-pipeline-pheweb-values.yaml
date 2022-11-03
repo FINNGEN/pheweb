@@ -18,6 +18,7 @@ resources:
     release: userresults
     environment: development
     serviceAccount: 1021318262546-compute@developer.gserviceaccount.com
+    ipAddress: 10.132.0.92
 
 - name: phweb-kubernetes-template
   type: phweb-kubernetes.jinja
