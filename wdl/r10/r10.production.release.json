@@ -5,6 +5,7 @@
   "import_pheweb.disk" : 8000,
   "import_pheweb.matrix.cpu" : 8,
   "import_pheweb.mem" : 64,
+  "import_pheweb.sites_file" : "gs://r10-data-green/sites.tsv",
   "import_pheweb.fields" : [ "category" , "category_index" , "num_cases" , "num_controls" , "phenocode", "phenostring" ],
   "import_pheweb.output_url" : [ "gs://r10-data-green/production/pheweb/release" ]
 }
