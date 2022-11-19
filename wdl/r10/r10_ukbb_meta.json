@@ -1,4 +1,4 @@
-{ "import_pheweb.docker" : "eu.gcr.io/phewas-development/pheweb:jm-dev",
+{ "import_pheweb.docker" : "eu.gcr.io/phewas-development/pheweb:ci-51b4241de83072b96a62b6c026e37d5d365fb785",
   "import_pheweb.summary_files":"gs://r10-data-green/meta_analysis/ukbb/R10_meta_pheweb_summary_stats_filtered",
   "import_pheweb.bed_file" : "gs://r10-data-green/regenie/demopheno/genes-b38-v39.bed",
   "import_pheweb.custom_json" : "gs://r10-data-green/meta_analysis/ukbb/R10_UKBB_meta_pheweb_import.custom.json",
