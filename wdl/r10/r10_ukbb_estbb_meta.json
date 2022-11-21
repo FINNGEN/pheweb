@@ -16,5 +16,6 @@
   "import_pheweb.preprocess.mlogp_column" : "all_inv_var_meta_mlogp" ,
   "import_pheweb.preprocess.beta_column" : "all_inv_var_meta_beta" ,
   "import_pheweb.preprocess.se_beta_column" : "all_inv_var_meta_sebeta" ,
+  "import_pheweb.preprocess.mem" : 16,
   "import_pheweb.file_affix" : "_meta_out_filtered.tsv"
 }
