@@ -1,6 +1,6 @@
 resources:
 
-- name: {{ properties["environment"] }}-{{ properties["release"] }}-instance-nfs
+- name: {{ properties["classification"] }}-{{ properties["environment"] }}-{{ properties["release"] }}-instance-nfs
   type: compute.v1.instance
   properties:
     zone: europe-west1-b
@@ -17,7 +17,7 @@ resources:
       initializeParams:
         sourceImage: https://www.googleapis.com/compute/v1/projects/debian-cloud/global/images/family/debian-10
       labels:
-        product: {{ properties["release"] }}-pheweb-nfs
+        product: {{ properties["classification"] }}-{{ properties["release"] }}-pheweb-nfs
       diskSizeGb: {{ properties["nfsDiskSizeGb"]}}
 
     networkInterfaces:
@@ -28,4 +28,4 @@ resources:
         type: ONE_TO_ONE_NAT
     startRestricted: false
     labels:
-      product: {{ properties["release"] }}-pheweb-nfs
+      product: {{ properties["classification"] }}-{{ properties["release"] }}-pheweb-nfs

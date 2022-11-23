@@ -11,6 +11,7 @@ resources:
     environment: development
     nfsDiskSizeGb: 2000
     serviceAccount: 1021318262546-compute@developer.gserviceaccount.com
+    classification: green
 
 - name: phweb-instance-cromwell-template
   type: phweb-instance-cromwell.jinja
@@ -19,6 +20,7 @@ resources:
     environment: development
     serviceAccount: 1021318262546-compute@developer.gserviceaccount.com
     ipAddress: 10.132.0.92
+    classification: green
 
 - name: phweb-kubernetes-template
   type: phweb-kubernetes.jinja

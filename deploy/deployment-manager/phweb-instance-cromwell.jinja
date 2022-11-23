@@ -1,14 +1,14 @@
 resources:
 
-- name: {{ properties["environment"] }}-{{ properties["release"] }}-cromwell-storage
+- name: {{ properties["classification"] }}-{{ properties["environment"] }}-{{ properties["release"] }}-cromwell-storage
   type: storage.v1.bucket
   properties:
     kind: storage#bucket
-    name: {{ properties["environment"] }}-{{ properties["release"] }}-cromwell-storage
+    name: {{ properties["classification"] }}-{{ properties["environment"] }}-{{ properties["release"] }}-cromwell-storage
     location: europe-west1
     storageClass: STANDARD
 
-- name: {{ properties["environment"] }}-{{ properties["release"] }}-cromwell-instance
+- name: {{ properties["classification"] }}-{{ properties["environment"] }}-{{ properties["release"] }}-cromwell-instance
   type: compute.v1.instance
   properties:
     zone: europe-west1-b
@@ -25,8 +25,7 @@ resources:
       initializeParams:
         sourceImage: https://www.googleapis.com/compute/v1/projects/debian-cloud/global/images/family/debian-11
       labels:
-        product: {{ properties["release"] }}-pheweb-cromwell
-
+        product: {{ properties["classification"] }}-{{ properties["release"] }}-pheweb-cromwell
     networkInterfaces:
     - subnetwork: https://www.googleapis.com/compute/v1/projects/{{ env["project"] }}/regions/europe-west1/subnetworks/default
       accessConfigs:
@@ -38,4 +37,4 @@ resources:
 
     startRestricted: false
     labels:
-      product: {{ properties["release"] }}-pheweb-cromwell
+      product: {{ properties["classification"] }}-{{ properties["release"] }}-pheweb-cromwell

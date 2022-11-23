@@ -8,4 +8,5 @@ resources:
     release: userresults
     environment: development
     serviceAccount: 550699724258-compute@developer.gserviceaccount.com
-    ipAddress: 10.100.0.172
+    ipAddress: 10.132.0.21
+    classification: red

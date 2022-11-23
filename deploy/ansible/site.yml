@@ -16,3 +16,9 @@
   roles:
     - role: cromwell
       become: yes
+
+- name: setup pipeline servers
+  hosts: pipeline_servers
+  roles:
+    - role: pipeline
+      become: yes
