@@ -21,7 +21,7 @@
     cromwell_project: "{{ cromwell_project }}"
     cromwell_task_zone: "TODO array"
     cromwell_bucket: "{{ cromwell_bucket }}"
-    docker_image: "{{ docker_image | default('broadinstitute/cromwell:84-dbe3a31') }}"
+    docker_image: "{{ cromwell_docker_image | default('broadinstitute/cromwell:84-dbe3a31') }}"
     docker_name: "cromwell"
     db_password: "{{ lookup('password', '/dev/null length=15 chars=ascii_letters') }}"
 
@@ -45,9 +45,9 @@
 - name: Create user with password, all database privileges
   community.mysql.mysql_user:
     state: present
-    name: "{{db_user}}"
+    name: "{{ db_user }}"
     host: localhost
-    password: "{{db_password}}"
+    password: "{{ db_password }}"
     priv:
       "{{ db_name }}.*:ALL"
 
@@ -71,7 +71,7 @@
 
 - name: Creates directory
   file:
-    path: "{{item}}"
+    path: "{{ item }}"
     state: directory
   with_items:
     - /opt/cromwell/cromwell-working-dir/cromwell-executions
@@ -87,8 +87,8 @@
 
 - name: create a data container
   community.docker.docker_container:
-    name: "{{docker_name}}"
-    image: "{{docker_image}}"
+    name: "{{ docker_name }}"
+    image: "{{ cromwell_docker_image }}"
     restart_policy: "on-failure"
     restart_retries: 10
     network_mode: host

@@ -24,3 +24,6 @@ properties:
     type: string
   nfsDiskSizeGb:
     type: integer
+  ipAddress:
+    description: optional ip address
+    type: string

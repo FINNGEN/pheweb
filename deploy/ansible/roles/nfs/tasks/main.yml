@@ -4,6 +4,9 @@
 #   https://github.com/takara9/vagrant-nfs
 #   https://www.tecmint.com/install-nfs-server-on-ubuntu/
 #   https://advishnuprasad.com/blog/2016/03/29/setup-nfs-server-and-client-using-ansible/
+- name: common role
+  include_role:
+        name: common
 
 - name: nfs - install apt packages
   apt:
@@ -15,9 +18,9 @@
 
 - name: nfs - make share directory
   ansible.builtin.file:
-    path: "{{share_directory}}"
-    owner:  nobody
-    group: nogroup
+    path: "{{ nfs_share_directory }}"
+    owner:  pheweb
+    group: pheweb
     mode: '0777'
     state: directory
 
@@ -31,16 +34,23 @@
 
 - name: nfs - make pheweb directory
   ansible.builtin.file:
-    path: "{{pheweb_directory}}"
-    owner:  nobody
-    group: nogroup
+    path: "{{ nfs_pheweb_directory }}"
+    owner:  pheweb
+    group: pheweb
     mode: '0777'
     state: directory
+
+- name: change owner to pheweb
+  ansible.builtin.file:
+    path: "{{ nfs_share_directory }}"
+    owner:  pheweb
+    group: pheweb
+    recurse: yes
 
 - name: nfs - copy bucket
   ansible.builtin.command:
   args:
-    cmd: gsutil -m rsync -R "{{bucket_directory}}" "{{pheweb_directory}}"
+    cmd: gsutil -m rsync -R "{{ nfs_bucket_directory }}" "{{ nfs_pheweb_directory }}"
   when: bucket_directory is defined
 
 - name: nfs - restart nfs server

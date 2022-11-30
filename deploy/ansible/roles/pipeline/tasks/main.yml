@@ -1,7 +1,7 @@
 ---
-- name: "set up docker"
+- name: common role
   include_role:
-        name: docker
+        name: common
 
 - name: Update and upgrade apt packages
   become: true
@@ -18,19 +18,20 @@
       - nginx
       - rsync
       - kubectl
+      - jq
 
 - name: Create mount directory
   become: true
   file:
-    path: "{{ data_dir }}"
+    path: "{{ restart_pods_data_dir }}"
     state: directory
   when: nfs_mount is defined
 
 - name: Mount an NFS volume
   become: true
   mount:
-    src: "{{ nfs_mount }}"
-    path: "{{ data_dir }}"
+    src: "{{ restart_pods_nfs_mount }}"
+    path: "{{ restart_pods_data_dir }}"
     opts: rw,sync,hard,intr
     state: mounted
     fstype: nfs
@@ -39,27 +40,57 @@
 - name: Create pipeline directory
   become: true
   file:
-    path: /opt/pipeline/data
+    path: "{{ item }}"
     state: directory
+    owner: pheweb
+    group: pheweb
+  with_items:
+   - /opt/pipeline/data
+   - /opt/pipeline/bin
 
-# ngnix
-# - name: Creates directory
-#   file:
-#     path: /opt
-#     state: directory
+- name: copy artifact from bucket
+  ansible.builtin.command:
+    cmd: gsutil cp "{{ restart_pods_artifact }}" "/opt/pipeline/bin/restart_pods"
 
-# - name: copy code
-#   become: true
-#   synchronize:
-#     src: /home/mwm1/Work/pipeline_coordination/restart_pods
-#     dest: /opt/pipeline_coordination
-#     rsync_opts:
-#       - "--exclude=.direnv"
+- name: Change file ownership, group and permissions
+  ansible.builtin.file:
+    path: /opt/pipeline/bin/restart_pods
+    owner: root
+    group: root
+    mode: '0555'
 
-# - name: copy code
-#   become: true
-#   template:
-#     src: templates/default
-#     dest: /etc/nginx/sites-enabled/default
-#   notify:
-#     - restart nginx
+- name: setup restart service
+  become: yes
+  template:
+    src: roles/pipeline/templates/restart_pods.service
+    dest: /etc/systemd/system/restart_pods.service
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: setup restart wrapper
+  become: yes
+  ansible.builtin.copy:
+    src: roles/pipeline/files/env_secrets.sh
+    dest: /opt/pipeline/bin/env_secrets.sh
+    owner: root
+    group: root
+    mode: '0555'
+
+
+- name: setup service
+  ansible.builtin.systemd:
+    name: restart_pods
+    enabled: yes
+    daemon_reload: yes
+    state: restarted
+
+- name: configure ngnix
+  become: yes
+  template:
+    src: roles/pipeline/templates/default
+    dest: /etc/nginx/sites-enabled/default
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart nginx

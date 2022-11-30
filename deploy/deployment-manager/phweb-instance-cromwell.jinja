@@ -7,6 +7,12 @@ resources:
     name: {{ properties["classification"] }}-{{ properties["environment"] }}-{{ properties["release"] }}-cromwell-storage
     location: europe-west1
     storageClass: STANDARD
+    lifecycle:
+      rule:
+        - action:
+            type: Delete
+          condition:
+            age: 60
 
 - name: {{ properties["classification"] }}-{{ properties["environment"] }}-{{ properties["release"] }}-cromwell-instance
   type: compute.v1.instance
