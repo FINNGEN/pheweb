@@ -10,9 +10,3 @@ resources:
     environment: production
     nfsDiskSizeGb: 2000
     serviceAccount: 1021318262546-compute@developer.gserviceaccount.com
-
-- name: phweb-kubernetes-template
-  type: phweb-kubernetes.jinja
-  properties:
-    release: userresults
-    environment: production

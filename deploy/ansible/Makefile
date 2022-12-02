@@ -5,3 +5,6 @@ all:
 
 development-userresults:
 	ansible-playbook site.yml -i inventory.ini -u ${USER}  --limit "green-development-userresults-instance-nfs,green-development-userresults-cromwell-instance,red-development-userresults-cromwell-instance"
+
+production-userresults:
+	ansible-playbook site.yml -i inventory.ini -u ${USER}  --limit "green-production-userresults-instance-nfs,green-production-userresults-cromwell-instance,red-production-userresults-cromwell-instance"

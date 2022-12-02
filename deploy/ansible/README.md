@@ -19,9 +19,6 @@ gcloud compute config-ssh --project finngen-refinery-dev
 ansible-playbook site.yml -i inventory.ini -u ${USER}  --limit <<your host>>
 ```
 
-
-
-
 # configuration for roles
 
 ## nfs
@@ -48,7 +45,3 @@ restart\_pods\_configuration\_secret\_name: name of restart pod secret the forma
    "project_zone": ... }
 
 ```
-
-monitoring pods
-
-journalctl -u restart_pods

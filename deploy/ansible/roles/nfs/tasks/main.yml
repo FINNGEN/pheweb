@@ -50,8 +50,8 @@
 - name: nfs - copy bucket
   ansible.builtin.command:
   args:
-    cmd: gsutil -m rsync -R "{{ nfs_bucket_directory }}" "{{ nfs_pheweb_directory }}"
-  when: bucket_directory is defined
+    cmd: gsutil -m rsync -R "{{ nfs_bucket_directory }}/" "{{ nfs_pheweb_directory }}/"
+  when: nfs_bucket_directory is defined
 
 - name: nfs - restart nfs server
   service: name=nfs-kernel-server state=restarted

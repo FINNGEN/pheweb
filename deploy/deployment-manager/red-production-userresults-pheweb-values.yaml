@@ -6,7 +6,7 @@ resources:
   type: phweb-instance-cromwell.jinja
   properties:
     release: userresults
-    environment: development
+    environment: production
     serviceAccount: 550699724258-compute@developer.gserviceaccount.com
-    ipAddress: 10.100.0.40
+    ipAddress: 10.132.0.13
     classification: red

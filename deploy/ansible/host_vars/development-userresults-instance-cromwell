@@ -1,4 +1,0 @@
----
-cromwell_project: "phewas-development"
-cromwell_bucket: "gs://dev-cromwell-1/"
-docker_image: "broadinstitute/cromwell:84-dbe3a31"
