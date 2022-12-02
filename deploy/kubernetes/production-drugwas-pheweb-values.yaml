@@ -5,16 +5,16 @@ replicaCount: 2
 pheweb:
   cloudSQLCredentialFile: /etc/gcp/cloud-sql-credentials.json
   cloudSQLProxyInstances: phewas-development:europe-west1:dev-db1=tcp:3306
-  directory: /mnt/drugs-meds/meds
-  ipName: finngen-meds-ip
+  directory: /mnt/drugs-meds/drugwas
+  ipName: finngen-drugwas-ip
   mount: /mnt
-  release: meds
-  secretName: production-meds-secrets
-  subdomain: meds
+  release: drugwas
+  secretName: production-drugwas-secrets
+  subdomain: drugwas
 
 persistentVolume:
   path: /data/nfs/pheweb
   server: 10.132.0.154
 
 image:
-  tag: ci-dea6c01d55aa17f763a8678124005e3bd55710ec
+  tag: ci-7bd54b4e2b6f58bf940be6e9be0a073f783f7e06

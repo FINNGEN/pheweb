@@ -13,6 +13,7 @@
     name:
       - nfs-kernel-server
       - nfs-common
+      - rsync
     state: present
     update_cache: yes
 

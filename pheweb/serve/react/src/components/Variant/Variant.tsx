@@ -29,6 +29,7 @@ interface KeyValue {
 }
 
 interface MAF {
+  value : string
   start : string
   stop : string
   properties :  KeyValue[]
@@ -42,8 +43,9 @@ interface GnomAD {
 }
 
 interface InfoRange {
-  start : string,
-  stop : string ,
+  value: string
+  start : string
+  stop : string
   properties :  KeyValue[]
 }
 
@@ -63,7 +65,7 @@ interface VariantSummary {
   alt : string
 }
 
-const createVariantSummary = (variantData : VariantModel.Data) => {
+const createVariantSummary = (variantData : VariantModel.Data) : VariantSummary => {
   const nearestGenes : string [] = variantData.variant.annotation.nearest_gene.split(",");
   const mostSevereConsequence = variantData?.variant?.annotation?.annot?.most_severe?.replace(/_/g, ' ')
 
@@ -93,14 +95,19 @@ const createVariantSummary = (variantData : VariantModel.Data) => {
     let properties = annot === undefined || annot == null ? []  :
     Object.keys(annot).filter((key) => key.indexOf('AF_') === 0 ).map(createIndex)
 
+    const value = 'AF' in annot ? annot['AF'] : undefined
     if(mafs.length === numPhenotypesWithMaf.length){
-      maf = { start : scientificFormatter(Math.min(...mafs)) ,
+      maf = {
+        value : scientificFormatter(value),
+        start : scientificFormatter(Math.min(...mafs)) ,
         stop : scientificFormatter(Math.max(...mafs)) ,
         properties ,
         description : 'across all phenotype' }
     } else {
       //{v : variantData.variant }
-      maf = { start : scientificFormatter(Math.min(...numPhenotypesWithMaf)) ,
+      maf = {
+        value : scientificFormatter(value),
+        start : scientificFormatter(Math.min(...numPhenotypesWithMaf)) ,
         stop : scientificFormatter(Math.max(...numPhenotypesWithMaf)),
         properties ,
         description : 'for phenotypes where it is defined' }
@@ -119,10 +126,9 @@ const createVariantSummary = (variantData : VariantModel.Data) => {
     } else {
       afFin = undefined
     }
-
-    // af pop max
     let afPopmax :string | undefined
-    if(gnomad && 'AF_fin' in gnomad && !isNaN(+gnomad['AF_popmax']) && isFinite(+gnomad['AF_popmax'])){
+    // af pop malet
+    if(gnomad && 'AF_fin' in gnomad && 'afPopmax' in gnomad && !isNaN(+gnomad['AF_popmax']) && isFinite(+gnomad['AF_popmax'])){
       afPopmax = scientificFormatter(+gnomad['AF_popmax']);
     } else {
       afPopmax = undefined
@@ -155,7 +161,10 @@ const createVariantSummary = (variantData : VariantModel.Data) => {
       }
       let properties = annot === undefined || annot === null ? []  : Object.keys(annot).filter(filter).map(reshape)
 
-      infoRange  = { start, stop , properties }
+      infoRange  = { value : scientificFormatter(info),
+                     start,
+                     stop ,
+                     properties }
     } else {
       infoRange = undefined
     }
@@ -194,7 +203,9 @@ const default_banner: string = `
 <div class="variant-info col-xs-12">
         <h1 style="margin-top:0">
           {{summary.chrom}}:{{summary.pos}}:{{summary.ref}}:{{summary.alt}}
-          ({{summary.rsids}})
+          {{#summary.rsids}}
+          ({{.}})
+          {{/summary.rsids}}
         </h1>
         <p style="margin-bottom: 0px;">
           Nearest gene:
@@ -226,7 +237,7 @@ const default_banner: string = `
           "
           html="true"
           data-html="true">
-          AF ( ranges from {{start}} to {{stop}} {{description}} )
+          AF {{value}} ( ranges from {{start}} to {{stop}} {{description}} )
 
        </p>
        {{/summary.maf}}
@@ -268,7 +279,7 @@ const default_banner: string = `
           "
           html="true"
           data-html="true">
-          (ranges in genotyping batches from {{start}} to {{stop}} )
+          INFO {{value}} (ranges in genotyping batches from {{start}} to {{stop}} )
        </p>
        {{/summary.infoRange}}
 
@@ -323,6 +334,16 @@ declare let window: ConfigurationWindow;
 const { config } = window;
 const banner: string = config?.userInterface?.variant?.banner || default_banner;
 
+interface  BioBankURL {rsid: string, url: string}
+interface BannerData { bioBankURL : BioBankURL[] , summary : VariantSummary }
+type BioBankURLObject = {[p: string]: string} | null
+
+const bannerData = (variantData :  VariantModel.Data, bioBankURLObject: BioBankURLObject) : BannerData => {
+  const bioBankURL : BioBankURL[] = bioBankURLObject == null ? [] : Object.entries(bioBankURLObject).map(([k,v])=> { return { rsid : k , url : v}})
+  const summary = createVariantSummary(variantData)
+  const data = { bioBankURL , summary }
+  return data;
+}
 
 const Variant = (props : Props) => {
   const [variantData, setVariantData] = useState<VariantModel.Data | null>(null);
@@ -351,14 +372,14 @@ const Variant = (props : Props) => {
 
   // the null check is on  bioBankURL == null as for some reason
   // the tool tip is not happing loading this later.
-  return variantData == null || bioBankURL == null?loading:
+  return variantData == null?loading:
     <VariantContextProvider>
     <React.Fragment>
 
       <div>
         <ReactTooltip />
              <div className="variant-info col-xs-12">
-                 {mustacheDiv(banner, { bioBankURL : Object.entries(bioBankURL).map(([k,v])=> { return { rsid : k , url : v}}), summary : createVariantSummary(variantData) } )}
+                 {mustacheDiv(banner,bannerData(variantData, bioBankURL))}
              </div>
       </div>
       <div>
@@ -375,5 +396,6 @@ const Variant = (props : Props) => {
   </React.Fragment>
   </VariantContextProvider>
 }
+
 
 export default Variant;

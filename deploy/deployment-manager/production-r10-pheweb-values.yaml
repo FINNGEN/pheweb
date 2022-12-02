@@ -6,13 +6,13 @@ resources:
 - name: phweb-instance-nfs-template
   type: phweb-instance-nfs.jinja
   properties:
-    release: r9
+    release: r10
     environment: production
-    nfsDiskSizeGb: 4000
+    nfsDiskSizeGb: 3500
     serviceAccount: pheweb@phewas-development.iam.gserviceaccount.com
 
 - name: phweb-kubernetes-template
   type: phweb-kubernetes.jinja
   properties:
-    release: r9
+    release: r10
     environment: production

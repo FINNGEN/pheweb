@@ -26,7 +26,20 @@ const optionaCellNumberFormatter = (props) => isNaN(+props.value) ? props.value 
 const scientificCellFormatter = (props) => (+props.value).toExponential(1);
 const optionalCellScientificFormatter = (props) => isNaN(+props.value) ? props.value : scientificCellFormatter(props);
 
-const pValueCellFormatter = (props) => (props.value === pValueSentinel) ? ` << ${pValueSentinel}` :  isNaN(+props.value) ?props.value: props.value.toExponential(1);
+export const pValueCellFormatter = (props) => {
+      const value = props.value;
+      let result;
+      if(props.value == pValueSentinel){
+         result = ` << ${pValueSentinel}`
+      } else if (typeof value === 'number') {
+        result = value.toExponential(1)
+      } else if (typeof value === 'string' && !isNaN(+props.value)) {
+        result = (+value).toExponential(1)
+      } else {
+        result = value;
+      }
+      return result;
+}
 
 const arrayCellFormatter = (props) => { return props?.value?.join(" ") || "" }
 
@@ -1289,7 +1302,7 @@ export const geneLossOfFunctionTableColumns = [
 
 
 export const genePhenotypeTableColumns = [
-  phenotypeColumns.rsid,
+  { ...phenotypeColumns.rsid, "minWidth": 70 , "width" : 70 },
   phenotypeColumns.finEnrichmentText,
   phenotypeColumns.genePhenotype,
   phenotypeColumns.category,
@@ -1301,11 +1314,11 @@ export const genePhenotypeTableColumns = [
 ]
 
 export const geneFunctionalVariantTableColumns = [
-  { ...phenotypeColumns.rsid, "attributes": { "minWidth": 100 } },
-  { ...phenotypeColumns.consequence, "attributes": { "minWidth": 100 } },
-  { ...phenotypeColumns.infoScore, "attributes": { "minWidth": 100 } },
-  { ...phenotypeColumns.finEnrichmentText, "attributes": { "minWidth": 100 } },
-  { ...phenotypeColumns.af, "attributes": { "minWidth": 100 } },
+  { ...phenotypeColumns.rsid, "minWidth": 70 , "width" : 70 },
+  { ...phenotypeColumns.consequence, "width" : 80 , "minWidth": 80 },
+  { ...phenotypeColumns.infoScore, "minWidth": 40 , "width" : 40 },
+  { ...phenotypeColumns.finEnrichmentText, "minWidth": 80 , "width" : 80 },
+  { ...phenotypeColumns.af, "minWidth": 50 , "width" : 50 },
   phenotypeColumns.finnGenPhenotype
 ]
 
@@ -1319,7 +1332,7 @@ export const geneDrugListTableColumns = [
 ]
 
 export const phenotypeListTableColumns = [
-  { ...phenotypeColumns.phenotype, "attributes": { "minWidth": 300 } },
+  phenotypeColumns.phenotype,
   phenotypeColumns.category,
   phenotypeColumns.numCases,
   phenotypeColumns.numControls,
@@ -1438,22 +1451,32 @@ interface ColumnDescriptor<E extends {}> {
 type ColumnConfiguration<E> = ColumnArchetype<E> | ColumnDescriptor<E>;
 export type TableColumnConfiguration<E> = ColumnConfiguration<E>[] | undefined | null
 
+export const createHeader = (title : string | null, label : string| null) => {
+    const spanTitle = title || label || ""
+    return <span title={spanTitle} style={{textDecoration: "underline"}}>
+        {label || title}
+    </span>
+}
+export const addHeader = (value, _createHeader = createHeader) => {
+    const { title, label , ...remainder } = value;
+    const doAddHeader = (title  !== undefined) || (label  !== undefined)
+    const header = { ...(doAddHeader && { Header : _createHeader(title,label)}) }
+    const columns = { ...remainder, ...header }
+    return columns
+}
+
 const createColumn = <Type extends {}>(descriptor: ColumnConfiguration<Type>): Column<Type> => {
   let column: Column<Type>;
 
   if ("type" in descriptor) {
     column = {
       ...phenotypeColumns[descriptor.type],
-      ...("attributes" in descriptor && descriptor.attributes)
+      ...("attributes" in descriptor && addHeader(descriptor.attributes))
     };
   } else {
     const { title, label, accessor, formatter, minWidth, sorter, filter } = descriptor;
-    const header: Renderer<HeaderProps<Type>> =
-      <span title={`{title || label }`} style={{ textDecoration: "underline" }}>
-        {label || title}
-      </span>;
+    const header: Renderer<HeaderProps<Type>> = createHeader(title,label);
     column = {
-      Header: header,
       accessor: accessor,
       Cell: formatter in formatters ? formatters[formatter] : textCellFormatter,
       ...(sorter && sorter in sorters && { sortMethod: sorters[sorter] }),
