@@ -1,12 +1,16 @@
-
 from ....file_utils import common_filepaths
 from ...server_utils import parse_variant
-from .dao import Autocompleter
+from .dao import AutocompleterDAO, QUERY_LIMIT
 import itertools
 import re
 import marisa_trie
 import copy
 from pathlib import Path
+
+import logging
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
+logger.setLevel(logging.DEBUG)
 
 # TODO: sort suggestions better.
 # - It's good that hitting enter sends you to the thing with the highest token-ratio.
@@ -18,13 +22,18 @@ from pathlib import Path
 #         - but, stringy things should just be in a streamtable anyways.
 
 
-class TriesAutocompleter(Autocompleter):
+class AutocompleterTriesDAO(AutocompleterDAO):
     def __init__(self,
                  phenos,
                  cpra_to_rsids_trie=common_filepaths['cpra-to-rsids-trie'],
                  rsid_to_cpra_trie=common_filepaths['rsid-to-cpra-trie'],
                  gene_alias_trie=common_filepaths['gene-aliases-trie']):
-        self._phenos = copy.deepcopy(phenos)
+        logger.info(f"autocomplete:'AutocompleterTriesDAO'")
+        logger.info(f"cpra_to_rsids_trie:'{cpra_to_rsids_trie}'")
+        logger.info(f"rsid_to_cpra_trie:'{rsid_to_cpra_trie}'")
+        logger.info(f"gene_alias_trie:'{gene_alias_trie}'")
+        
+        self._phenos = copy.deepcopy(phenos())
         self._preprocess_phenos()
 
         self._cpra_to_rsids_trie = marisa_trie.BytesTrie().load(cpra_to_rsids_trie)
@@ -49,7 +58,7 @@ class TriesAutocompleter(Autocompleter):
         query = query.strip()
         result = []
         for autocompleter in self._autocompleters:
-            result = list(itertools.islice(autocompleter(query), 0, 10))
+            result = list(itertools.islice(autocompleter(query), 0, QUERY_LIMIT))
             if result: break
         return result
 

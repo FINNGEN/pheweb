@@ -40,6 +40,8 @@ from .components.autocomplete.service import autocomplete
 from .components.chip.service import chip
 from flask_cors import CORS
 
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__,
             # this is hack so this it doesn't get confused on the static subdirectory

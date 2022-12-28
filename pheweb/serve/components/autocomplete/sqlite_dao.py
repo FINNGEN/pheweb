@@ -1,7 +1,6 @@
-
 from ....file_utils import get_filepath
 from ...server_utils import parse_variant
-
+from .dao import AutocompleterDAO, QUERY_LIMIT
 from flask import url_for
 from pathlib import Path
 import urllib.parse
@@ -10,6 +9,11 @@ import re
 import copy
 import sqlite3
 from typing import List,Dict,Any,Optional,Iterator
+
+import logging
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
+logger.setLevel(logging.DEBUG)
 
 # TODO: sort suggestions better.
 # - It's good that hitting enter sends you to the thing with the highest token-ratio.
@@ -25,9 +29,16 @@ def get_sqlite3_readonly_connection(filepath:str):
     # `check_same_thread=False` lets WSGI work. Readonly makes me feel better about disabling `check_same_thread`.
     return sqlite3.connect('file:{}?mode=ro'.format(urllib.parse.quote(filepath)), uri=True, check_same_thread=False)
 
-class SQLiteAutocompleter(object):
-    def __init__(self, phenos:Dict[str,Dict[str,Any]]):
-        self._phenos = copy.deepcopy(phenos)
+class AutocompleterSqliteDAO(AutocompleterDAO):
+    def __init__(self,
+                 phenos,
+                 cpras_rsids_path = Path(get_filepath('cpras-rsids-sqlite3', must_exist=False)),
+                 gene_aliases_path = Path(get_filepath('gene-aliases-sqlite3', must_exist=False)())):
+        logger.info(f"autocomplete:'AutocompleterSqliteDAO'")
+        logger.info(f"cpras_rsids_path:'{cpras_rsids_path}'")
+        logger.info(f"gene_aliases_path:{gene_aliases_path}'")
+
+        self._phenos = copy.deepcopy(phenos())
         self._preprocess_phenos()
         cpras_rsids_path = Path(get_filepath('cpras-rsids-sqlite3', must_exist=False))
         gene_aliases_path = Path(get_filepath('gene-aliases-sqlite3', must_exist=False)())
@@ -50,7 +61,7 @@ class SQLiteAutocompleter(object):
         query = query.strip()
         result = []
         for autocompleter in self._autocompleters:
-            result = list(itertools.islice(autocompleter(query), 0, 10))
+            result = list(itertools.islice(autocompleter(query), 0, QUERY_LIMIT))
             if result: break
         return result
 
