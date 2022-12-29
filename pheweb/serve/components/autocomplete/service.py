@@ -1,7 +1,5 @@
 import json
 from flask import Blueprint, current_app as app, g, request, jsonify
-from .tries_dao import create_autocompleter as tries_dao_create_autocompleter
-from .sqlite_dao import create_autocompleter as sqlite_dao_create_autocompleter
 from .dao import AutocompleterDAO, QUERY_LIMIT
 
 

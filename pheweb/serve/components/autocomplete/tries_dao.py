@@ -216,16 +216,3 @@ class AutocompleterTriesDAO(AutocompleterDAO):
                             "display": "{} (icd9 string; icd9 code: {}; phewas code: {})".format(icd9['icd9_string'], icd9['icd9_code'], phenocode),
                         }
 
-def create_autocompleter(phenos):
-    try:
-        autocompleter = TriesAutocompleter(phenos)
-        # random test query
-        autocompleter.autocomplete("2a593769-f25f-4658-a21d-aa372d52a6ae")
-        return autocompleter
-    except Exception as e:
-        print("attempted creating tries autocomplete and failed ...")
-        import sys
-        import traceback
-        print(traceback.format_exc(), file=sys.stderr)
-        return None
-

@@ -95,6 +95,8 @@ class AutocompleterSqliteDAO(AutocompleterDAO):
         # chrom-pos-ref-alt format
         query = query.replace(',', '')
         chrom, pos, ref, alt = parse_variant(query, default_chrom_pos = False)
+        logger.debug(f"autocomplete_variant:{query}:{chrom}")
+        
         if chrom is not None:
             key = '-'.join(str(e) for e in [chrom,pos,ref,alt] if e is not None)
 
@@ -175,15 +177,3 @@ class AutocompleterSqliteDAO(AutocompleterDAO):
                         'display' : '{} (alias for {})'.format(alias, canonical_symbols[0]),
                     }
 
-def create_autocompleter(phenos):
-    try:
-        autocompleter = SQLiteAutocompleter(phenos)
-        # random test query
-        autocompleter.autocomplete("2a593769-f25f-4658-a21d-aa372d52a6ae")
-        return autocompleter
-    except Exception as e:
-        print("attempted creating sqlite autocomplete and failed ...")
-        import sys
-        import traceback
-        print(traceback.format_exc(), file=sys.stderr)
-        return None
