@@ -40,8 +40,6 @@ class AutocompleterSqliteDAO(AutocompleterDAO):
 
         self._phenos = copy.deepcopy(phenos())
         self._preprocess_phenos()
-        cpras_rsids_path = Path(get_filepath('cpras-rsids-sqlite3', must_exist=False))
-        gene_aliases_path = Path(get_filepath('gene-aliases-sqlite3', must_exist=False)())
 
         self._cpras_rsids_sqlite3 = get_sqlite3_readonly_connection(str(cpras_rsids_path))
         self._cpras_rsids_sqlite3.row_factory = sqlite3.Row
@@ -95,15 +93,14 @@ class AutocompleterSqliteDAO(AutocompleterDAO):
         # chrom-pos-ref-alt format
         query = query.replace(',', '')
         chrom, pos, ref, alt = parse_variant(query, default_chrom_pos = False)
-        logger.debug(f"autocomplete_variant:{query}:{chrom}")
         
         if chrom is not None:
             key = '-'.join(str(e) for e in [chrom,pos,ref,alt] if e is not None)
-
+            like = f'{key}%'
             # In Python's sort, chr1:23-A-T comes before chr1:23-A-TG, so this should always put exact matches first.
             cpra_rsid_pairs = list(self._cpras_rsids_sqlite3.execute(
                 'SELECT cpra,rsid FROM cpras_rsids WHERE cpra LIKE ? ORDER BY ROWID LIMIT 100',  # Input was sorted by cpra, so ROWID will sort by cpra
-                (key+'%',)
+                (like,)
             ))
             if cpra_rsid_pairs:
                 for cpra, rows in itertools.groupby(cpra_rsid_pairs, key=lambda row:row['cpra']):
