@@ -343,8 +343,10 @@ const Variant = (props : Props) => {
       const variant = createVariant()
       const summary : VariantSummary | undefined = createVariantSummary(variantData)
       const rsids : string[] | undefined  = summary?.rsids
-      if(rsids === undefined || rsids.length == 0){
-        summary?.rsids?.forEach((rsid) => {
+      if(rsids === undefined || rsids === null || rsids.length == 0){
+        setBioBankURL({});
+      } else {
+        rsids.forEach((rsid) => {
           (async () => getEnsembl(rsid, (e: Ensembl.Data) => {
             if (e && e.mappings && e.mappings.length > 0) {
               const mapping: Ensembl.Mapping = e.mappings[0]
@@ -353,8 +355,6 @@ const Variant = (props : Props) => {
             }
           }))();
         });
-      } else {
-        setBioBankURL({});
       }
       setLoadedBioBank(true);
     }
