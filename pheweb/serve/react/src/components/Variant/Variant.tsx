@@ -1,25 +1,34 @@
-import React, { useEffect, useState } from "react";
-import { Variant as CommonVariantModel, variantFromStr } from "../../common/Model";
-import { Ensembl, Variant as VariantModel } from "./variantModel";
-import { getEnsembl, getVariant } from "./variantAPI";
-import { ConfigurationWindow } from "../Configuration/configurationModel";
-import { mustacheDiv } from "../../common/Utilities";
-import { hasError, isLoading } from "../../common/Loading";
-import VariantTable from "./VariantTable";
-import VariantLocusZoom from "./VariantLocusZoom";
-import { numberFormatter, scientificFormatter } from "../../common/Formatter";
-import ReactTooltip from "react-tooltip";
-import { finEnrichmentLabel } from "../Finngen/gnomad";
-import VariantContextProvider from "./VariantContext";
-import VariantLavaaPlot from "./VariantLavaaPlot";
+import React, { useEffect, useState } from "react"
+import { Variant as CommonVariantModel, variantFromStr } from "../../common/Model"
+import { Ensembl, Variant as VariantModel } from "./variantModel"
+import { getEnsembl, getVariant } from "./variantAPI"
+import { ConfigurationWindow } from "../Configuration/configurationModel"
+import { mustacheDiv } from "../../common/Utilities"
+import { hasError, isLoading } from "../../common/Loading"
+import VariantTable from "./VariantTable"
+import VariantLocusZoom from "./VariantLocusZoom"
+import { numberFormatter, scientificFormatter } from "../../common/Formatter"
+import ReactTooltip from "react-tooltip"
+import { finEnrichmentLabel } from "../Finngen/gnomad"
+import VariantContextProvider from "./VariantContext"
+import VariantLavaaPlot from "./VariantLavaaPlot"
+import { Either, Left, Right } from "purify-ts/Either"
+
 interface Props {}
 
-export const createVariant = (href : string = window.location.href) : CommonVariantModel | undefined  => {
-  const match = href.match("/variant/(.+)$")
+
+export const createVariant = (pathanme : string = window.location.pathname) : Either<string,CommonVariantModel>  => {
+  const match = pathanme.match("^/variant/(.+)$")
   if(match){
     const [, variantString ] : Array<string> = match;
     const variant : CommonVariantModel | undefined = variantFromStr(variantString)
-    return variant
+    if(variant == null){
+      return Left(`Could not parse variant from '${variantString}'`)
+    } else {
+      return Right(variant);
+    }
+  } else {
+    Left(`Could not parse variant from url '${pathanme}'`)
   }
 }
 
@@ -336,8 +345,7 @@ const Variant = (props : Props) => {
   const [error, setError] = useState<string|null>(null);
 
   useEffect(() => {
-    const variant = createVariant()
-    variant && getVariant(variant, setVariantData, setError)
+    createVariant().bimap(setError, variant => getVariant(variant, setVariantData, setError));
   },[]);
 
   useEffect(() => {
@@ -363,8 +371,7 @@ const Variant = (props : Props) => {
   },[variantData, setBioBankURL,bioBankURL,loadedBioBank, setLoadedBioBank]);
 
 
-  // the null check is on  bioBankURL == null as for some reason
-  // the tool tip is not happing loading this later.
+  // lazy load
   const content = () => <VariantContextProvider>
     <React.Fragment>
       <div>
