@@ -4,7 +4,7 @@ import { Ensembl, Variant as VariantModel } from "./variantModel";
 import { getEnsembl, getVariant } from "./variantAPI";
 import { ConfigurationWindow } from "../Configuration/configurationModel";
 import { mustacheDiv } from "../../common/Utilities";
-import loading from "../../common/Loading";
+import { hasError, isLoading } from "../../common/Loading";
 import VariantTable from "./VariantTable";
 import VariantLocusZoom from "./VariantLocusZoom";
 import { numberFormatter, scientificFormatter } from "../../common/Formatter";
@@ -333,9 +333,11 @@ const Variant = (props : Props) => {
   const [variantData, setVariantData] = useState<VariantModel.Data | null>(null);
   const [bioBankURL, setBioBankURL] = useState<{ [ key : string ] : string }| null>(null);
   const [loadedBioBank, setLoadedBioBank] = useState<boolean>(false);
+  const [error, setError] = useState<string|null>(null);
+
   useEffect(() => {
     const variant = createVariant()
-    variant && getVariant(variant, setVariantData)
+    variant && getVariant(variant, setVariantData, setError)
   },[]);
 
   useEffect(() => {
@@ -363,14 +365,12 @@ const Variant = (props : Props) => {
 
   // the null check is on  bioBankURL == null as for some reason
   // the tool tip is not happing loading this later.
-  return variantData == null || bioBankURL == null?loading:
-    <VariantContextProvider>
+  const content = () => <VariantContextProvider>
     <React.Fragment>
-
       <div>
-             <div className="variant-info col-xs-12">
-                 {mustacheDiv(banner,bannerData(variantData, bioBankURL))}
-             </div>
+        <div className="variant-info col-xs-12">
+          {mustacheDiv(banner,bannerData(variantData, bioBankURL))}
+        </div>
         <ReactTooltip className={'variant-tooltip'} multiline={true} html={true} />
       </div>
       <div>
@@ -378,14 +378,16 @@ const Variant = (props : Props) => {
       </div>
 
       <div>
-           <VariantLocusZoom variantData={variantData} />
+        <VariantLocusZoom variantData={variantData} />
       </div>
 
       <div>
-           <VariantTable variantData={variantData} />
+        <VariantTable variantData={variantData} />
       </div>
-  </React.Fragment>
+    </React.Fragment>
   </VariantContextProvider>
+  return hasError(error,isLoading(variantData == null || bioBankURL == null,content));
+
 }
 
 
