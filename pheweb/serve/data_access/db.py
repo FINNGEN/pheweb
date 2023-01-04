@@ -1497,6 +1497,7 @@ class TabixAnnotationDao(AnnotationDB):
         return annotations
 
     def get_variant_annotations_range(self, chrom, start, end, cpra):
+        t = time.time()
         try:
             tabix_iter =pysam.TabixFile(self.matrix_path, parser=None).fetch(chrom, start - 1, end)
         except ValueError:
@@ -1522,7 +1523,9 @@ class TabixAnnotationDao(AnnotationDB):
                 },
             )
             annotations.append(v)
-
+        print(
+            "TABIX get_variant_annotations_range " + str(round(10 * (time.time() - t)) / 10)
+        )
         return annotations
 
     def get_gene_functional_variant_annotations(self, gene):

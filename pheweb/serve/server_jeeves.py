@@ -514,16 +514,28 @@ class ServerJeeves(object):
                 aggregated[row["variant"]]["trait_name"] = trait_merge_func(aggregated[row["variant"]]["trait_name"],row["trait_name"])
         #transform back to list
         values = [a for a in aggregated.values()]
-        #create list of Variants that is used to get gnomad and finngen annotation data
+        #create list of Variants that is used to get finngen annotation data
         list_of_vars = []
+        chrom = None
+        start = 
+        end = None
         variants = list(set([a["variant"] for a in data]))
         for variant in variants:
             v=variant.replace("chr","").split("_")
             c = int(v[0].replace("X","23").replace("Y","24").replace("MT","25").replace("M","25"))
-            list_of_vars.append(Variant(c,v[1],v[2],v[3]))
+            variant = Variant(c,v[1],v[2],v[3])
+            if chrom == None:
+                chrom = str(variant.chr) 
+                start = int(variant.pos)
+                end = int(variant.pos)
+            else:
+                start = variant.pos if variant.pos < start else start
+                end = variant.pos if end < variant.pos else end
+            list_of_vars.append(variant)
+        
 
         # get finngen & gnomad annotations from endpoints
-        fg_data = self.annotation_dao.get_variant_annotations(list_of_vars,True)
+        fg_data = self.annotation_dao.get_variant_annotations_range(chrom,start,end,True)
         # flatten
         fg_data = {a.varid:a.get_annotations()["annot"]["INFO"] for a in fg_data}
         #join
