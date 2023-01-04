@@ -525,7 +525,7 @@ class ServerJeeves(object):
         # get finngen & gnomad annotations from endpoints
         fg_data = self.annotation_dao.get_variant_annotations(list_of_vars,True)
         # flatten
-        fg_data = {a.varid:a.get_annotations()["annot"]["info"] for a in fg_data}
+        fg_data = {a.varid:a.get_annotations()["annot"]["INFO"] for a in fg_data}
         #join
         for record in values:
             vid = record["variant"].replace("chr","").replace("_",":").replace("X","23").replace("Y","24").replace("MT","25").replace("M","25")
