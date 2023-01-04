@@ -517,7 +517,7 @@ class ServerJeeves(object):
         #create list of Variants that is used to get finngen annotation data
         list_of_vars = []
         chrom = None
-        start = 
+        start = None
         end = None
         variants = list(set([a["variant"] for a in data]))
         for variant in variants:
