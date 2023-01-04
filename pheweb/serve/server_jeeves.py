@@ -541,7 +541,7 @@ class ServerJeeves(object):
         #join
         for record in values:
             vid = record["variant"].replace("chr","").replace("_",":").replace("X","23").replace("Y","24").replace("MT","25").replace("M","25")
-            record["INFO"] = fg_data[vid] if vid in fg_data else "NA"
+            record["INFO"] = fg_data.get(vid,"NA")
             #replace inf with str version
             for key in record:
                 if isinstance(record[key],float):
