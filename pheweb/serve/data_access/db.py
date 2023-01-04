@@ -1818,14 +1818,29 @@ class AutoreportingDao(AutorepVariantDB):
                         " chrom chr , "
                         " null af_alt , "
                         " null af_alt_cases , "
-                        " GENOME_FI_enrichment_nfe_est af_alt_controls , "
+                        " null af_alt_controls , "
                         " FG_INFO INFO , "
                         " null enrichment_nfsee "
                         "FROM autoreporting_variants "
                         "WHERE rel=%s AND phenotype=%s AND locus_id=%s"
                     )
                 else:
-                    sql = "SELECT * FROM autoreporting_variants WHERE rel=%s AND phenotype=%s AND locus_id=%s"
+                    sql = ("SELECT " 
+                        "variant , "
+                        "pval , "
+                        "mlogp , "
+                        "beta , "
+                        "most_severe_gene , "
+                        "most_severe_consequence , "
+                        "af_alt , "
+                        "af_alt_cases , "
+                        "af_alt_controls , "
+                        "enrichment_nfsee , "
+                        "cs_prob , "
+                        "functional_category , "
+                        "trait_name , "
+                        "r2_to_lead  "
+                        " FROM autoreporting_variants WHERE rel=%s AND phenotype=%s AND locus_id=%s")
                 cursori.execute(sql, ["r{}".format(self.release), phenotype, locus_id])
                 result = cursori.fetchall()
             return result

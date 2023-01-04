@@ -10,6 +10,7 @@ from ..file_utils import common_filepaths
 import json
 import pandas as pd
 import glob
+import math
 
 from typing import List, Dict,Tuple, Union
 
@@ -481,52 +482,62 @@ class ServerJeeves(object):
 
 
     def get_autoreport_variants(self, phenocode: str, locus_id: str) -> List[Dict[str,Union[str,int,float,bool]]]:
-        abort = [a == None for a in [self.autoreporting_dao,self.gnomad_dao, self.annotation_dao]]
+        #column names
+        cols = ["variant",
+            "pval",
+            "mlogp",
+            "beta",
+            "most_severe_gene",
+            "most_severe_consequence",
+            "af_alt",
+            "af_alt_cases",
+            "af_alt_controls",
+            "INFO",
+            "enrichment_nfsee",
+            "cs_prob",
+            "functional_category",
+            "trait_name",
+            "r2_to_lead"]
+        abort = [a == None for a in [self.autoreporting_dao, self.annotation_dao]]
         if any(abort):
             return None
         data=self.autoreporting_dao.get_group_variants(phenocode, locus_id)
         if not data:
             return []
-        df=pd.DataFrame(data)
-        agg_dict = dict.fromkeys(df,"first")
-        agg_dict["trait"]=";".join
-        agg_dict["trait_name"]=";".join
-        df=df.groupby('variant').agg(agg_dict).reset_index(drop=True)
-
+        #aggregate trait names by ;
+        aggregated = {}
+        trait_merge_func = lambda a,b: ";".join(filter(lambda x: x != "NA" and x != "",[a,b]))
+        for row in data:
+            if row["variant"] not in aggregated:
+                aggregated[row["variant"]] = row
+            else:
+                aggregated[row["variant"]]["trait_name"] = trait_merge_func(aggregated[row["variant"]]["trait_name"],row["trait_name"])
+        #transform back to list
+        values = [a for a in aggregated.values()]
         #create list of Variants that is used to get gnomad and finngen annotation data
         list_of_vars = []
         variants = list(set([a["variant"] for a in data]))
         for variant in variants:
             v=variant.replace("chr","").split("_")
-            if (v[0] in ["X","Y","T"]) :
-                transform = {"X":23,"Y":24,"MT":25}
-                c=transform[v[0]]
-            else:
-                c = int(v[0])
+            c = int(v[0].replace("X","23").replace("Y","24").replace("MT","25").replace("M","25"))
             list_of_vars.append(Variant(c,v[1],v[2],v[3]))
 
         # get finngen & gnomad annotations from endpoints
         fg_data = self.annotation_dao.get_variant_annotations(list_of_vars,True)
-        gnomad_data = self.gnomad_dao.get_variant_annotations(list_of_vars)
         # flatten
-        fg_data = [{"variant":a.varid,**a.get_annotations()["annot"]} for a in fg_data]
-        gnomad_data = [{"variant":a["variant"].varid,**a["var_data"]} for a in gnomad_data]
-        #dataframify
-        fg_data = pd.DataFrame(fg_data)
-        gnomad_data = pd.DataFrame(gnomad_data)
-        # C:P:R:A to chrC_P_R_A
-        fg_data["variant"] = "chr"+fg_data["variant"].str.replace(":","_")
-
-        #join that data to autoreporting dataframe
-        output = pd.merge(df,fg_data,on="variant",how="left")
-        if 'variant' in gnomad_data:
-            gnomad_data["variant"] = "chr"+gnomad_data["variant"].str.replace(":","_")
-            output = pd.merge(output,gnomad_data,on="variant",how="left")
-        #and back to dicts :)
-        #JSON doesn't implement floating point numbers correctly, so no infinite or nan values even though they are available in both python and js... >_<
-        output=output.replace(to_replace={
-            float('inf'): "inf",
-            float('-inf'):"-inf"
-        })
-        output=output.fillna("NA")
-        return output.to_dict('records')
+        fg_data = {a.varid:a.get_annotations()["annot"]["info"] for a in fg_data}
+        #join
+        for record in values:
+            vid = record["variant"].replace("chr","").replace("_",":").replace("X","23").replace("Y","24").replace("MT","25").replace("M","25")
+            if vid in fg_data:
+                record["INFO"] = fg_data[vid]
+            #replace inf with str version
+            for key in record:
+                if isinstance(record[key],float):
+                    if math.isnan(record[key]):
+                        record[key] = "NA"
+                    elif record[key] == float("inf"):
+                        record[key] = "inf"
+                    elif record[key] == float("-inf"):
+                        record[key] = "-inf"
+        return values
