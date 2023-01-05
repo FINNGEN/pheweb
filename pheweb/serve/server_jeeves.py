@@ -482,22 +482,25 @@ class ServerJeeves(object):
 
 
     def get_autoreport_variants(self, phenocode: str, locus_id: str) -> List[Dict[str,Union[str,int,float,bool]]]:
-        #column names
-        cols = ["variant",
-            "pval",
-            "mlogp",
-            "beta",
-            "most_severe_gene",
-            "most_severe_consequence",
-            "af_alt",
-            "af_alt_cases",
-            "af_alt_controls",
-            "INFO",
-            "enrichment_nfsee",
-            "cs_prob",
-            "functional_category",
-            "trait_name",
-            "r2_to_lead"]
+        """
+        Get variants of locus for a given locus and endpoint. Returns a list of records, one record corresponding to a single variant.
+        Record fields:
+        variant
+        pval
+        mlogp
+        beta
+        most_severe_gene
+        most_severe_consequence
+        af_alt
+        af_alt_cases
+        af_alt_controls
+        enrichment_nfsee
+        cs_prob
+        functional_category
+        trait_name
+        r2_to_lead
+        INFO
+        """
         abort = [a == None for a in [self.autoreporting_dao, self.annotation_dao]]
         if any(abort):
             return None
@@ -516,26 +519,15 @@ class ServerJeeves(object):
         values = [a for a in aggregated.values()]
         #create list of Variants that is used to get finngen annotation data
         list_of_vars = []
-        chrom = None
-        start = None
-        end = None
         variants = list(set([a["variant"] for a in data]))
         for variant in variants:
             v=variant.replace("chr","").split("_")
             c = int(v[0].replace("X","23").replace("Y","24").replace("MT","25").replace("M","25"))
-            variant = Variant(c,v[1],v[2],v[3])
-            if chrom == None:
-                chrom = str(variant.chr) 
-                start = int(variant.pos)
-                end = int(variant.pos)
-            else:
-                start = variant.pos if variant.pos < start else start
-                end = variant.pos if end < variant.pos else end
-            list_of_vars.append(variant)
-        
+            list_of_vars.append(Variant(c,v[1],v[2],v[3]))
 
-        # get finngen & gnomad annotations from endpoints
-        fg_data = self.annotation_dao.get_variant_annotations_range(chrom,start,end,True)
+        # get finngen INFO from finngen annotation endpoint
+        #NOTE: This is really slow because of the large number of variants involved -> INFO should instead be in the autoreporting db.
+        fg_data = self.annotation_dao.get_variant_annotations(list_of_vars,True)
         # flatten
         fg_data = {a.varid:a.get_annotations()["annot"]["INFO"] for a in fg_data}
         #join
