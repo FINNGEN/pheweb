@@ -28,9 +28,14 @@ import {
   filterLessThan,
   filterAbsGreaterThan,
 } from "./Filters";
-import config from "../../codingConfig";
 
-const typedConfig: { [key: string]: any } = config;
+import { ConfigurationWindow } from "../../../Configuration/configurationModel";
+import { resolveURL }          from "../../../Configuration/configurationModel";
+import { defaultConfig } from "../../codingModel";
+
+declare let window: ConfigurationWindow;
+
+const typedConfig: { [key: string]: any } = window?.config?.userInterface?.coding?.config || defaultConfig;
 
 const pval_repr = (mlogp: number) => {
   const p = Math.pow(10, -mlogp);
@@ -174,6 +179,7 @@ export const ResultTable = () => {
         width: 2,
         Filter: VariantFilter,
         Cell: (e: CellProps<VariantResult>) => {
+	  const src = resolveURL(`/api/v1/coding/cluster_plot/${e.value.replaceAll("-", "_")}`)
           if (e.cell.row.original.mlogp_chip) {
             return (
               <>
@@ -184,7 +190,7 @@ export const ResultTable = () => {
                     <img
                       style={{ maxWidth: "100%", maxHeight: "100%" }}
                       id="cplot"
-                      src={`/api/v1/coding/cluster_plot/${e.value.replaceAll("-", "_")}`}
+                      src={src}
                     />
                   )}
                   data-for="tooltip-clusterplot"

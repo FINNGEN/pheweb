@@ -5,10 +5,7 @@ import { ResultTable } from "./features/table/ResultTable";
 import store from "./app/store";
 import { Provider } from "react-redux";
 
-import codingConfig from "./codingConfig";
 import './style.css';
-
-const typedConfig: { [key: string]: any } = codingConfig;
 
 const Chip = (props : { } ) =>
   <Provider store={store}>
