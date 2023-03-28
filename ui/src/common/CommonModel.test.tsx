@@ -11,7 +11,7 @@ import {
   variantToPheweb,
   variantToStr
 } from "./commonModel";
-import { variantLink } from "./CommonFormatter";
+import { variantLink } from "./commonFormatter";
 
 test('serialize variant 1', () => {
   const variant : Variant = { chromosome: 1, position: 1, reference: 'A', alternate: 'G' }

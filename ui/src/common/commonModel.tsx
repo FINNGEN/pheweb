@@ -176,7 +176,7 @@ export function locusToStr (locus : Locus) {
  */
 export function locusFromStr (locusString : string) : Locus | undefined {
   let result : Locus | undefined
-  const match = locusString.match('^([A-Za-z0-9]+):([0-9]+)-([0-9]+)$')
+  const match = locusString && locusString.match('^([A-Za-z0-9]+):([0-9]+)-([0-9]+)$');
   if (match) {
     const [, chromosomeString, start, stop] : Array<string> = match
     const chromosome = stringToChromosome(chromosomeString)
