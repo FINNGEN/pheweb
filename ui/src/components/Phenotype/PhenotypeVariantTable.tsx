@@ -6,11 +6,7 @@ import CommonDownloadTable, { DownloadTableProps } from "../../common/CommonDown
 import { PhenotypeVariantData, PhenotypeVariantRow } from "./phenotypeModel";
 import { getManhattan } from "./phenotypeAPI";
 import { PhenotypeContext, PhenotypeState } from "./PhenotypeContext";
-/* binary
- * - or, af cases , af controls
- * quant
- * - beta
- */
+
 const defaultSorted = [{
   id: 'pval',
   desc: false
