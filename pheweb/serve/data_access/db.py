@@ -1905,6 +1905,10 @@ class AutoreportingDao(AutorepVariantDB):
                         all_traits_relaxed = cols[hdi["found_associations_relaxed"]]
                     record["all_traits_strict"] = all_traits_strict
                     record["all_traits_relaxed"] = all_traits_relaxed
+                    #fill in NA for missing values
+                    for key in record:
+                        if record[key] == "":
+                            record[key] = "NA"
                     data.append(record)
             return data
         return []
