@@ -308,7 +308,10 @@ def api_finemapped_region(phenocode):
 
 @app.route('/api/gene_pqtl_colocalization/<genename>')
 def api_gene_pqtl_colocalization(genename):
-    pqtldat = jeeves.get_pqtl_colocalization_by_gene_name(genename)
+    try:
+        pqtldat = jeeves.get_pqtl_colocalization_by_gene_name(genename)
+    except Exception as e:
+        die(f"Sorry, pQTL data for the gene {genename} is not available: {e}\n")
     return jsonify(pqtldat)
 
 @app.route('/api/gene/<genename>')
