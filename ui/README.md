@@ -41,6 +41,9 @@ Start front end
 
 ```npm start```
 
+# Configuration
+
+example configurations can be found in the `ui/public` directory.
 
 # Troubleshooting
 
