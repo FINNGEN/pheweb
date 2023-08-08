@@ -89,7 +89,7 @@ ClinvarDataSource.prototype.fetchRequest = function(state: any, chain: any, fiel
       }
 
       if (data.esearchresult.idlist != null) {
-        const promises = chunk(data.esearchresult.idlist,420).map(ids => clinvarlESearchURL(url)(ids as string[])).map(url => createCORSPromise("GET", url));
+        const promises = chunk(data.esearchresult.idlist,410).map(ids => clinvarlESearchURL(url)(ids as string[])).map(url => createCORSPromise("GET", url));
         return Promise.all(promises).then(x => x.map((x)=> JSON.parse(x as string) )).then(clinvarlESearchCollect).then(JSON.stringify);
       } else {
         const resultFailed = defer();
