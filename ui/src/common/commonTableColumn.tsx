@@ -49,8 +49,8 @@ const scientificCellFormatter = (props) : string => (+props.value).toExponential
 export const optionalCellScientificFormatter = (props) => isNaN(+props.value) || props.value === "" ? props.value : scientificCellFormatter(props);
 
 export const nearestGeneFormatter = (geneName : string | null | undefined) => {
-       const geneLabels = geneName?.split(",")?.map(geneName => <a href={`/gene/${geneName}`}>{geneName}</a>);
-       return geneLabels?[].concat(...geneLabels.map(element => [<span> , </span>, element])).slice(1):<></>;
+       const geneLabels = geneName?.split(",")?.map(geneName => <a key={geneName} href={`/gene/${geneName}`}>{geneName}</a>);
+       return geneLabels?[].concat(...geneLabels.map((element,i) => [<span key={i}> , </span>, element])).slice(1):<></>;
 }
 export const pValueCellFormatter = (props) => {
       const value = props.value;
@@ -402,6 +402,14 @@ const phenotypeColumns = {
     beta: {
       Header: () => (<span title="effect size beta" style={{ textDecoration: "underline" }}>beta (se)</span>),
       accessor: "beta",
+      filterMethod: (filter, row) => Math.abs(row[filter.id]) > filter.value,
+      Cell: optionalCellScientificFormatter,
+      minWidth: 5 * emsize ,
+      width: 5 * emsize
+    },
+    sebeta: {
+      Header: () => (<span title="standard error of effect size" style={{ textDecoration: "underline" }}>sebeta</span>),
+      accessor: "sebeta",
       filterMethod: (filter, row) => Math.abs(row[filter.id]) > filter.value,
       Cell: optionalCellScientificFormatter,
       minWidth: 5 * emsize ,
@@ -1532,6 +1540,7 @@ export const genePhenotypeTableColumns = [
   phenotypeColumns.genePhenotype,
   phenotypeColumns.category,
   phenotypeColumns.geneOddRatio,
+  { ...phenotypeColumns.sebeta, show : false},
   phenotypeColumns.mlogp,
   phenotypeColumns.pValue,
   phenotypeColumns.numCases
@@ -1597,7 +1606,9 @@ export const phenotypeBinaryTableColumns = [
   phenotypeColumns.afControls,
   phenotypeColumns.or,
   phenotypeColumns.pValue,
-  phenotypeColumns.mlogp
+  phenotypeColumns.mlogp,
+  {...phenotypeColumns.sebeta, show:false }
+
 ]
 
 export const phenotypeQuantitativeTableColumns = [
@@ -1674,6 +1685,7 @@ export const variantTableColumns = [
   phenotypeColumns.category,
   phenotypeColumns.phenotype,
   phenotypeColumns.beta,
+  { ...phenotypeColumns.sebeta, show : false},
   phenotypeColumns.pValue,
   phenotypeColumns.mlogp,
   { ...phenotypeColumns.chipAFCase, accessor: 'maf_case' },
@@ -1872,6 +1884,12 @@ export const csTableCols = [{
     filterMethod: (filter,row) => filter.value === row[filter.id],
     Cell: props => props.value,
     minWidth: 50,
+}, {
+  Header: () => (<span title="position" style={{textDecoration: 'underline'}}>position</span>),
+  accessor: 'pos',
+  filterMethod: (filter,row) => filter.value === row[filter.id],
+  Cell: props => props.value,
+  minWidth: 50,
 }, { ...phenotypeColumns.pValue , minWidth: 50,
 }, { ...phenotypeColumns.mlogp , accessor: 'lead_mlogp',  minWidth: 50,
 }, {
@@ -1880,6 +1898,13 @@ export const csTableCols = [{
     filterMethod: (filter, row) => Math.abs(row[filter.id]) >= +filter.value,
     Cell: props => tofixed(props.value,3),
     minWidth: 50,
+},{
+  Header: () => (<span title="standard error of effect size (sebeta)" style={{textDecoration: 'underline'}}>se effect size (sebeta)</span>),
+  accessor: 'lead_sebeta',
+  filterMethod: (filter, row) => Math.abs(row[filter.id]) >= +filter.value,
+  Cell: props => tofixed(props.value,3),
+  minWidth: 50,
+  show: false
 }, {
     Header: () => (<span title="Finnish Enrichment" style={{textDecoration: 'underline'}}>Finnish Enrichment</span>),
     accessor: 'lead_enrichment',

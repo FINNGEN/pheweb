@@ -30,8 +30,8 @@ import { resolveURL } from "../../Configuration/configurationModel";
 import { isFinngenServer } from "../../Finngen/finngenUtilities";
 
 declare let window: ConfigurationWindow;
-const { application } = window?.config;
-const { region: config } = window?.config?.userInterface;
+const application = window?.config?.application;
+const config = window?.config?.userInterface?.region;
 
 TransformationFunctions.set<number, number>("neglog10_or_100", (x: number) =>
   x === 0 ? 100 : -Math.log(x) / Math.LN10
@@ -190,10 +190,10 @@ export const init_locus_zoom = (region: Region): LocusZoomContext => {
     `/api/region/${region.pheno.phenocode}/lz-`
   );
   const localCondBase: string = resolveURL(
-    "/api/conditional_region/" + region.pheno.phenocode + "/lz-"
+    `/api/conditional_region/${region.pheno.phenocode}/lz-`
   );
   const localFMBase: string = resolveURL(
-    "/api/finemapped_region/" + region.pheno.phenocode + "/lz-"
+    `/api/finemapped_region/${region.pheno.phenocode}/lz-`
   );
   const remoteBase: string = "https://portaldev.sph.umich.edu/api/v1/";
   const dataSources: DataSources = new DataSources();
