@@ -93,6 +93,7 @@ const GenePqtls = () => {
     <div>{mustacheDiv(banner, context)} <CommonDownloadTable {...prop}/> </div>
   )
   return genePqtlColocalizationData == null && error == null ? commonLoading : hasError(error, content)
+
 }
 
 export default GenePqtls
