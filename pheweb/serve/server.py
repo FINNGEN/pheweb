@@ -36,10 +36,15 @@ from .group_based_auth  import verify_membership
 from .server_auth import before_request
 
 from pheweb_colocalization.view import colocalization
-from .components.autocomplete.service import autocomplete
 from .components.chip.service import chip
 from .components.coding.service import coding
 from flask_cors import CORS
+
+from pheweb.serve.components.autocomplete.service import component as component_autocomplete
+from pheweb.serve.components.health.service import component as component_health, add_status_check
+
+components = [ component_autocomplete, component_health ]
+
 
 import logging
 logging.basicConfig(level=logging.DEBUG)
@@ -88,10 +93,12 @@ jeeves = ServerJeeves( conf )
 
 app.jeeves = jeeves
 app.register_blueprint(colocalization)
-app.register_blueprint(autocomplete)
 app.register_blueprint(chip)
 app.register_blueprint(coding)
 
+for c in components:
+    app.register_blueprint(c.blueprint)
+    add_status_check(c.status_check)
 
 # static resources
 resource_dir = None

@@ -40,8 +40,9 @@ class ServerJeeves(object):
         self.variant_phenotype = self.dbs_fact.get_variant_phenotype_dao()
         self.threadpool = ThreadPoolExecutor(max_workers= self.conf.n_query_threads)
         self.phenos = {pheno['phenocode']: pheno for pheno in get_phenolist()}
-        self.autocompleter = self.dbs_fact.get_autocompleter()
+        self.autocompleter_dao = self.dbs_fact.get_autocompleter_dao()
         self.pqtl_colocalization = self.dbs_fact.get_pqtl_colocalization_dao()
+        self.health_dao = self.dbs_fact.get_health_dao()
 
     def gene_functional_variants(self, gene, pThreshold=None):
         if pThreshold is None:
