@@ -42,8 +42,9 @@ from flask_cors import CORS
 
 from pheweb.serve.components.autocomplete.service import component as component_autocomplete
 from pheweb.serve.components.health.service import component as component_health, add_status_check
+from pheweb.serve.components.configuration.service import component as component_configuration
 
-components = [ component_autocomplete, component_health ]
+components = [ component_autocomplete, component_health , component_configuration ]
 
 
 import logging

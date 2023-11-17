@@ -7,7 +7,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.ERROR)
 
 # stores list of check
 _components_checks = []

@@ -3,6 +3,7 @@ from flask import Blueprint
 from typing import List, Optional, Dict
 import abc
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -11,9 +12,9 @@ logger.setLevel(logging.DEBUG)
 @dataclass
 class ComponentStatus:
     is_okay : bool
-    time: Optional[float] = None
     messages : List[str] = field(default_factory=list)
     details : Dict[str,'ComponentStatus'] = field(default_factory=dict)
+    time: Optional[float] = None
 
     @staticmethod
     def from_exception(ex: Exception,time : Optional[float]=None):
@@ -28,6 +29,8 @@ class ComponentCheck:
     def get_status(self,) -> ComponentStatus:
         raise NotImplementedError
 
+
+    
 class CompositeCheck(ComponentCheck):
     
     def __init__(self, checks : Optional[List[ComponentCheck]]=None):
@@ -36,11 +39,11 @@ class CompositeCheck(ComponentCheck):
     def get_name(self,) -> str:
         return ",".join(map(lambda check : check.get_name(),self.checks))
 
-    def add_check(self, check: ComponentCheck):
+    def add_check(self,check: ComponentCheck):
         self.checks.append(check)
 
     def clear_checks(self):
-        self.clear()
+        self.checks.clear()
     
     def get_status(self,) -> ComponentStatus:
         result=ComponentStatus(is_okay=True)
@@ -50,19 +53,18 @@ class CompositeCheck(ComponentCheck):
             check_start = time.perf_counter()
             status = check.get_status()
             check_end = time.perf_counter()            
-            if status.status is None:
-                status.time = check_start - check_end
+            if status.time is None:
+                status.time = check_end - check_start
             result.is_okay = status.is_okay and result.is_okay
             if result.is_okay is False:
                 failure_names.append(check.get_name())
-            result.details[status.get_name()] = status
+            result.details[check.get_name()] = status
         component_end = time.perf_counter() 
-        status.second=component_start - component_end
+        result.time=component_end - component_start
         names=",".join(failure_names)
         count=len(failure_names)
-        status.messages = [f"""{count} failures : {names}"""]
-
-        return status
+        result.messages = [f"""{count} failures : [{names}]"""]
+        return result
 
     
 @dataclass
