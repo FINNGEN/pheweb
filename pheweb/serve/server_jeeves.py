@@ -482,8 +482,7 @@ class ServerJeeves(object):
     def get_best_phenos_by_gene(self, gene):
         chrom,start,end = self.get_gene_region_mapping()[gene]
         results = self.result_dao.get_top_per_pheno_variant_results_range(chrom, start, end)
-        print(results)
-        if 'pval' in r.assoc:
+        if 'pval' in results.assoc:
             phenolist = [r.assoc.phenocode for r in results if r.assoc.pval < 1e-08]
         else:
             phenolist = [r.assoc.phenocode for r in results if r.assoc.mlogp > 16.8]

@@ -1,5 +1,5 @@
 import requests
-from pheweb.serve.components.model import ComponentCheck, ComponentStatus
+from pheweb.serve.components.model import ComponentCheck, ComponentStatus, total_check
 from pheweb.serve.components.health.dao import HealthDAO, HealthSummary
 from typing import Tuple
 import json
@@ -13,26 +13,6 @@ logger.setLevel(logging.DEBUG)
 
 REQUEST_TIMEOUT=10 # 10 seconds
 
-def total_check(check: ComponentCheck) -> Tuple[str, ComponentStatus]:
-    """
-    Make checks are total with respect
-    to exceptions.
-
-    If there is an exception a failed status
-    is created with the name of the check and
-    a message with exception is returned.
-
-    :param check check to run
-
-    :returns a tuple containing (name of check, result of check)
-    """
-    try:
-        return check.get_name(), check.get_status()
-    except Exception as ex:
-        logger.exception(ex)
-        return check.get_name(), ComponentStatus.from_exception(ex)
-
-
 class HealthSimpleDAO(HealthDAO):
     def get_summary(self, ) -> HealthSummary:
         """
@@ -44,7 +24,7 @@ class HealthSimpleDAO(HealthDAO):
         :returns a dictionary with the service statuses
         """
         checks = get_status_check()
-        messages = dict(map(total_check, checks))
+        messages = dict(map(lambda c: (c.get_name(),total_check(c)), checks))
         is_okay = all(message.is_okay for message in messages.values())
         return HealthSummary(is_okay,messages)
 

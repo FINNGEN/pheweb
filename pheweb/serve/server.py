@@ -4,7 +4,7 @@ from ..file_utils import common_filepaths
 from .server_utils import get_pheno_region
 from .auth import GoogleSignIn
 from ..version import version as pheweb_version
-
+from typing import Optional
 from flask import Blueprint
 
 from .data_access.db import Variant
@@ -165,9 +165,12 @@ def pheno(phenocode):
         abort(404)
     return jsonify(phenos[phenocode])
 
+def active_phenolist():
+    return [pheno for pheno in get_phenolist() if pheno['phenocode'] in use_phenos]
+
 @app.route('/api/phenos')
 def phenolist():
-    return jsonify([pheno for pheno in get_phenolist() if pheno['phenocode'] in use_phenos])
+    return jsonify(active_phenolist())
 
 @app.route('/api/variant/<query>')
 def api_variant(query):
@@ -258,14 +261,6 @@ def api_lof_gene(gene):
             lofs_use.append(lof)
     return jsonify(lofs_use)
 
-@app.route('/api/top_hits.json')
-def api_top_hits():
-    return send_file(common_filepaths['top-hits-1k'])
-
-@app.route('/download/top_hits.tsv')
-def download_top_hits():
-    return send_file(common_filepaths['top-hits-tsv'])
-
 @app.route('/api/qq/pheno/<phenocode>')
 def api_pheno_qq(phenocode):
     if phenocode not in use_phenos:
@@ -299,10 +294,10 @@ def api_region_page(phenocode, region):
     return jsonify(data)
 
 @app.route('/api/region/<phenocode>/lz-results/') # This API is easier on the LZ side.
-def api_region(phenocode):
+def api_region(phenocode : str,filter_param = None):
     if phenocode not in use_phenos:
         abort(404)
-    filter_param = request.args.get('filter')
+    filter_param = filter_param if filter_param is not None else request.args.get('filter')
     groups = re.match(r"analysis in 3 and chromosome in +'(.+?)' and position ge ([0-9]+) and position le ([0-9]+)", filter_param).groups()
     chrom, pos_start, pos_end = groups[0], int(groups[1]), int(groups[2])
     chrom = '23' if str(chrom) == 'X' else chrom
@@ -311,20 +306,22 @@ def api_region(phenocode):
     return jsonify(rv)
 
 @app.route('/api/conditional_region/<phenocode>/lz-results/')
-def api_conditional_region(phenocode):
+def api_conditional_region(phenocode, filter_param : Optional[str] = None):
     if phenocode not in use_phenos:
         abort(404)
-    filter_param = request.args.get('filter')
+    if filter_param is None:
+        filter_param=request.args.get('filter')
     groups = re.match(r"analysis in 3 and chromosome in +'(.+?)' and position ge ([0-9]+) and position le ([0-9]+)", filter_param).groups()
     chrom, pos_start, pos_end = groups[0], int(groups[1]), int(groups[2])
     rv = jeeves.get_conditional_regions_for_pheno(phenocode, chrom, pos_start, pos_end)
     return jsonify(rv)
 
 @app.route('/api/finemapped_region/<phenocode>/lz-results/')
-def api_finemapped_region(phenocode):
+def api_finemapped_region(phenocode : str, filter_param : Optional[str] = None):
     if phenocode not in use_phenos:
         abort(404)
-    filter_param = request.args.get('filter')
+    if filter_param is None:
+        filter_param=request.args.get('filter')
     groups = re.match(r"analysis in 3 and chromosome in +'(.+?)' and position ge ([0-9]+) and position le ([0-9]+)", filter_param).groups()
     chrom, pos_start, pos_end = groups[0], int(groups[1]), int(groups[2])
     chrom = 23 if str(chrom) == 'X' else int(chrom)
@@ -338,49 +335,6 @@ def api_gene_pqtl_colocalization(genename):
     except Exception as e:
         die(f"\nSorry, pQTL data for the gene {genename} is not available: {e}\n")
     return jsonify(pqtldat)
-
-@app.route('/api/gene/<genename>')
-def gene_api(genename):
-
-    phenos_in_gene = [pheno for pheno in jeeves.get_best_phenos_by_gene(genename) if pheno['phenocode'] in use_phenos]
-    if not phenos_in_gene:
-        die("Sorry, that gene doesn't appear to have any associations in any phenotype")
-    try:
-        phenocode=phenos_in_gene[0]['phenocode']
-        gene_region_mapping = jeeves.get_gene_region_mapping()
-        chrom, start, end = gene_region_mapping[genename]
-
-        include_string = request.args.get('include', '')
-        if include_string:
-            include_chrom, include_pos = include_string.split('-')
-            include_pos = int(include_pos)
-            assert include_chrom == chrom
-            if include_pos < start:
-                start = include_pos - (end - start) * 0.01
-            elif include_pos > end:
-                end = include_pos + (end - start) * 0.01
-        start, end = pad_gene(start, end)
-
-        pheno = phenos[phenocode]
-
-        phenos_in_gene = []
-        for pheno_in_gene in jeeves.get_best_phenos_by_gene().get(genename, []):
-            if pheno_in_gene['phenocode'] in use_phenos:
-                phenos_in_gene.append({
-                    'pheno': {k:v for k,v in phenos[pheno_in_gene['phenocode']].items() if k not in ['assoc_files', 'colnum']},
-                    'assoc': {k:v for k,v in pheno_in_gene.items() if k != 'phenocode'},
-                })
-
-        gene_information = { "pheno" :  pheno,
-                             "significant_phenos" : phenos_in_gene,
-                             "gene_symbol" : genename,
-                             "region" : f'{chrom}-{start}-{end}',
-                             "start" : start ,
-                             "end" : end }
-
-        return jsonify(gene_information)
-    except Exception as exc:
-        die("Sorry, your region request for phenocode {!r} and gene {!r} didn't work".format(phenocode, genename), exception=exc)
 
 @app.route('/api/genereport/<genename>')
 def gene_report(genename):
@@ -469,11 +423,13 @@ def drugs(genename):
 
 # NCBI sometimes doesn't like cross-origin requests so do them here and not in the browser
 @app.route('/api/ncbi/<endpoint>')
-def ncbi(endpoint):
+def ncbi(endpoint, args=None):
     url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/' + endpoint + '?'
     url_parts = list(urlparse.urlparse(url))
     query = dict(urlparse.parse_qsl(url_parts[3]))
-    query.update({param: request.args.get(param) for param in request.args})
+    if args is None:
+        args=request.args
+    query.update({param: args.get(param) for param in args})
     url_parts[3] = urlencode(query)
     return urllib.request.urlopen(urlparse.urlunparse(url_parts).replace(';', '?')).read()
 

@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from flask import Blueprint
 from typing import List, Optional, Dict
 import abc
@@ -18,8 +18,7 @@ class ComponentStatus:
 
     @staticmethod
     def from_exception(ex: Exception,time : Optional[float]=None):
-        logger.exception(ex)
-        return ComponentStatus(is_okay=False, messages=str(ex), time=time)
+        return ComponentStatus(is_okay=False, messages=[str(ex)], time=time)
 
 class ComponentCheck:
     def get_name(self,) -> str:
@@ -30,6 +29,26 @@ class ComponentCheck:
         raise NotImplementedError
 
 
+def total_check(check: ComponentCheck) -> ComponentStatus:
+    """
+    Make checks are total with respect
+    to exceptions.
+
+    If there is an exception a failed status
+    is created with the name of the check and
+    a message with exception is returned.
+
+    :param check check to run
+
+    :returns a tuple containing (name of check, result of check)
+    """
+    try:
+        status=check.get_status()
+    except Exception as ex:
+        logger.exception(ex)
+        logger.error(ex)
+        status=ComponentStatus.from_exception(ex)
+    return status
     
 class CompositeCheck(ComponentCheck):
     
@@ -51,14 +70,14 @@ class CompositeCheck(ComponentCheck):
         failure_names = []
         for check in self.checks:
             check_start = time.perf_counter()
-            status = check.get_status()
-            check_end = time.perf_counter()            
+            status = total_check(check)
+            check_end = time.perf_counter()
             if status.time is None:
                 status.time = check_end - check_start
             result.is_okay = status.is_okay and result.is_okay
-            if result.is_okay is False:
+            if status.is_okay is False:
                 failure_names.append(check.get_name())
-            result.details[check.get_name()] = status
+            result.details[check.get_name()] = replace(status)
         component_end = time.perf_counter() 
         result.time=component_end - component_start
         names=",".join(failure_names)

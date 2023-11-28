@@ -62,6 +62,10 @@ def get_random_region():
                 start_position=start_position,
                 end_position=end_position)
     
+def get_random_filter_param():
+    region = get_random_region()
+    filter_param=f"""analysis in 3 and chromosome in '{region["chromosome"]}' and position ge {region["start_position"]} and position le {region["end_position"]}"""
+    return filter_param
 
 # Endpoint checks
 class HomePageCheck(ComponentCheck):
@@ -153,7 +157,7 @@ class GeneFunctionalVariantsCheck(ComponentCheck):
         response=api_gene_functional_variants(genename)
         return ComponentStatus(response.status_code == 200 , [ f"status {response.status_code}"])
     
-class LofCheck(ComponentCheck):
+class LOFCheck(ComponentCheck):
     def get_status(self,) -> ComponentStatus:
         from pheweb.serve.server import api_lof
         dao = app.jeeves.lof_dao
@@ -171,21 +175,7 @@ class LOFGeneCheck(ComponentCheck):
         response=api_lof_gene(genename)
         return ComponentStatus(response.status_code == 200 , [ f"status {response.status_code}"])    
         
-class TopHitCheck(ComponentCheck):
-    # def api_top_hits():
-    def get_status(self,) -> ComponentStatus:
-        from pheweb.serve.server import api_top_hits
-        response=api_top_hits()
-        return ComponentStatus(response.status_code == 200 and response.get_json() is not None, [ f"status {response.status_code}"])
-
-class DownloadTopHitCheck(ComponentCheck):
-    # def download_top_hits():
-    def get_status(self,) -> ComponentStatus:
-        from pheweb.serve.server import download_top_hits
-        response=download_top_hits()
-        return ComponentStatus(response.status_code == 200 and response.get_json() is not None, [ f"status {response.status_code}"])
-
-class ApiPhenoQQCheck(ComponentCheck):
+class PhenoQQCheck(ComponentCheck):
     # def api_pheno_qq(phenocode):
     def get_status(self,) -> ComponentStatus:
         from pheweb.serve.server import api_pheno_qq
@@ -215,9 +205,11 @@ class RegionPageCheck(ComponentCheck):
 class RegionCheck(ComponentCheck):
     # def api_region(phenocode):
     def get_status(self,) -> ComponentStatus:
-        from pheweb.serve.server import api_region_page
+        from pheweb.serve.server import api_region
+        region=get_random_region()
         phenocode=get_random_phenocode()
-        response=api_region_page(phenocode)
+        filter_param=get_random_filter_param()
+        response=api_region(phenocode, filter_param)
         return ComponentStatus(response.status_code == 200 , [ f"status {response.status_code}"])    
 
 
@@ -229,8 +221,9 @@ class ApiConditionalRegionCheck(ComponentCheck):
         if dao is None:
             return ComponentStatus(True, ["finemapping not configured"])
         else:
+            phenocode=get_random_phenocode()
             region=get_random_region()
-            filter_param=f"""analysis in 3 and chromosome in '{region["chromosome"]}' and position ge {region["start_position"]} and position le {region["end_position"]}"""
+            filter_param=get_random_filter_param()
             response=api_conditional_region(phenocode, filter_param)
             return ComponentStatus(response.status_code == 200 , [ f"status {response.status_code}"])    
 
@@ -243,7 +236,8 @@ class ApiFinemapedRegionCheck(ComponentCheck):
             return ComponentStatus(True, ["finemapping not configured"])
         else:
             region=get_random_region()
-            filter_param=f"""analysis in 3 and chromosome in '{region["chromosome"]}' and position ge {region["start_position"]} and position le {region["end_position"]}"""
+            filter_param=get_random_filter_param()
+            phenocode=get_random_phenocode()
             response=api_finemapped_region(phenocode, filter_param)
             return ComponentStatus(response.status_code == 200 , [ f"status {response.status_code}"])    
 
@@ -287,12 +281,12 @@ class NCBICheck(ComponentCheck):
                   retmax=500)
         response=ncbi(endpoint, args)
         return ComponentStatus(response is not None, [])
-        
+
 # TODO
 # 1. configuration
 # 2. filter
-# 3. check all optional
-# 4. unit test
+# 3. check endpoints from curl
+# 4. static checks
 
 all_checks=[
     HomePageCheck(),
@@ -305,11 +299,9 @@ all_checks=[
     PhenoCheck(),
     GenePhenotypesCheck(),
     GeneFunctionalVariantsCheck(),
-    LofCheck(),
+    LOFCheck(),
     LOFGeneCheck(),
-    TopHitCheck(),
-    DownloadTopHitCheck(),
-    ApiPhenoQQCheck(),
+    PhenoQQCheck(),
     UKBBNSCheck(),
     RegionPageCheck(),
     RegionCheck(),
