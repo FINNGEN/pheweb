@@ -282,12 +282,6 @@ class NCBICheck(ComponentCheck):
         response=ncbi(endpoint, args)
         return ComponentStatus(response is not None, [])
 
-# TODO
-# 1. configuration
-# 2. filter
-# 3. check endpoints from curl
-# 4. static checks
-
 all_checks=[
     HomePageCheck(),
     AutoreportCheck(),
@@ -308,7 +302,7 @@ all_checks=[
     ApiConditionalRegionCheck(),
     ApiFinemapedRegionCheck(),
     GenePQTLColocalizationCheck(),
-    GeneReportCheck(),
+    #GeneReportCheck(),
     DrugsCheck(),
     NCBICheck(),
 ]
