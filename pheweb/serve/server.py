@@ -139,14 +139,15 @@ def check_auth():
 @app.route('/api/metrics')
 @is_public
 def api_metrics():
-    if request.remote_addr not in  ['127.0.0.1', '192.168.1.1']:
-        abort(403)  # Forbidden access
-    else:
+    # only allow access to the metrics to the collector
+    if 'collector_ips' in conf and request.remote_addr in conf['collector_ips']:
         response_data, content_type = metrics.generate_metrics()
         response = make_response(response_data)
         response.content_type = content_type
         return response
-
+    else:
+        abort(403)  # Forbidden access
+    
 @app.route('/health')
 @is_public
 def health():
