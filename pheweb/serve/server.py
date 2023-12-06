@@ -12,6 +12,8 @@ from .data_access.db import Variant
 from flask import Flask, jsonify, render_template, request, redirect, abort, flash, current_app, send_from_directory, send_file, session, url_for,make_response
 from flask_compress import Compress
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user
+from prometheus_flask_exporter import PrometheusMetrics
+
 from .reporting import Report
 
 import urllib
@@ -54,6 +56,9 @@ app = Flask(__name__,
             # this is hack so this it doesn't get confused on the static subdirectory
             static_url_path='/55e2cb41-9305-4f09-97fd-b66c4141d245',
             static_folder='static')
+
+metrics = PrometheusMetrics(app, path=None, group_by='endpoint')
+
 
 # see: https://flask-cors.readthedocs.io/en/latest/
 if 'cors_origins' in conf:
@@ -130,6 +135,17 @@ def check_auth():
     else: # check authentication
         result = before_request()
     return result
+
+@app.route('/api/metrics')
+@is_public
+def api_metrics():
+    if request.remote_addr not in  ['127.0.0.1', '192.168.1.1']:
+        abort(403)  # Forbidden access
+    else:
+        response_data, content_type = metrics.generate_metrics()
+        response = make_response(response_data)
+        response.content_type = content_type
+        return response
 
 @app.route('/health')
 @is_public

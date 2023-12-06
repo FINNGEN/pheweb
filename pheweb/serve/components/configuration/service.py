@@ -67,12 +67,15 @@ def get_random_filter_param():
     filter_param=f"""analysis in 3 and chromosome in '{region["chromosome"]}' and position ge {region["start_position"]} and position le {region["end_position"]}"""
     return filter_param
 
+def check_url(url):
+    with app.test_client() as client:
+        response = client.get(url)
+        return ComponentStatus(response.status_code == 200 , [ f"status {response.status_code}"])
+
 # Endpoint checks
 class HomePageCheck(ComponentCheck):
     def get_status(self,) -> ComponentStatus:
-        from pheweb.serve.server import homepage
-        response=homepage("")
-        return ComponentStatus(response.status_code == 200, [ f"status {response.status_code}"])    
+        return check_url("")
 
 class AutoreportCheck(ComponentCheck):
     def get_status(self,) -> ComponentStatus:
@@ -80,15 +83,11 @@ class AutoreportCheck(ComponentCheck):
         if dao is None:
             return ComponentStatus(True, ["autoreporting not configured"])
         else:
-            from pheweb.serve.server import phenolist
-            from pheweb.serve.server import autoreport
-            phenocode=get_random_phenocode()            
-            response=autoreport(phenocode)
-            return ComponentStatus(response.status_code == 200 and response.get_json() is not None, [])
+            phenocode=get_random_phenocode()
+            return check_url(f'/api/autoreport/{phenocode}')
 
 class AutoreportVariantsCheck(ComponentCheck):
     def get_status(self,) -> ComponentStatus:
-        from pheweb.serve.server import autoreport_variants
         dao = app.jeeves.autoreporting_dao
         if dao is None:
             return ComponentStatus(True, ["autoreporting not configured"])
@@ -96,127 +95,98 @@ class AutoreportVariantsCheck(ComponentCheck):
             variant=get_random_variant()
             locus_id=f"{variant['chrom']}:{variant['pos']}:{variant['ref']}:{variant['alt']}"
             phenocode=get_random_phenocode()
-            response=autoreport_variants(phenocode,locus_id)
-            return ComponentStatus(response.status_code == 200 , [ f"status {response.status_code}"])
+            return check_url(f'/api/autoreport_variants/{phenocode}/{locus_id}')
+                
 
 class PhenocodeCheck(ComponentCheck):
     
     def get_status(self,) -> ComponentStatus:
-        from pheweb.serve.server import pheno
         phenocode=get_random_phenocode()
-        response=pheno(phenocode) 
-        return ComponentStatus(response.status_code == 200 and response.get_json() is not None, [ f"status {response.status_code}"])    
-
+        return check_url(f'/api/pheno/{phenocode}')
+        
 class PhenolistCheck(ComponentCheck):
     
     def get_status(self,) -> ComponentStatus:
-        from pheweb.serve.server import phenolist
-        response=phenolist()
-        return ComponentStatus(response.status_code == 200 and response.get_json() is not None, [ f"status {response.status_code}"])
+        return check_url('/api/phenos')
     
 class VariantCheck(ComponentCheck):
     # def api_variant(query):
     def get_status(self,) -> ComponentStatus:
-         from pheweb.serve.server import api_variant
          variant=get_random_variant()
-         query=f"{variant['chrom']}:{variant['pos']}:{variant['ref']}:{variant['alt']}"
-         response=api_variant(query)
-         return ComponentStatus(response is not None , [ ])
+         url=f"/api/variant/{variant['chrom']}:{variant['pos']}:{variant['ref']}:{variant['alt']}"
+         return check_url(url)
 
 class VariantPhenoCheck(ComponentCheck):
     # def api_variant_pheno(query, phenocode):
     def get_status(self,) -> ComponentStatus:
-         from pheweb.serve.server import api_variant_pheno
          variant=get_random_variant()
          query=f"{variant['chrom']}:{variant['pos']}:{variant['ref']}:{variant['alt']}"
          phenocode=get_random_phenocode()
-         response=api_variant_pheno(query, phenocode)
-         return ComponentStatus(response is not None , [ ])
+         url=f'/api/variant/{query}/{phenocode}'
+         return check_url(url)
 
 class PhenoCheck(ComponentCheck):
     
     def get_status(self,) -> ComponentStatus:
-        from pheweb.serve.server import api_pheno
         phenocode=get_random_phenocode()
-        response=api_pheno(phenocode)
-        return ComponentStatus(response is not None , [ ])    
+        url=f'/api/manhattan/pheno/{phenocode}'
+        return check_url(url)
+
 
 class GenePhenotypesCheck(ComponentCheck):
     
     def get_status(self,) -> ComponentStatus:
-        from pheweb.serve.server import api_gene_phenotypes
         genename=get_random_gene()
-        response=api_gene_phenotypes(genename)
-        return ComponentStatus(response.status_code == 200 , [ f"status {response.status_code}"])    
+        url=f'/api/gene_phenos/{genename}'
+        return check_url(url)
     
 class GeneFunctionalVariantsCheck(ComponentCheck):
-    # def api_gene_functional_variants(gene):
     def get_status(self,) -> ComponentStatus:
-        from pheweb.serve.server import api_gene_functional_variants
         genename=get_random_gene()
-        response=api_gene_functional_variants(genename)
-        return ComponentStatus(response.status_code == 200 , [ f"status {response.status_code}"])
+        url=f'/api/gene_functional_variants/{genename}'
+        return check_url(url)
     
 class LOFCheck(ComponentCheck):
     def get_status(self,) -> ComponentStatus:
-        from pheweb.serve.server import api_lof
         dao = app.jeeves.lof_dao
         if dao is None:
             return ComponentStatus(True, ["loss of function not configured"])
         else:
-            response=api_lof()
-            return ComponentStatus(response.status_code == 200 and response.get_json() is not None, [ f"status {response.status_code}"])
-
+            return check_url("/api/lof")
+        
 class LOFGeneCheck(ComponentCheck):
-    # def api_lof_gene(gene):
     def get_status(self,) -> ComponentStatus:
-        from pheweb.serve.server import api_lof_gene
         genename=get_random_gene()
-        response=api_lof_gene(genename)
-        return ComponentStatus(response.status_code == 200 , [ f"status {response.status_code}"])    
+        return check_url(f"/api/lof/{genename}")
         
 class PhenoQQCheck(ComponentCheck):
-    # def api_pheno_qq(phenocode):
     def get_status(self,) -> ComponentStatus:
-        from pheweb.serve.server import api_pheno_qq
         phenocode=get_random_phenocode()
-        response=api_pheno_qq(phenocode) 
-        return ComponentStatus(response.status_code == 200 , [ f"status {response.status_code}"])    
-    
+        return check_url(f'/api/qq/pheno/{phenocode}')
     
 class UKBBNSCheck(ComponentCheck):
-    # def ukbb_ns(phenocode):
     def get_status(self,) -> ComponentStatus:
-        from pheweb.serve.server import ukbb_ns
         phenocode=get_random_phenocode()
-        response=ukbb_ns(phenocode) 
-        return ComponentStatus(response is not None, [ ])    
+        return check_url(f'/api/ukbb_n/{phenocode}')
     
 class RegionPageCheck(ComponentCheck):
-    # def api_region_page(phenocode, region):
     def get_status(self,) -> ComponentStatus:
-        from pheweb.serve.server import api_region_page
         phenocode=get_random_phenocode()
         region=get_random_region()
         region=f"""{region["chromosome"]}:{region["start_position"]}-{region["end_position"]}"""
-        response=api_region_page(phenocode, region)
-        return ComponentStatus(response.status_code == 200 , [ f"status {response.status_code}"])    
+        return check_url(f'/api/region/{phenocode}/{region}')
 
 class RegionCheck(ComponentCheck):
-    # def api_region(phenocode):
+
     def get_status(self,) -> ComponentStatus:
-        from pheweb.serve.server import api_region
         region=get_random_region()
         phenocode=get_random_phenocode()
         filter_param=get_random_filter_param()
-        response=api_region(phenocode, filter_param)
-        return ComponentStatus(response.status_code == 200 , [ f"status {response.status_code}"])    
+        return check_url(f'/api/region/{phenocode}/lz-results/?filter={filter_param}') 
 
 
 class ApiConditionalRegionCheck(ComponentCheck):
-    # def api_conditional_region(phenocode, filter_param : Optional[str] = None):
     def get_status(self,) -> ComponentStatus:
-        from pheweb.serve.server import api_conditional_region
         dao = app.jeeves.finemapping_dao
         if dao is None:
             return ComponentStatus(True, ["finemapping not configured"])
@@ -224,13 +194,10 @@ class ApiConditionalRegionCheck(ComponentCheck):
             phenocode=get_random_phenocode()
             region=get_random_region()
             filter_param=get_random_filter_param()
-            response=api_conditional_region(phenocode, filter_param)
-            return ComponentStatus(response.status_code == 200 , [ f"status {response.status_code}"])    
+            return check_url(f'/api/conditional_region/{phenocode}/lz-results/?filter={filter_param}') 
 
 class ApiFinemapedRegionCheck(ComponentCheck):
-    # def api_finemapped_region(phenocode : str, filter_param : Optional[str] = None):
     def get_status(self,) -> ComponentStatus:
-        from pheweb.serve.server import api_finemapped_region
         dao = app.jeeves.finemapping_dao
         if dao is None:
             return ComponentStatus(True, ["finemapping not configured"])
@@ -238,49 +205,37 @@ class ApiFinemapedRegionCheck(ComponentCheck):
             region=get_random_region()
             filter_param=get_random_filter_param()
             phenocode=get_random_phenocode()
-            response=api_finemapped_region(phenocode, filter_param)
-            return ComponentStatus(response.status_code == 200 , [ f"status {response.status_code}"])    
+            return check_url(f'/api/finemapped_region/{phenocode}/lz-results/?filter={filter_param}')
 
 class GenePQTLColocalizationCheck(ComponentCheck):
-    # def api_gene_pqtl_colocalization(genename):
     def get_status(self,) -> ComponentStatus:
-        from pheweb.serve.server import api_gene_pqtl_colocalization
         dao=app.jeeves.pqtl_colocalization
         if dao is None:
             return ComponentStatus(True, ["autoreporting not configured"])
         else:
             genename=get_random_gene()
-            response=api_gene_pqtl_colocalization(genename)
-            return ComponentStatus(response.status_code == 200 , [ f"status {response.status_code}"])    
-
+            return check_url(f'/api/gene_pqtl_colocalization/{genename}')
+        
 class GeneReportCheck(ComponentCheck):
-    # def gene_report(genename):
     def get_status(self,) -> ComponentStatus:
-        from pheweb.serve.server import gene_report
         genename=get_random_gene()
-        response=gene_report(genename)
-        return ComponentStatus(response.status_code == 200 , [ f"status {response.status_code}"])    
+        return check_url(f'/api/genereport/{genename}')
         
 class DrugsCheck(ComponentCheck):
-    # def drugs(genename):
     def get_status(self,) -> ComponentStatus:
-        from pheweb.serve.server import drugs
         genename=get_random_gene()
-        response=drugs(genename)
-        return ComponentStatus(response.status_code == 200 , [ f"status {response.status_code}"])    
+        return check_url(f'/api/drugs/{genename}')
 
 class NCBICheck(ComponentCheck):
     # def ncbi(endpoint):
     def get_status(self,) -> ComponentStatus:
-        from pheweb.serve.server import ncbi
         region=get_random_region()
         endpoint="esearch.fcgi"
-        args=dict(db='clinvar',
-                  retmode='json',
-                  term=f"""{region["chromosome"]}[chr]{region["start_position"]}:{region["end_position"]}[chrpos]"clinsig pathogenic"[Properties]""",
-                  retmax=500)
-        response=ncbi(endpoint, args)
-        return ComponentStatus(response is not None, [])
+        db='clinvar'
+        retmode='json'
+        term=f"""{region["chromosome"]}[chr]{region["start_position"]}:{region["end_position"]}[chrpos]"clinsig pathogenic"[Properties]""",
+        retmax=500
+        return check_url(f'/api/ncbi/{endpoint}?db={db}&retmode={retmode}&term={term}&retmax={retmax}')
 
 all_checks=[
     HomePageCheck(),
@@ -302,7 +257,7 @@ all_checks=[
     ApiConditionalRegionCheck(),
     ApiFinemapedRegionCheck(),
     GenePQTLColocalizationCheck(),
-    #GeneReportCheck(),
+    GeneReportCheck(),
     DrugsCheck(),
     NCBICheck(),
 ]
@@ -320,24 +275,3 @@ class ConfigurationCheck(CompositeCheck):
     
 component = ComponentDTO(configuration, ConfigurationCheck())
 
-def scan_endpoints():
-    from flask import Flask
-    app = Flask(__name__)
-    with app.app_context():
-        # static paths
-        
-        # phenotypes
-        from pheweb.serve.server import active_phenolist, api_pheno
-        for phenotype in active_phenolist():
-            phenocode=phenotype["phenocode"]
-            from pheweb.serve.server import pheno
-            response=pheno(phenocode)
-            assert response.status_code == 200, f"pheno {phenocode}"
-            from pheweb.serve.server import autoreport
-            response=autoreport(phenocode)
-            assert response.status_code == 200, f"pheno {phenocode}"
-            for variant in (api_pheno(phenocode)["unbinned_variants"])[0:5]:
-                from pheweb.serve.server import autoreport_variants
-                locus_id=f"{variant['chrom']}:{variant['pos']}:{variant['ref']}:{variant['alt']}"
-                response=autoreport_variants(phenocode,locus_id)
-                assert response.status_code == 200, f"pheno {phenocode} variant {locus_id}"

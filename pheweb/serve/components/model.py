@@ -3,7 +3,6 @@ from flask import Blueprint
 from typing import List, Optional, Dict
 import abc
 import logging
-import time
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -14,11 +13,10 @@ class ComponentStatus:
     is_okay : bool
     messages : List[str] = field(default_factory=list)
     details : Dict[str,'ComponentStatus'] = field(default_factory=dict)
-    time: Optional[float] = None
 
     @staticmethod
-    def from_exception(ex: Exception,time : Optional[float]=None):
-        return ComponentStatus(is_okay=False, messages=[str(ex)], time=time)
+    def from_exception(ex: Exception):
+        return ComponentStatus(is_okay=False, messages=[str(ex)])
 
 class ComponentCheck:
     def get_name(self,) -> str:
@@ -66,20 +64,13 @@ class CompositeCheck(ComponentCheck):
     
     def get_status(self,) -> ComponentStatus:
         result=ComponentStatus(is_okay=True)
-        component_start = time.perf_counter()
         failure_names = []
         for check in self.checks:
-            check_start = time.perf_counter()
             status = total_check(check)
-            check_end = time.perf_counter()
-            if status.time is None:
-                status.time = check_end - check_start
             result.is_okay = status.is_okay and result.is_okay
             if status.is_okay is False:
                 failure_names.append(check.get_name())
             result.details[check.get_name()] = replace(status)
-        component_end = time.perf_counter() 
-        result.time=component_end - component_start
         names=",".join(failure_names)
         count=len(failure_names)
         result.messages = [f"""{count} failures : [{names}]"""]
