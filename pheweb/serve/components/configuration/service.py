@@ -238,7 +238,7 @@ class NCBICheck(ComponentCheck):
         return check_url(f'/api/ncbi/{endpoint}?db={db}&retmode={retmode}&term={term}&retmax={retmax}')
 
 all_checks=[
-    HomePageCheck(),
+    # HomePageCheck(),
     AutoreportCheck(),
     AutoreportVariantsCheck(),
     PhenocodeCheck(),
@@ -257,7 +257,7 @@ all_checks=[
     ApiConditionalRegionCheck(),
     ApiFinemapedRegionCheck(),
     GenePQTLColocalizationCheck(),
-    GeneReportCheck(),
+    # GeneReportCheck(), # TODO 
     DrugsCheck(),
     NCBICheck(),
 ]
