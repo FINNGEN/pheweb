@@ -42,8 +42,7 @@ def get_health():
         abort(500, "Healthcheck not available")
     else:
         summary = dao.get_summary()
-        status_code = 200 if summary.is_okay else 503
-        return jsonify(summary), status_code
+        return jsonify(summary)
 
 
 class HealthCheck(ComponentCheck):
