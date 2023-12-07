@@ -57,7 +57,11 @@ app = Flask(__name__,
             static_url_path='/55e2cb41-9305-4f09-97fd-b66c4141d245',
             static_folder='static')
 
-metrics = PrometheusMetrics(app, path=None, group_by='endpoint')
+default_labels = conf['collector_labels'] if 'collector_labels' in conf else {}
+metrics = PrometheusMetrics(app,
+                            path=None,
+                            group_by='endpoint',
+                            default_labels=default_labels)
 
 
 # see: https://flask-cors.readthedocs.io/en/latest/
