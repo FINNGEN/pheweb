@@ -16,6 +16,7 @@ from prometheus_flask_exporter import PrometheusMetrics
 
 from .reporting import Report
 
+import ipaddress
 import urllib
 import urllib.parse as urlparse
 from urllib.parse import urlencode
@@ -140,11 +141,36 @@ def check_auth():
         result = before_request()
     return result
 
+
+def is_ip_in_cidr(ip, cidr):
+    """
+    Check if an IP address is within a specified CIDR block.
+
+    Args:
+    ip (str): The IP address to test.
+    cidr (str): The CIDR block.
+
+    Returns:
+    bool: True if the IP is within the CIDR block, False otherwise.
+    """
+    ip_address = ipaddress.ip_address(ip)
+    cidr_network = ipaddress.ip_network(cidr, strict=False)
+    return ip_address in cidr_network
+
+def metric_endpoint_is_accessible():
+    result = False
+    ip_addr = request.remote_addr
+    if 'collector_ips' in conf and ip_addr in conf['collector_ips']:
+        result = True
+    elif 'collector_cidrs' in conf:
+        result = any(is_ip_in_cidr(ip_addr, cidr) for cidr in conf['collector_cidrs'])
+    return result
+
 @app.route('/api/metrics')
 @is_public
 def api_metrics():
     # only allow access to the metrics to the collector
-    if 'collector_ips' in conf and request.remote_addr in conf['collector_ips']:
+    if metric_endpoint_is_accessible():
         response_data, content_type = metrics.generate_metrics()
         response = make_response(response_data)
         response.content_type = content_type
