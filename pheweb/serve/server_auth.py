@@ -3,10 +3,14 @@ from flask import Flask, jsonify, render_template, request, redirect, abort, fla
 from ..conf_utils import conf
 import functools
 from .group_based_auth  import verify_membership
+from flask import g
 
 def before_request():
+    
     if not conf.authentication:
         print('anonymous visited {!r}'.format(request.path))
+        return None
+    elif getattr(g, 'is_test', None) == True:
         return None
     elif current_user is None or not hasattr(current_user, 'email'):
         return redirect(url_for('get_authorized',

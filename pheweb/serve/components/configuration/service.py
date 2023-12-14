@@ -69,6 +69,8 @@ def get_random_filter_param():
 
 def check_url(url):
     with app.test_client() as client:
+        from flask import g
+        g.is_test = True
         response = client.get(url)
         return ComponentStatus(response.status_code == 200 , [ f"status {response.status_code}"])
 
