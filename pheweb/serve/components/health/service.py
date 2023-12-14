@@ -3,6 +3,7 @@ from flask import Blueprint, current_app as app, jsonify, abort
 import typing
 from pheweb.serve.components.health.dao import HealthDAO
 from pheweb.serve.components.model import ComponentDTO
+from pheweb.serve.server_auth import is_public
 import logging
 
 logger = logging.getLogger(__name__)
@@ -33,6 +34,7 @@ def get_dao(current_app=app) -> typing.Optional[HealthDAO]:
 health = Blueprint("health", __name__)
 
 @health.route("/api/health", methods=["GET"])
+@is_public
 def get_health():
     """
     Health check flask route

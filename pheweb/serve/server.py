@@ -36,7 +36,7 @@ from collections import defaultdict
 from .encoder import FGJSONEncoder
 from .group_based_auth  import verify_membership
 
-from .server_auth import before_request
+from .server_auth import before_request, is_public, do_check_auth
 
 from pheweb_colocalization.view import colocalization
 from .components.chip.service import chip
@@ -125,22 +125,9 @@ if resource_dir:
                                  static_folder=resource_dir)
     app.register_blueprint(static_resources)
 
-# see discussion
-# https://stackoverflow.com/questions/13428708/best-way-to-make-flask-logins-login-required-the-default
-def is_public(function):
-    function.is_public = True
-    return function
-
 @app.before_request
 def check_auth():
-    # check if endpoint is mapped then
-    # check if endpoint has is public annotation
-    if request.endpoint and (request.endpoint in app.view_functions) and getattr(app.view_functions[request.endpoint], 'is_public', False) :
-        result = None
-    else: # check authentication
-        result = before_request()
-    return result
-
+    return do_check_auth(app)
 
 def is_ip_in_cidr(ip, cidr):
     """
