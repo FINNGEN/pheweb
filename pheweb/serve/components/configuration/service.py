@@ -5,7 +5,7 @@ from pheweb.serve.components.model import ComponentCheck, ComponentStatus, Compo
 import json
 import logging
 import random
-
+from datetime import date
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 logger.setLevel(logging.ERROR)
@@ -228,17 +228,28 @@ class DrugsCheck(ComponentCheck):
         genename=get_random_gene()
         return check_url(f'/api/drugs/{genename}')
 
+last_ncbi_check_date = None
 class NCBICheck(ComponentCheck):
+    # Only call this once a day
     # def ncbi(endpoint):
     def get_status(self,) -> ComponentStatus:
-        region=get_random_region()
-        endpoint="esearch.fcgi"
-        db='clinvar'
-        retmode='json'
-        term=f"""{region["chromosome"]}[chr]{region["start_position"]}:{region["end_position"]}[chrpos]"clinsig pathogenic"[Properties]""",
-        retmax=500
-        return check_url(f'/api/ncbi/{endpoint}?db={db}&retmode={retmode}&term={term}&retmax={retmax}')
-
+        global last_ncbi_check_date
+        today = date.today()
+        print(today, last_ncbi_check_date)
+        if last_ncbi_check_date != today:
+            last_ncbi_check_date  = today
+            
+            region=get_random_region()
+            endpoint="esearch.fcgi"
+            db='clinvar'
+            retmode='json'
+            term=f"""{region["chromosome"]}[chr]{region["start_position"]}:{region["end_position"]}[chrpos]"clinsig pathogenic"[Properties]""",
+            retmax=500
+            result = check_url(f'/api/ncbi/{endpoint}?db={db}&retmode={retmode}&term={term}&retmax={retmax}')
+        else:
+            result = ComponentStatus(is_okay=True, messages=f"skipping for {last_ncbi_check_date}")
+        return result
+    
 all_checks=[
     # HomePageCheck(),
     AutoreportCheck(),
