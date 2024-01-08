@@ -17,7 +17,7 @@ import imp
 from typing import List, Tuple, Dict, Union
 from ...file_utils import MatrixReader, common_filepaths
 from ...utils import get_phenolist, get_gene_tuples, pvalue_to_mlogp, get_use_phenocode_pheno_map
-from ..components.health.health_check import default_dao as health_default_dao, HealthSimpleDAO, HealthNotificationDAO
+from ..components.health.health_check import default_dao as health_default_dao, HealthSimpleDAO, HealthNotificationDAO, HealthTrivialDAO
 
 from collections import namedtuple
 import requests
@@ -2005,8 +2005,8 @@ class DataFactory(object):
                         db[db_type][db_source].pop("const_arguments", None)
                     print(db_type, db_source)
                     self.dao_impl[db_type] = daoclass(**db[db_type][db_source])
-        
-        if "health" not in self.dao_impl:                                                                                                                                                  
+                    
+        if "health" not in self.dao_impl:
             self.dao_impl["health"] = health_default_dao()
         self.dao_impl["geneinfo"] = NCBIGeneInfoDao()
         self.dao_impl["catalog"] = MichinganGWASUKBBCatalogDao()
