@@ -9,6 +9,8 @@ import { compose } from "../../../common/commonUtilities";
 import { refreshLocusZoom } from "./ColocalizationLocusZoom";
 import { RegionContext, RegionState } from "../RegionContext";
 
+import ColocalizationSourcesSummary from './ColocalizationSourcesSummary';
+
 
 const SelectTable = selectTableHOC(ReactTable);
 SelectTable.prototype.headSelector = () => null;
@@ -76,7 +78,6 @@ const subComponent = (row : Row<Colocalization>) => {
     return (<div style={{ padding: "20px" }}> { reactTable}</div>);
 }
 
-
 interface Props {}
 const ColocalizationList = (props : Props) => {
     const { locusZoomData,
@@ -86,6 +87,7 @@ const ColocalizationList = (props : Props) => {
     const { locusZoomContext ,setSelectedPosition } = useContext<Partial<RegionState>>(RegionContext);
 
     const [selectedRow, setRowSelected]= useState<string | undefined>(undefined);
+
   useEffect(() => {
       colocalization
       && locusZoomData
@@ -111,9 +113,39 @@ const ColocalizationList = (props : Props) => {
     const flatten = (c : Colocalization) => { return { ...c ,
                                                        locus_id1 : c.locus_id1?variantToStr(c.locus_id1):undefined } };
 
+    const arr = colocalization ? colocalization.map(element => {return element.source2_displayname}) : undefined
+    const sourcesInitial = colocalization ? arr.filter((item,index) => arr.indexOf(item) === index) : undefined
+
+    const [colocFiltBySource, setColocFiltBySource] = useState<Colocalization[]| undefined>(colocalization);
+    const [selectedSources, setSelectedSources] = useState<string[] | undefined>(sourcesInitial);
+
+    useEffect(() => {
+        setColocFiltBySource(colocalization?.filter(element => selectedSources.indexOf(element.source2_displayname) > -1));
+    }, [selectedSources, colocalization, selectedSources])
+
+    const selectorContent = selectedSources ? (
+        <div className="colocs-summary-selector">
+            <form id="colocs-selector" className="colocs-summary-selector">
+                <label htmlFor="selectedOptions"/>
+                    <span className="colocs-summary-item"><b>Select source(s):</b></span>
+                    <select multiple name = "selectedOptions" onChange = {(e) => {
+                        const selectedOpts = Array.from(e.target.options).filter(opt => opt.selected).map(opt => opt.value);
+                        setSelectedSources(selectedOpts);
+                    }}>
+                    {sourcesInitial.map((key, i) => 
+                        <option value={key}>{key}</option>
+                    )}
+                    </select>
+                    <input type="submit" value="Submit" onClick = {(e) => console.log(e.target)}/>
+            </form>
+        </div>
+    ) : null
+
     if(colocalization && locusZoomData){
         return (<div>
-            <SelectTable data={ colocalization }
+            {selectorContent}
+            <ColocalizationSourcesSummary data={colocFiltBySource}/>
+            <SelectTable data={ colocFiltBySource }
                          keyField="colocalization_id"
                          columns={ columns(listMetadata) }
                          defaultSorted={[{  id: "clpa", desc: true }]}
@@ -132,7 +164,7 @@ const ColocalizationList = (props : Props) => {
                 <div className="col-xs-12">
                     <CSVLink
                         headers={headers(listMetadata)}
-                        data={ colocalization.map(flatten) }
+                        data={ colocFiltBySource.map(flatten) }
                         separator={'\t'}
                         enclosingCharacter={''}
                         filename={`colocalization.tsv`}

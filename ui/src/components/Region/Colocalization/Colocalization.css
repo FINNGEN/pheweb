@@ -1,0 +1,21 @@
+.colocs-summary {
+    display: flex;
+    flex-direction: row;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.colocs-summary-pos b {
+    color: #E54B4B;
+}
+
+.colocs-summary-neg b {
+    color: #156064;
+}
+
+.colocs-summary-item {
+    min-width: fit-content;
+    margin-right: 20px;
+    padding: 5px;
+}

@@ -62,6 +62,10 @@ export interface Colocalization {
   readonly x: number;
 
   readonly source2_displayname? : string
+  readonly beta1? : number
+  readonly beta2? : number
+  readonly pval1? : number
+  readonly pval2? : number
 }
 
 export interface Variant {
