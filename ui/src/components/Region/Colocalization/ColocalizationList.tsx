@@ -113,8 +113,8 @@ const ColocalizationList = (props : Props) => {
     const flatten = (c : Colocalization) => { return { ...c ,
                                                        locus_id1 : c.locus_id1?variantToStr(c.locus_id1):undefined } };
 
-    const arr = colocalization ? colocalization.map(element => {return element.source2_displayname}) : undefined
-    const sourcesInitial = colocalization ? arr.filter((item,index) => arr.indexOf(item) === index) : undefined
+    const arr = colocalization?.map(element => {return element.source2_displayname}) 
+    const sourcesInitial = arr?.filter((item,index) => arr.indexOf(item) === index)
 
     const [colocFiltBySource, setColocFiltBySource] = useState<Colocalization[]| undefined>(colocalization);
     const [selectedSources, setSelectedSources] = useState<string[] | undefined>(sourcesInitial);
