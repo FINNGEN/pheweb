@@ -133,7 +133,7 @@ const ColocalizationList = (props : Props) => {
 
     useEffect(() => {
         if (colocalization){
-            setSelectorText(selectedSources.length === initialSources.length ? "Select All" : selectedSources.join(","));
+            setSelectorText(selectedSources.length === initialSources.length ? "Select All" : selectedSources.length + " Selected");
             setColocFiltBySource(colocalization.filter(element => selectedSources.indexOf(element.source2_displayname) > -1));
         }  
     }, [selectedSources]);
@@ -141,7 +141,9 @@ const ColocalizationList = (props : Props) => {
     if(colocalization && locusZoomData && colocFiltBySource){
         return (<div>
 
+            <div>
             <ColocalizationSourcesSummary data={colocFiltBySource}/>
+            </div>
 
             {
                 selectedSources ? <div className="colocs-summary-container">             
