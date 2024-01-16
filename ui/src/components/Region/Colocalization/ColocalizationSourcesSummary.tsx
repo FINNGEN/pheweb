@@ -20,7 +20,7 @@ const ColocalizationSourcesSummary = ( props: Props) => {
     return (
         <div className="colocs-summary" >
             {sources.map((key, i) => 
-                <div className="colocs-summary-item" key={key}>{key}: 
+                <div className="colocs-summary-text" key={key}>{key}: 
                     <span className="colocs-summary-pos"> <b>↑</b>
                         {colocalization?.filter(element => element.beta2 > 0 && element.source2_displayname == key).length}
                     </span>

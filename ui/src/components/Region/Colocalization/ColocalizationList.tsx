@@ -10,6 +10,7 @@ import { refreshLocusZoom } from "./ColocalizationLocusZoom";
 import { RegionContext, RegionState } from "../RegionContext";
 
 import ColocalizationSourcesSummary from './ColocalizationSourcesSummary';
+import './Colocalization.css'
 
 
 const SelectTable = selectTableHOC(ReactTable);
@@ -87,14 +88,21 @@ const ColocalizationList = (props : Props) => {
     const { locusZoomContext ,setSelectedPosition } = useContext<Partial<RegionState>>(RegionContext);
 
     const [selectedRow, setRowSelected]= useState<string | undefined>(undefined);
+    
+    const [colocFiltBySource, setColocFiltBySource] = useState<Colocalization[]>([]);
+    const [selectedSources, setSelectedSources] = useState<string[]>([]);
+    const [initialSources, setInitialSources] = useState<string[]>([]);
+    const [showDropdown, setShowDropdown] = useState<boolean>(false);
+    const [selectorText, setSelectorText] = useState<string>("Select All");
 
   useEffect(() => {
       colocalization
       && locusZoomData
       && locusZoomContext
-      && setSelectedPosition
+      && setSelectedPosition 
       && refreshLocusZoom(setSelectedPosition,selectedColocalization, locusZoomData, locusZoomContext); },
-    [ setSelectedPosition , colocalization , locusZoomData , selectedColocalization, locusZoomContext ]);
+    [ setSelectedPosition , colocalization , locusZoomData , selectedColocalization, locusZoomContext]);
+
     const toggleSelection = (key : string, shift, row : Colocalization) => {
         setSelectedColocalization && setSelectedColocalization(selectedRow ? undefined : row);
         setRowSelected(selectedRow ? undefined : key);
@@ -113,38 +121,56 @@ const ColocalizationList = (props : Props) => {
     const flatten = (c : Colocalization) => { return { ...c ,
                                                        locus_id1 : c.locus_id1?variantToStr(c.locus_id1):undefined } };
 
-    const arr = colocalization?.map(element => {return element.source2_displayname}) 
-    const sourcesInitial = arr?.filter((item,index) => arr.indexOf(item) === index)
-
-    const [colocFiltBySource, setColocFiltBySource] = useState<Colocalization[]| undefined>(colocalization);
-    const [selectedSources, setSelectedSources] = useState<string[] | undefined>(sourcesInitial);
+    useEffect(() => {
+        if (colocalization){
+            const arr = colocalization?.map(element => {return element.source2_displayname}); 
+            const src = arr?.filter((item,index) => arr.indexOf(item) === index);
+            setInitialSources(src);
+            setSelectedSources(src);
+            setColocFiltBySource;   
+        }  
+    }, [colocalization])
 
     useEffect(() => {
-        setColocFiltBySource(colocalization?.filter(element => selectedSources.indexOf(element.source2_displayname) > -1));
-    }, [selectedSources, colocalization, selectedSources])
+        if (colocalization){
+            setSelectorText(selectedSources.length === initialSources.length ? "Select All" : selectedSources.join(","));
+            setColocFiltBySource(colocalization.filter(element => selectedSources.indexOf(element.source2_displayname) > -1));
+        }  
+    }, [selectedSources]);
 
-    const selectorContent = selectedSources ? (
-        <div className="colocs-summary-selector">
-            <form id="colocs-selector" className="colocs-summary-selector">
-                <label htmlFor="selectedOptions"/>
-                    <span className="colocs-summary-item"><b>Select source(s):</b></span>
-                    <select multiple name = "selectedOptions" onChange = {(e) => {
-                        const selectedOpts = Array.from(e.target.options).filter(opt => opt.selected).map(opt => opt.value);
-                        setSelectedSources(selectedOpts);
-                    }}>
-                    {sourcesInitial.map((key, i) => 
-                        <option value={key}>{key}</option>
-                    )}
-                    </select>
-                    <input type="submit" value="Submit" onClick = {(e) => console.log(e.target)}/>
-            </form>
-        </div>
-    ) : null
-
-    if(colocalization && locusZoomData){
+    if(colocalization && locusZoomData && colocFiltBySource){
         return (<div>
-            {selectorContent}
+
             <ColocalizationSourcesSummary data={colocFiltBySource}/>
+
+            {
+                selectedSources ? <div className="colocs-summary-container">             
+                <div className="dropdown-group">
+                    <button className="dropdown-button" onClick={() => setShowDropdown(!showDropdown)}>{selectorText}
+                        <div className="dropdown-pointer">
+                            <i className="arrow down"></i>
+                        </div>
+                    </button>
+                    <div className={ showDropdown ? "dropdown-content show" : "dropdown-content"}>
+                        {
+                            initialSources.map((key, i) => 
+                                <div className="checkbox-item-div">
+                                    <input type="checkbox" id={key} name={key} value={key} checked={selectedSources.indexOf(key) > -1}
+                                        onChange={(e) => {
+                                            var src = e.target.checked ? 
+                                                [...selectedSources, e.target.value] : 
+                                                selectedSources.filter(a => a !== e.target.value);
+                                            setSelectedSources(src);
+                                    }}/> 
+                                    <span className="checkbox-label"><label htmlFor={key}>{key}</label></span>
+                                </div>
+                            )
+                        }
+                    </div>
+                </div>
+                </div> : null
+            }
+
             <SelectTable data={ colocFiltBySource }
                          keyField="colocalization_id"
                          columns={ columns(listMetadata) }
