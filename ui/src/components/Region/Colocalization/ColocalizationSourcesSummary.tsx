@@ -9,13 +9,13 @@ interface Props {
 
 const ColocalizationSourcesSummary = ( props: Props) => {
 
-    const [colocalization, setColocalization] = useState<Colocalization[]| undefined>(props.data);
+    const [colocalization, setColocalization] = useState<Colocalization[]| undefined>([]);
     const arr = colocalization?.map(element => {return element.source2_displayname});
     const sources = arr.filter((item,index) => arr.indexOf(item) === index);
-
+    
     useEffect(() => {
-        setColocalization
-    }, [])
+        setColocalization(props.data)
+    }, [props]);
 
     return (
         <div className="colocs-summary" >

@@ -1,8 +1,8 @@
 .colocs-summary {
     display: flex;
     flex-direction: row;
-    margin-top: 10px;
-    margin-bottom: 10px;
+    margin-top: 20px;
+    margin-bottom: 20px;
     flex-wrap: wrap;
 }
 
@@ -20,6 +20,10 @@
     padding: 5px;
 }
 
+.colocs-selection-dropdown {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
 
 .dropdown-button {
     background-color: white;
@@ -40,11 +44,6 @@
     height: 25px;
     margin-bottom: 5px;
 }
-
-  /* .dropdown-pointer:hover, .dropdown-pointer:focus {
-    background-color: #156064;
-  }
-   */
 
 .dropdown-group {
     position: relative;
