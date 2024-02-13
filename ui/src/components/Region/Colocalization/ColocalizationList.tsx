@@ -148,12 +148,14 @@ const ColocalizationList = (props : Props) => {
         }  
     }, [selectedSources]);
 
+    console.log("showDropdown:", showDropdown)
+
     if(colocalization && locusZoomData && colocFiltBySource){
         return (<div>
             
             <hr/>
             <div>
-            <ColocalizationSourcesSummary data={colocFiltBySource}/>
+            <ColocalizationSourcesSummary data={colocalization}/>
             </div>
             {
                 selectedSources ? <div className="colocs-selection-dropdown">             
@@ -170,22 +172,17 @@ const ColocalizationList = (props : Props) => {
                                     <input type="checkbox" id={key} name={key} value={key} checked={selectedSources.indexOf(key) > -1}
                                         onChange={(e) => {
                                             var src = null;
-                                            
                                             if (e.target.checked && e.target.value === 'All'){
                                                 src = [...dropDownSources];
-
                                             } else if (!e.target.checked && e.target.value === 'All') {
                                                 src = [];
-
                                             } else if (e.target.checked && e.target.value !== 'All') {
                                                 src = [...selectedSources, e.target.value];
                                                 if (src.length === initialSources.length) {
                                                     src.unshift("All")
                                                 }
-
                                             } else if (!e.target.checked && e.target.value !== 'All') {
                                                 src = [...selectedSources].filter(a => a !== e.target.value);
-
                                                 if (src.filter(a => a !== 'All').length === 0){
                                                     src = [];
                                                 } else {
