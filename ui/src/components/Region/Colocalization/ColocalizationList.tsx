@@ -148,8 +148,6 @@ const ColocalizationList = (props : Props) => {
         }  
     }, [selectedSources]);
 
-    console.log("showDropdown:", showDropdown)
-
     if(colocalization && locusZoomData && colocFiltBySource){
         return (<div>
             
