@@ -22,7 +22,6 @@ export const cell_variant = (row : Row<CasualVariant>) => row.original.variant
 export const cell_quant1 = (row : Row<Colocalization>) => row.original.quant1
 
 
-
 interface Metadata { accessor: string
                      label: string
                      title: string
@@ -90,9 +89,10 @@ const ColocalizationList = (props : Props) => {
     const [selectedRow, setRowSelected]= useState<string | undefined>(undefined);
     
     const [colocFiltBySource, setColocFiltBySource] = useState<Colocalization[]>([]);
-    const [selectedSources, setSelectedSources] = useState<string[]>([]);
-    const [initialSources, setInitialSources] = useState<string[]>([]);
-    const [dropDownSources, setDropDownSources] = useState<string[]>([]);
+    
+    const [selectedSources, setSelectedSources] = useState<(string|undefined)[]>([]);
+    const [initialSources, setInitialSources] = useState<(string|undefined)[]>([]);
+    const [allChecked, setAllChecked] = useState<boolean>(true);    
     const [showDropdown, setShowDropdown] = useState<boolean>(false);
     const [selectorText, setSelectorText] = useState<string>("Select All");
 
@@ -124,29 +124,34 @@ const ColocalizationList = (props : Props) => {
 
     useEffect(() => {
         if (colocalization){
-            
             const arr = colocalization?.map(element => {return element.source2_displayname}); 
             const src = arr?.filter((item,index) => arr.indexOf(item) === index);
             setInitialSources(src);
-
-            const listedSources = [...src];
-            listedSources.unshift("All");
-            setSelectedSources(listedSources);
-            setDropDownSources(listedSources);
-
+            setSelectedSources(src);
             setColocFiltBySource;   
         }  
-    }, [colocalization])
+    }, [colocalization]);
 
     useEffect(() => {
         if (colocalization){
-            
-            var src = [...selectedSources];
-            setSelectorText(src.filter(a => a !== 'All').length === initialSources.length ? "All Selected" : selectedSources.length + " Selected");
             setColocFiltBySource(colocalization.filter(element => selectedSources.indexOf(element.source2_displayname) > -1));
-
+            selectedSources.length == initialSources.length ? setAllChecked(true) : setAllChecked(false);
+            selectedSources.length == initialSources.length ? setSelectorText("All Selected") : setSelectorText(selectedSources.length + " Selected");
         }  
     }, [selectedSources]);
+
+    const inputCheckboxAllSources = (
+        <>
+        <input type="checkbox" id='All' name='All' value='All' checked={allChecked} onChange={(e) => {
+            setAllChecked(e.target.checked);
+            var src = e.target.checked ? [...initialSources] : [];
+            setSelectedSources(src);
+        }}/>
+        <span className="checkbox-label"><label htmlFor='All'>All</label></span>
+        </>
+    );
+
+    console.log("colocFiltBySource:", colocFiltBySource)
 
     if(colocalization && locusZoomData && colocFiltBySource){
         return (<div>
@@ -164,29 +169,15 @@ const ColocalizationList = (props : Props) => {
                         </div>
                     </button>
                     <div className={ showDropdown ? "dropdown-content show" : "dropdown-content"}>
+                        {inputCheckboxAllSources}
                         {
-                            dropDownSources.map((key, i) => 
+                            initialSources.map((key, i) => 
                                 <div className="checkbox-item-div">
                                     <input type="checkbox" id={key} name={key} value={key} checked={selectedSources.indexOf(key) > -1}
                                         onChange={(e) => {
-                                            var src = null;
-                                            if (e.target.checked && e.target.value === 'All'){
-                                                src = [...dropDownSources];
-                                            } else if (!e.target.checked && e.target.value === 'All') {
-                                                src = [];
-                                            } else if (e.target.checked && e.target.value !== 'All') {
-                                                src = [...selectedSources, e.target.value];
-                                                if (src.length === initialSources.length) {
-                                                    src.unshift("All")
-                                                }
-                                            } else if (!e.target.checked && e.target.value !== 'All') {
-                                                src = [...selectedSources].filter(a => a !== e.target.value);
-                                                if (src.filter(a => a !== 'All').length === 0){
-                                                    src = [];
-                                                } else {
-                                                    src = src.filter(a => a !== 'All');
-                                                }
-                                            }
+                                            var src = e.target.checked ? 
+                                                [...selectedSources, e.target.value] : 
+                                                selectedSources.filter(a => a !== e.target.value);
                                             setSelectedSources(src);
                                     }}/> 
                                     <span className="checkbox-label"><label htmlFor={key}>{key}</label></span>
