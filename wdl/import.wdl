@@ -42,7 +42,10 @@ task preprocess {
   String? exclude
   String exclude_flag = if defined(exclude) then "--exclude '${exclude}'" else ""
 
-  String normalized_filename = sub(sub(basename(summary_file), ".gz$", ""), ".bgz$", "")
+  String? suffix
+  String suffix_remove = if defined(suffix) then "${suffix}" else ""
+
+  String normalized_filename = sub(sub(sub(basename(summary_file), suffix_remove, ""), ".gz$", ""), ".bgz$", "")
   String out_filename = "${normalized_filename}.gz"
 
   String dir = '/cromwell_root/'
@@ -51,8 +54,7 @@ task preprocess {
 	   set -euxo pipefail
      	   cd ${dir}
 
-	   cat "${summary_file}" | \
-           cat | (if [[ "${summary_file}" == *.gz || "${summary_file}" == *.bgz ]]; then zcat ; else cat ; fi) | \
+	   zcat -f "${summary_file}" | \
            ${default="cat" preprocessor } | \
            pheweb format-summary-file ${chrom_flag} ${pos_flag} ${ref_flag} ${alt_flag} ${pval_flag} ${mlogp_flag} ${beta_flag} ${se_beta_flag} | \
            sort -t$'\t' -k1,1n -k2,2n -k3,3 -k4,4 | \
@@ -90,9 +92,7 @@ task sites {
         for file in ${sep="\t" summary_files}; do
 
 	   # decompress if suffixes indicate compression
-	   cat "$file" | \
-
-       (if [[ "$file" == *.gz || "$file" == *.bgz ]]; then zcat ; else cat ; fi)  | \
+	   zcat -f "$file" | \
 	      cut -d$'\t' -f1-4| \
 	      sed '1d' | \
 	      sort -t$'\t' -k1,1n -k2,2n -k3,3 -k4,4 > "$file.tmp"
@@ -135,32 +135,26 @@ task annotation {
      String dir = '/cromwell_root/'
      Array[String] output_url
 
-     Int gene_version
-
     command <<<
 	set -euxo pipefail
 	cd ${dir}
 
-    mkdir -p pheweb/generated-by-pheweb/parsed
+        mkdir -p pheweb/generated-by-pheweb/parsed
 	mkdir -p pheweb/generated-by-pheweb/tmp
 	mkdir -p pheweb/generated-by-pheweb/sites/genes
 	mkdir -p pheweb/generated-by-pheweb/sites/dbSNP
-    mkdir -p /root/.pheweb/cache/
-
-    # to ensure that bed file is used by pheweb
-    [[ -z "${bed_file}" ]] || cp ${bed_file} /root/.pheweb/cache/genes-b38-v${gene_version}.bed
 
 	# TODO test cache
 	# TODO this file also appears : generated-by-pheweb/sites/dbSNP/dbsnp-b151-GRCh38.gz
 	[[ -z "${rsids_file}" ]] || mv ${rsids_file} pheweb/generated-by-pheweb/sites/dbSNP/rsids-b38-dbsnp151.vcf.gz
-    [[ -z "${bed_file}" ]] || mv ${bed_file} /root/.pheweb/cache/genes-b38-v${gene_version}.bed
-    # allow for compressed sites file
+        [[ -z "${bed_file}" ]] || mv ${bed_file}   pheweb/generated-by-pheweb/sites/genes/genes-b38-v37.bed
+        # allow for compressed sites file
 	cat ${variant_list} | (if [[ "${variant_list}" == *.gz || "${variant_list}" == *.bgz ]]; then zcat ; else cat ; fi) > pheweb/generated-by-pheweb/sites/sites-unannotated.tsv
 
  	cd pheweb
-        [[ -z "${bed_file}" ]] && pheweb download-genes 
+
         df -h && pheweb add-rsids
-        [[ -z "${bed_file}" ]] && pheweb add-genes || pheweb add-genes --genes-filepath /root/.pheweb/cache/genes-b38-v${gene_version}.bed
+        df -h && pheweb add-genes --genes-filepath ${dir}/pheweb/generated-by-pheweb/sites/genes/genes-b38-v37.bed
         df -h && pheweb make-cpras-rsids-sqlite3
         df -h && pheweb make-gene-aliases-sqlite3
 
@@ -173,7 +167,7 @@ task annotation {
         /pheweb/scripts/copy_files.sh ${dir}/pheweb/generated-by-pheweb/sites/sites.tsv                $url/generated-by-pheweb/sites/sites.tsv
         /pheweb/scripts/copy_files.sh ${dir}/pheweb/generated-by-pheweb/resources/gene_aliases.sqlite3 $url/generated-by-pheweb/resources/gene_aliases.sqlite3
         /pheweb/scripts/copy_files.sh ${dir}/pheweb/generated-by-pheweb/sites/cpras-rsids.sqlite3      $url/generated-by-pheweb/sites/cpras-rsids.sqlite3
-        /pheweb/scripts/copy_files.sh /root/.pheweb/cache/genes-b38-v${gene_version}.bed $url/cache/genes-b38-v${gene_version}.bed
+        /pheweb/scripts/copy_files.sh ${dir}/pheweb/generated-by-pheweb/sites/genes/genes-b38-v37.bed  $url/cache/genes-b38-v37.bed
 
         done
 
@@ -195,6 +189,7 @@ task annotation {
         preemptible: 0
     }
 }
+
 
 
 task webdav_directories {
@@ -261,8 +256,7 @@ task pheno {
 	mv ${variant_list} pheweb/generated-by-pheweb/sites/
 
 	# pipeline to file without compression suffix if there is one
-	cat ${pheno_file} | \
-	(if [[ "${pheno_file}" == *.gz || "${pheno_file}" == *.bgz ]]; then zcat ; else cat ; fi) | \
+	zcat -f ${pheno_file} | \
 	sed '1 s/^#chrom/chrom/ ; '  > pheweb/generated-by-pheweb/parsed/${pheno_name}
 
         cd pheweb
@@ -513,6 +507,12 @@ for p_dict in phenolist:
     # UPDATE P_DICT
     p_dict['gc_lambda'] = qq['overall']['gc_lambda']
     p_dict['num_gw_significant'] = len([v for v in manha['unbinned_variants'] if 'peak' in v and v['peak'] == True and float(v['pval']) < 5e-8])
+
+    # Add possibly missing fields
+    for key in fields:
+        if key not in custom_jsons[pheno]:
+            custom_jsons[pheno][key] = 0
+
     # remove empty strings - empty lists become a list with empty string
     for key in [k for k in fields if k ]: p_dict[key] = custom_jsons[pheno][key]
 
