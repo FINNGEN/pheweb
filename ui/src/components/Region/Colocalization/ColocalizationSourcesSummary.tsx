@@ -1,36 +1,74 @@
 
 import React, { useState, useEffect } from "react";
-import { Colocalization } from "../../../common/commonModel";
+import { colocalizationSourceTypeConfiguration } from "./ColocalizationModel";
+import { ConfigurationWindow } from "../../Configuration/configurationModel";
+import {colocTypesSummaryData as Data} from '../../../common/commonModel'
+
 import './Colocalization.css'
 
-interface Props {
-	readonly data: Colocalization[]| undefined
-}
 
-const ColocalizationSourcesSummary = ( props: Props) => {
+declare let window: ConfigurationWindow;
+const { config } = window;
+const colocalizationSourceTypes : Array<colocalizationSourceTypeConfiguration>|null = config?.userInterface?.region['colocalizationSourceTypes'] || null;
 
-    const [colocalization, setColocalization] = useState<Colocalization[]| undefined>([]);
-    const arr = colocalization?.map(element => {return element.source2_displayname});
-    const sources = arr.filter((item,index) => arr.indexOf(item) === index);
-    
+
+const ColocalizationSourcesSummary = ( props: {data: Data[], showSourceTypes: boolean}) => {
+
+    const [sourceSummaryData, setSourceSummaryData] = useState<Data[] | null>(null);
+    const [displaynameSources, setDisplaynameSources]  = useState<String[] | null>(null);
+    const [sources, setSources]  = useState<String[] | null>(null);
+
+    const filterSource = (data, attribute) => {
+        var arr = data?.map(element => {return element[attribute]});
+        var src = arr?.filter((item,index) => arr?.indexOf(item) === index);
+        return(src)
+    }
+
     useEffect(() => {
-        setColocalization(props.data)
+        setSourceSummaryData(props.data);
     }, [props]);
 
-    return (
-        <div className="colocs-summary" >
-            {sources.map((key, i) => 
-                <div className="colocs-summary-text" key={key}>{key}: 
-                    <span className="colocs-summary-pos"> <b>↑</b>
-                        {colocalization?.filter(element => element.beta2 > 0 && element.source2_displayname == key).length}
-                    </span>
-                    <span className="colocs-summary-neg"> <b>↑</b>
-                        {colocalization?.filter(element => element.beta2 <= 0 && element.source2_displayname == key).length}
-                    </span>
-            </div>)}
-        </div> 
+    useEffect(() => {
+        sourceSummaryData && setDisplaynameSources(filterSource([...sourceSummaryData], 'source'));
+        sourceSummaryData && setSources(filterSource([...sourceSummaryData], 'sourceKey'));   
+    }, [sourceSummaryData]);
+
+    const renderContent = (src, data) => (
+        src?.map((key, i) => 
+        <div className="colocs-summary-text" key={i}>{key}: 
+            <span className="colocs-summary-pos"> <b>↑</b>
+                {data?.filter(element => element.beta > 0 && element.source == key).length}
+            </span>
+            <span className="colocs-summary-neg"> <b>↓</b>
+                {data?.filter(element => element.beta <= 0 && element.source == key).length}
+            </span>
+        </div>)
     )
 
+    return (
+        <div className="colocs-summary">
+        {
+            colocalizationSourceTypes!==null && props.showSourceTypes ? 
+            <div className="colocs-summary-row" > 
+            {
+                sourceSummaryData && colocalizationSourceTypes.map((item, i) => {
+                    
+                    var sourcesFilt = [...item['sources']].filter((element, index) => sources?.indexOf(element) >= 0);
+                    var sourceSummaryDataFilt = [...sourceSummaryData].filter((element, index) => sourcesFilt.indexOf(element.sourceKey) >= 0);
+                    var displaySourcesType = [...new Set(sourceSummaryDataFilt.map(element => element.source))];
+    
+                    if (sourceSummaryDataFilt.length > 0) {
+                        return ( 
+                        <div className="colocs-summary-type">
+                            <b>{item['type']}:</b><div className="colocs-summary-row">{renderContent(displaySourcesType, sourceSummaryDataFilt)}</div>
+                        </div>)
+                    }
+                }) 
+            }
+            </div> : <div className="colocs-summary-row" >{ renderContent(displaynameSources, sourceSummaryData)}</div> 
+        }
+        </div>       
+    )
 };
 
 export default ColocalizationSourcesSummary;

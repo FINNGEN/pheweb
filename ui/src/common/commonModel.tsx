@@ -222,3 +222,9 @@ export interface GcLambda {
 export const addLambda = (phenotype: Phenotype) => {
   return { ...phenotype, lambda: phenotype.gc_lambda["0.5"] };
 }
+
+export interface colocTypesSummaryData {
+  source: string;
+  beta: number;
+  sourceKey: string;
+}

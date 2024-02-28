@@ -1,9 +1,16 @@
 .colocs-summary {
-    display: flex;
-    flex-direction: row;
     margin-top: 20px;
     margin-bottom: 20px;
+}
+
+.colocs-summary-row {
+    display: flex;
+    flex-direction: row;
     flex-wrap: wrap;
+}
+
+.justify {
+    justify-content: space-between;
 }
 
 .colocs-summary-pos b {
@@ -16,8 +23,17 @@
 
 .colocs-summary-text {
     min-width: fit-content;
-    margin-right: 20px;
-    padding: 5px;
+    margin-left: 5px;
+    margin-right: 10px;
+}
+
+
+.colocs-summary-type{
+    display: flex;
+    flex-direction: row;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    margin-right: 25px;
 }
 
 .colocs-selection-dropdown {

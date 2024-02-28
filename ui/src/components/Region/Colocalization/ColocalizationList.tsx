@@ -8,8 +8,9 @@ import { cellNumber, cellText, variantLink } from "../../../common/commonFormatt
 import { compose } from "../../../common/commonUtilities";
 import { refreshLocusZoom } from "./ColocalizationLocusZoom";
 import { RegionContext, RegionState } from "../RegionContext";
-
 import ColocalizationSourcesSummary from './ColocalizationSourcesSummary';
+import {colocTypesSummaryData as summaryData} from '../../../common/commonModel'
+
 import './Colocalization.css'
 
 
@@ -55,7 +56,12 @@ const listMetadata : Metadata[] = [
         label: "CLPA",
         width: 80 },
     { title: "cs_size_1", accessor: "cs_size_1", label: "CS Size 1", width: 80 },
-    { title: "cs_size_2", accessor: "cs_size_2", label: "CS Size 2", width: 80 } ];
+    { title: "cs_size_2", accessor: "cs_size_2", label: "CS Size 2", width: 80 },
+    { title: "beta1", accessor: "beta1", label: "beta cs1", width: 100,  Cell: cellNumber}, 
+    { title: "beta2", accessor: "beta2", label: "beta cs2", width: 100,  Cell: cellNumber},
+    { title: "pval1", accessor: "beta1", label: "p-value cs1", width: 100,  Cell: cellNumber}, 
+    { title: "pval2", accessor: "beta2", label: "p-value cs2", width: 100,  Cell: cellNumber} 
+];
 
 const subComponentMetadata = [ { title: "Variant" , accessor: "varid1" , label: "Variant" , Cell : compose(cell_variant,variantLink) },
                                { title: "pip1" , accessor: "pip1" , label:"PIP 1" , Cell : cellNumber },
@@ -78,6 +84,7 @@ const subComponent = (row : Row<Colocalization>) => {
     return (<div style={{ padding: "20px" }}> { reactTable}</div>);
 }
 
+
 interface Props {}
 const ColocalizationList = (props : Props) => {
     const { locusZoomData,
@@ -95,6 +102,7 @@ const ColocalizationList = (props : Props) => {
     const [allChecked, setAllChecked] = useState<boolean>(true);    
     const [showDropdown, setShowDropdown] = useState<boolean>(false);
     const [selectorText, setSelectorText] = useState<string>("Select All");
+    const [sourceSummaryData, setSourceSummaryData]  = useState<summaryData[] | undefined>([]);
 
   useEffect(() => {
       colocalization
@@ -129,6 +137,10 @@ const ColocalizationList = (props : Props) => {
             setInitialSources(src);
             setSelectedSources(src);
             setColocFiltBySource;   
+            setSourceSummaryData(colocalization?.map(
+                element => { return {source: element['source2_displayname'], beta: element['beta2'], sourceKey:  element['source2'] }}).sort()
+            );
+
         }  
     }, [colocalization]);
 
@@ -151,14 +163,12 @@ const ColocalizationList = (props : Props) => {
         </>
     );
 
-    console.log("colocFiltBySource:", colocFiltBySource)
-
     if(colocalization && locusZoomData && colocFiltBySource){
         return (<div>
             
             <hr/>
             <div>
-            <ColocalizationSourcesSummary data={colocalization}/>
+            <ColocalizationSourcesSummary data={sourceSummaryData} showSourceTypes={true}/>
             </div>
             {
                 selectedSources ? <div className="colocs-selection-dropdown">             

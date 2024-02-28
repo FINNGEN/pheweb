@@ -168,3 +168,13 @@ export interface PhenotypeList {
 }
 
 export type LocusZoomData = { [ key: string]: CasualVariantVector };
+
+
+export interface colocalizationSourceType {
+    type: string,
+    source:  Array<string>;
+}
+
+export interface colocalizationSourceTypeConfiguration {
+    region : Array<colocalizationSourceType>;
+}
