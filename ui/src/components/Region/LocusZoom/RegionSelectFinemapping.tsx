@@ -2,6 +2,21 @@ import React, { Fragment, useContext, useEffect, useState } from "react";
 import { cond_fm_regions_types, CondFMRegions, layout_types, Params } from "../RegionModel";
 import { RegionContext, RegionState } from "../RegionContext";
 
+export interface LeadCSVariants {
+    variant: string;
+	url: string;
+}
+
+function intersperse(arr, sep) {
+    if (arr.length === 0) {
+        return [];
+    }
+
+    return arr.slice(1).reduce(function(xs, x, i) {
+        return xs.concat([sep, x]);
+    }, [arr[0]]);
+}
+
 const Component = (cond_fm_regions : cond_fm_regions_types, dataSources , plot) => {
     const finemapping_methods : layout_types[] =
       Array.from( (cond_fm_regions || [])
@@ -13,6 +28,21 @@ const Component = (cond_fm_regions : cond_fm_regions_types, dataSources , plot) 
     const cond_signals : CondFMRegions | undefined = (cond_fm_regions || []).find(region => region.type === 'conditional')
     const n_cond_signals = cond_signals?.n_signals || 0
     const [conditionalIndex, setConditionalIndex] = useState<number | undefined>(n_cond_signals > 0?0:undefined);
+    
+    const { region } = useContext<Partial<RegionState>>(RegionContext);
+    const pheno = region?.pheno.phenocode;
+    const finemap : CondFMRegions | undefined = (cond_fm_regions || []).find(region => region.type === 'finemap');
+    const finemappedRegion: string = `${finemap.chr}:${finemap.start}-${finemap.end}` || null
+
+    const leadVariantsCS = finemap?.lead_causal_vars.map(element => {
+            let pos = Number(element.split('_')[1]);
+            let chrom = Number(element.split('_')[0].replace('chr', ''));
+            let result = {
+                'variant': element.replaceAll('_', ':').replace('chr', ''), 
+                'url': `/region/${pheno}/${chrom}:${Math.max(pos - 200 * 1000, 0)}-${pos + 200 * 1000}`
+            };
+            return result;
+    });
 
     useEffect(() => {
         const params = dataSources?.sources?.finemapping?.params as Params ;
@@ -48,9 +78,20 @@ const Component = (cond_fm_regions : cond_fm_regions_types, dataSources , plot) 
 
     const showFinemapping = (s : layout_types) => () => { dataSources && plot &&  setSelectedMethod(s); }
 
+    var leadVariantsCSjsx = leadVariantsCS.map((element, i) => {
+        const split = element['url'].split('/');
+        const tooltip = `Link to the region centered around the variant: ${split[split.length-1]}`;
+        return <span><a title={tooltip} href={element['url']}>{element['variant']}</a></span>
+    });
+    leadVariantsCSjsx = intersperse(leadVariantsCSjsx, ', ');
+
     const signalLabel = (region : CondFMRegions) => region.type === 'finemap' ?
-      <Fragment><span>{region.n_signals} {region.type} signals (prob. {region.n_signals_prob.toFixed(3)} ) </span><br/></Fragment> :
-      <Fragment><span>{region.n_signals} {region.type} signals</span><br/></Fragment>
+      <Fragment>
+        <div>{region.n_signals} {region.type} signals (prob. {region.n_signals_prob.toFixed(3)})</div>
+        <div>Lead variants: {leadVariantsCSjsx}</div>
+        <div>Finemap region: {finemappedRegion} </div>
+      </Fragment> :
+      <Fragment><span>{region.n_signals} {region.type} signals </span><br/></Fragment>
 
     const conditionalLabel = (i : number) => <button onClick={showConditional(i)}
                                                      key={i}
@@ -100,6 +141,7 @@ const Component = (cond_fm_regions : cond_fm_regions_types, dataSources , plot) 
 }
 
 export const RegionSelectFinemapping = () => {
+
     const { region : {cond_fm_regions} = {} ,
             locusZoomContext : { dataSources , plot } = {} } = useContext<Partial<RegionState>>(RegionContext);
 

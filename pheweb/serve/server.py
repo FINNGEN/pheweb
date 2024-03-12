@@ -324,15 +324,31 @@ def api_region_page(phenocode, region):
     chrom = chr_se[0]
     chrom = 23 if str(chrom) == 'X' else int(chrom)
     start_end = jeeves.get_max_finemapped_region(phenocode, chrom, chr_se[1].split('-')[0], chr_se[1].split('-')[1])
+
     if start_end is not None:
         cond_fm_regions = jeeves.get_finemapped_region_boundaries_for_pheno('all', phenocode, chrom, int(chr_se[1].split('-')[0]), int(chr_se[1].split('-')[1]))
     else:
         cond_fm_regions = []
     print(cond_fm_regions)
+
+    if len(cond_fm_regions) > 0:
+        cred_file = cond_fm_regions[1]['path']
+        try:
+            with open(cred_file, 'r') as f:
+                data = f.read().split('\n')
+        except Exception as e:
+            print(f"Error when fetching lead causal variants from the cred file {cred_file}: {e}")
+        else:
+            data = [d for d in data if d != '']
+            cs_lead_vars_data = [line for line in data if not line.startswith("#")][1]
+            cs_lead_vars = re.findall('chr[0-9]*_[0-9]*_[A-Z]', cs_lead_vars_data)
+            cond_fm_regions[1]['lead_causal_vars'] = cs_lead_vars
+
     pheno['phenocode'] = phenocode
     data = { 'pheno' : pheno ,
              'region' : region,
              'cond_fm_regions' : cond_fm_regions }
+             
     return jsonify(data)
 
 @app.route('/api/region/<phenocode>/lz-results/') # This API is easier on the LZ side.
