@@ -28,6 +28,8 @@ export interface ApplicationConfiguration {
 
   readonly ld_service: string;
   readonly ld_panel_version: string;
+
+  readonly trackingId? :string;
 }
 
 export interface ConfigurationUserInterface {

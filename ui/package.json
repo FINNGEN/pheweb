@@ -38,6 +38,7 @@
     "react-csv": "^2.2.2",
     "react-dom": "^16.14.0",
     "react-dom-coding": "npm:react@^17.0.2",
+    "react-gtm-module": "^2.0.11",
     "react-plotly.js": "^2.6.0",
     "react-router-dom": "^5.3.4",
     "react-scripts": "^5.0.1",
