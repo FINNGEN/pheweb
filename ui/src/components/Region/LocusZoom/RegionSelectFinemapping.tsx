@@ -34,7 +34,7 @@ const Component = (cond_fm_regions : cond_fm_regions_types, dataSources , plot) 
     const finemap : CondFMRegions | undefined = (cond_fm_regions || []).find(region => region.type === 'finemap');
     const finemappedRegion: string = `${finemap.chr}:${finemap.start}-${finemap.end}` || null
 
-    const leadVariantsCS = finemap?.lead_causal_vars.map(element => {
+    const leadVariantsCS = finemap?.lead_vars.map(element => {
             let pos = Number(element.split('_')[1]);
             let chrom = Number(element.split('_')[0].replace('chr', ''));
             let result = {
