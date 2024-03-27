@@ -2,7 +2,7 @@ import React, { createContext, useEffect, useState } from "react";
 import { CasualVariant, Colocalization, Locus } from "../../../common/commonModel";
 import { LocusZoomData, SearchSummary } from "./ColocalizationModel";
 import { getLocusZoomData, getSearchResults, getSummary } from "./ColocalizationAPI";
-import { createParameter,Region, RegionParams } from "../RegionModel";
+import { createParameter,Region, RegionParams, CondFMRegions } from "../RegionModel";
 import { getRegion } from "../RegionAPI";
 
 interface Props {
@@ -34,31 +34,21 @@ const ColocalizationContextProvider = ({ params , children} :  Props) => {
     const [selectedColocalization, setSelectedColocalization] = useState<Colocalization | undefined>(undefined);
     const [searchSummary, setSearchSummary] = useState<SearchSummary | undefined>(undefined);
     const [casualVariant, selectedCasualVariant] = useState<CasualVariant | undefined>(undefined);
-    const [maxRegion, setMaxRegion] = useState< RegionParams<Locus>| undefined>(undefined);
     const [region, setRegion] = useState<Region| undefined>(undefined); 
     
     useEffect(() => {
         const parameter : RegionParams<Locus>| undefined = createParameter(params)
         getRegion(parameter,setRegion); }, [params]);
-    
-    useEffect (() => {
-        const locus = {
-            'chromosome': region?.cond_fm_regions[1]['chr'],
-            'start': region?.cond_fm_regions[1]['start'],
-            'stop': region?.cond_fm_regions[1]['end']
-        } 
-        setMaxRegion({'locus': locus, 'phenotype': params?.phenotype})
-    }, [region])
-
 
     useEffect(() => {
         const parameter : RegionParams<Locus>| undefined = createParameter(params);
-        region && getSearchResults(maxRegion, setColocalization);
+        const finemapRegion : CondFMRegions | undefined = (region?.cond_fm_regions || []).find(element => element.type === 'finemap');
+        region && getSearchResults(
+            {locus: { ...finemapRegion, chromosome: finemapRegion.chr, stop: finemapRegion.end}, 
+            phenotype: params?.phenotype}, setColocalization);
         getLocusZoomData(parameter, setLocusZoomData);
         getSummary(parameter, setSearchSummary);
-
-    },[maxRegion]);
-    
+    },[region, params]);
 
     const parameter : RegionParams<Locus>| undefined = createParameter(params);
     return (<ColocalizationContext.Provider value={{ parameter ,
