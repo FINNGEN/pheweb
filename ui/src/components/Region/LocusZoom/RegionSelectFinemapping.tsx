@@ -48,17 +48,21 @@ const Component = (cond_fm_regions : cond_fm_regions_types, dataSources , plot) 
             const cs = data.cs.filter((val, ind, arr) => arr.indexOf(val) == ind);
             
             cs.map(e => {
+                
                 const indices = indexOfAll([...data.cs], e);
                 const probs = indices.map(i => [...data.prob][i]);
+                const ind = getMaxIndex(probs);
+
                 setLeadVariants(arr => [...arr, {
                     cs: e,
                     csSize: indices.length, 
-                    prob: probs[getMaxIndex(probs)], 
-                    varid: indices.map(i => [...data.rsid][i])[getMaxIndex(probs)],
-                    chr: indices.map(i => [...data.chr][i])[getMaxIndex(probs)],
-                    pos: indices.map(i => [...data.position][i])[getMaxIndex(probs)],
+                    prob: probs[ind], 
+                    varid: indices.map(i => [...data.rsid][i])[ind],
+                    chr: indices.map(i => [...data.chr][i])[ind],
+                    pos: indices.map(i => [...data.position][i])[ind],
                     pheno: pheno
                 }]);
+
             });
         }
     }, [finemapSusieData]);
