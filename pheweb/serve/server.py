@@ -331,19 +331,6 @@ def api_region_page(phenocode, region):
         cond_fm_regions = []
     print(cond_fm_regions)
 
-    if len(cond_fm_regions) > 0:
-        cred_file = cond_fm_regions[1]['path']
-        try:
-            with open(cred_file, 'r') as f:
-                data = f.read().split('\n')
-        except Exception as e:
-            print(f"Error when fetching lead variants from the cred file {cred_file}: {e}")
-        else:
-            data = [d for d in data if d != '']
-            cs_lead_vars_data = [line for line in data if not line.startswith("#")][1]
-            cs_lead_vars = re.findall('chr[0-9]*_[0-9]*_[A-Z]', cs_lead_vars_data)
-            cond_fm_regions[1]['lead_vars'] = cs_lead_vars
-
     pheno['phenocode'] = phenocode
     data = { 'pheno' : pheno ,
              'region' : region,

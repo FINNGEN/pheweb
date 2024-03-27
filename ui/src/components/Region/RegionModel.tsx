@@ -76,7 +76,6 @@ export interface CondFMRegions {
 	start: number;
 	type: layout_types;
 	variants: string;
-	lead_vars?: Array<string>|[];
 }
 
 export type cond_fm_regions_types = CondFMRegions[] | undefined | null;
