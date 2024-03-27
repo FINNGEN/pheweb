@@ -1820,6 +1820,12 @@ class FineMappingMySQLDao(FineMappingDB):
                         sql,
                         [self.release, "susie", "finemap", phenocode, chr, end, start],
                     )
+                elif type == "susie":
+                    sql = "SELECT type, chr, start, end, n_signals, n_signals_prob, path FROM finemapped_regions WHERE rel=%s AND type=%s AND phenocode=%s AND chr=%s AND start <= %s AND end >= %s ORDER BY type DESC"
+                    cursori.execute(
+                        sql,
+                        [self.release, "susie", phenocode, chr, end, start],
+                    )
                 else:
                     raise ValueError('unsupported type "' + type + '"')
             result = cursori.fetchall()

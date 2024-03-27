@@ -1,21 +1,15 @@
 import React, { Fragment, useContext, useEffect, useState } from "react";
-import { cond_fm_regions_types, CondFMRegions, layout_types, Params } from "../RegionModel";
+import { cond_fm_regions_types, CondFMRegions, layout_types, Params, LeadVariant } from "../RegionModel";
 import { RegionContext, RegionState } from "../RegionContext";
+import { async } from "q";
+import { setData } from "../../Chip/features/chipTableSlice";
+import { getFinemapSusieData } from '../RegionAPI';
+import ReactTooltip from "react-tooltip";
 
-export interface LeadCSVariants {
-    variant: string;
-	url: string;
-}
+import "../Region.css"
 
-function intersperse(arr, sep) {
-    if (arr.length === 0) {
-        return [];
-    }
-
-    return arr.slice(1).reduce(function(xs, x, i) {
-        return xs.concat([sep, x]);
-    }, [arr[0]]);
-}
+const getMaxIndex = (x: Array<number> ) : number => x.indexOf(Math.max(...x));
+const indexOfAll = (arr, val) => arr.reduce((acc, el, i) => (el === val ? [...acc, i] : acc), []);
 
 const Component = (cond_fm_regions : cond_fm_regions_types, dataSources , plot) => {
     const finemapping_methods : layout_types[] =
@@ -30,19 +24,44 @@ const Component = (cond_fm_regions : cond_fm_regions_types, dataSources , plot) 
     const [conditionalIndex, setConditionalIndex] = useState<number | undefined>(n_cond_signals > 0?0:undefined);
     
     const { region } = useContext<Partial<RegionState>>(RegionContext);
-    const pheno = region?.pheno.phenocode;
     const finemap : CondFMRegions | undefined = (cond_fm_regions || []).find(region => region.type === 'finemap');
-    const finemappedRegion: string = `${finemap.chr}:${finemap.start}-${finemap.end}` || null
+    const finemappedRegion: string = `${finemap.chr}:${finemap.start}-${finemap.end}` || null;
+    const [finemapSusieData, setFinemapSusieData] = useState<any>(null);
+    const [leadVariants, setLeadVariants] = useState<LeadVariant[]|[]>([]);
+    const pheno = region.pheno.phenocode;
+    const [errorFinemapSusie, setErrorFinemapSusie] = useState<string|null>(null);
+    
+    useEffect(() => { 
+        const urlPartial: string = dataSources?.sources?.finemapping?.url;
+        if (urlPartial){
+            getFinemapSusieData(urlPartial, region.region, setFinemapSusieData, setErrorFinemapSusie);
+        }
+    },[dataSources]);
 
-    const leadVariantsCS = finemap?.lead_vars.map(element => {
-            let pos = Number(element.split('_')[1]);
-            let chrom = Number(element.split('_')[0].replace('chr', ''));
-            let result = {
-                'variant': element.replaceAll('_', ':').replace('chr', ''), 
-                'url': `/region/${pheno}/${chrom}:${Math.max(pos - 200 * 1000, 0)}-${pos + 200 * 1000}`
-            };
-            return result;
-    });
+    useEffect(() => {
+        errorFinemapSusie && console.error(errorFinemapSusie)
+    }, [errorFinemapSusie])
+
+    useEffect(() => {
+        if (finemapSusieData) {
+            const data = finemapSusieData[0].data;
+            const cs = data.cs.filter((val, ind, arr) => arr.indexOf(val) == ind);
+            
+            cs.map(e => {
+                const indices = indexOfAll([...data.cs], e);
+                const probs = indices.map(i => [...data.prob][i]);
+                setLeadVariants(arr => [...arr, {
+                    cs: e,
+                    csSize: indices.length, 
+                    prob: probs[getMaxIndex(probs)], 
+                    varid: indices.map(i => [...data.rsid][i])[getMaxIndex(probs)],
+                    chr: indices.map(i => [...data.chr][i])[getMaxIndex(probs)],
+                    pos: indices.map(i => [...data.position][i])[getMaxIndex(probs)],
+                    pheno: pheno
+                }]);
+            });
+        }
+    }, [finemapSusieData]);
 
     useEffect(() => {
         const params = dataSources?.sources?.finemapping?.params as Params ;
@@ -72,27 +91,55 @@ const Component = (cond_fm_regions : cond_fm_regions_types, dataSources , plot) 
             panel.data_layers.associationpvalues.data = dataSources.sources.conditional.parseArraysToObjects(params.allData[conditionalIndex].data, params.fields, params.outnames, params.trans);
             panel.data_layers.associationpvalues.render();
         }
+        
     },[setConditionalIndex, conditionalIndex, dataSources, plot]);
 
     const showConditional = (i : number) => () => dataSources && plot && setConditionalIndex(i) ;
 
-    const showFinemapping = (s : layout_types) => () => { dataSources && plot &&  setSelectedMethod(s); }
+    const showFinemapping = (s : layout_types) => () => { 
+        dataSources && plot &&  setSelectedMethod(s); 
+    }
 
-    var leadVariantsCSjsx = leadVariantsCS.map((element, i) => {
-        const split = element['url'].split('/');
-        const tooltip = `Link to the region centered around the variant: ${split[split.length-1]}`;
-        return <span><a title={tooltip} href={element['url']}>{element['variant']}</a></span>
-    });
-    leadVariantsCSjsx = intersperse(leadVariantsCSjsx, ', ');
+    const leadVarsContent = leadVariants.map((key, i) => { 
 
-    const signalLabel = (region : CondFMRegions) => region.type === 'finemap' ?
-      <Fragment>
-        <div>{region.n_signals} {region.type} signals (prob. {region.n_signals_prob.toFixed(3)})</div>
-        <div>Lead variants: {leadVariantsCSjsx}</div>
-        <div>Finemap region: {finemappedRegion} </div>
-      </Fragment> :
-      <Fragment><span>{region.n_signals} {region.type} signals </span><br/></Fragment>
+        const url: string = `/region/${key.pheno}/${key.chr}:${Math.max(key.pos - 200 * 1000, 0)}-${key.pos + 200 * 1000}`;
 
+        return (
+            <div style={{ marginLeft: "7px"}}>
+                <ReactTooltip 
+                className="tooltip-lead-vars"
+                id='tooltip-lead-vars' 
+                html={true}
+                arrowColor="#F4F4F4"
+                effect='solid'/>
+                <a href={url}><span data-tip={
+                    `<div style={{display: "flex", flexDirection: "column"}}>
+                        <span>
+                        <b>CS:</b> ${key.cs}<br>
+                        <b>CS specific prob:</b> ${key.prob}<br>
+                        <b>CS size:</b> ${key.csSize}</span>
+                    </div>`
+                } data-for="tooltip-lead-vars">{key.varid}</span></a>
+            </div>
+        )
+        }
+    )
+
+    const signalLabel = (region : CondFMRegions) => region.type !== 'finemap' ?
+        <Fragment>
+            <span>{region.n_signals} {region.type} signals </span><br/>
+            { leadVariants.length > 0 && region.type !== 'conditional' ? 
+                <span style={{display: "flex", flexDirection: "row"}}>Lead variants: { 
+                    leadVarsContent.slice(1).reduce(function(xs, x, i) {
+                        return (xs.concat([(<span>,</span>), x]));
+                    }, [leadVarsContent[0]])
+                    }</span> 
+                : null 
+            } </Fragment> 
+        : <Fragment>
+            <span>{region.n_signals} {region.type} signals in finemapping region <b>{finemappedRegion}</b> (prob. {region.n_signals_prob.toFixed(3)})</span>
+        </Fragment>
+          
     const conditionalLabel = (i : number) => <button onClick={showConditional(i)}
                                                      key={i}
                                                      data-cond-i={i}
@@ -102,7 +149,9 @@ const Component = (cond_fm_regions : cond_fm_regions_types, dataSources , plot) 
     </button>
 
     let summaryHTML =
+
     <Fragment>
+            
           { cond_fm_regions.map((region,i) => <div key={i}>{  signalLabel(region) }</div>)}
 
           {n_cond_signals > 0 ?
@@ -130,15 +179,17 @@ const Component = (cond_fm_regions : cond_fm_regions_types, dataSources , plot) 
 
           { finemapping_methods.map((r,i) =>
             <button type="button" key={i} onClick={showFinemapping( r )}
-                    className={"btn " + (r === selectedMethod ? 'btn-default' : 'btn-primary' )}
-                    disabled={ r === selectedMethod }>
-                <span>{ r }</span>
-            </button>)
+            className={"btn " + (r === selectedMethod ? 'btn-default' : 'btn-primary' )}
+            disabled={ r === selectedMethod }>
+        <span>{ r }</span>
+    </button>
+            )
           }
 
       </Fragment>
     return summaryHTML
 }
+
 
 export const RegionSelectFinemapping = () => {
 
