@@ -172,7 +172,7 @@ def api_metrics():
         return response
     else:
         abort(403)  # Forbidden access
-    
+
 @app.route('/health')
 @is_public
 def health():
@@ -192,7 +192,7 @@ def homepage(path):
 def api_404(path):
    abort(404, description="Resource not found")
 
-    
+
 @app.route('/api/autoreport/<phenocode>')
 def autoreport(phenocode):
     return jsonify(jeeves.get_autoreport(phenocode))
@@ -244,7 +244,7 @@ def api_variant_pheno(query, phenocode):
         v = Variant(q[0].replace('X', '23'),q[1],q[2], q[3])
 
         # get single variant data
-        variantdat = jeeves.get_single_variant_pheno_data(v, phenocode)     
+        variantdat = jeeves.get_single_variant_pheno_data(v, phenocode)
         if variantdat is None:
             die("Sorry, I couldn't find the variant {}".format(query))
         result = { "results" : variantdat }
@@ -258,7 +258,7 @@ def api_pheno(phenocode):
     if phenocode not in use_phenos:
         abort(404)
     try:
-        return json.loads(jeeves.get_pheno_manhattan(phenocode))
+        return jeeves.get_pheno_manhattan(phenocode)
     except Exception as exc:
         die("Sorry, your manhattan request for phenocode {!r} didn't work".format(phenocode), exception=exc)
 

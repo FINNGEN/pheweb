@@ -340,7 +340,8 @@ class FileCodingDAO(CodingDAO):
             # add possible_explaining_signals if available
             pheno_var_id = res['pheno']['code'] + '_' + res['variant']
             if pheno_var_id in top_list.index:
-                res['possible_explaining_signals'] = top_list.loc[pheno_var_id]['possible_explaining_signals']
+                signals = top_list.loc[pheno_var_id]['possible_explaining_signals']
+                res['possible_explaining_signals'] = None if pd.isna(signals) else signals
             results_munged.append(res)
 
         time_munge = timeit.default_timer() - start_time

@@ -682,10 +682,12 @@ class TabixGnomadDao(GnomadDB):
         t = time.time()
         ##print("There are {} active tabix handles for gnomad".format( len(self.tabix_handles)))
         tabix = pysam.TabixFile(self.matrix_path, parser=None)
+        header = [h.lower() for h in self.headers]
         for var_i, variant in enumerate(var_list):
             # print("There are {} active tabix handles for gnomad. Current pid {}".format( len(self.tabix_handles), os.getpid()))
 
             ### TODO get rid of this chr shit once the annotation files have been fixed
+
             fetch_chr = (
                 str(variant.chr)
                 .replace("23", "X")
@@ -698,12 +700,16 @@ class TabixGnomadDao(GnomadDB):
 
             for row in tabix_iter:
                 split = row.split("\t")
-                if split[3] == variant.ref and split[4] == variant.alt:
+                ref = split[header.index('ref')]
+                alt = split[header.index('alt')]            
+                if ref == variant.ref and alt == variant.alt:
                     for i, s in enumerate(split):
                         if (
                             self.headers[i].startswith("AF")
                             and split[i] != "NaN"
+                            and split[i] != "NA"
                             and split[i] != "."
+                            and split[i] != ""
                         ):
                             split[i] = float(s)
                     annotations.append(

@@ -53,11 +53,11 @@ class ServerJeeves(object):
         print(" gene functional variants took {}".format( time.time()-startt) )
         remove_indx =[]
         chrom,start,end = self.get_gene_region_mapping()[gene]
-        
+
         startt = time.time()
         ## if there are not many functional variants and gene is large it is better to get them one by one
         results = self.result_dao.get_variant_results_range( chrom, start, end )
-        
+
         # add rsids
         vars_anno = self.annotation_dao.get_variant_annotations_range(chrom, start, end, self.conf.anno_cpra)
         rsids = { v : v.annotation['annot']['rsid'] for v in vars_anno }
@@ -115,8 +115,8 @@ class ServerJeeves(object):
         start, end = pad_gene(start, end)
         starttime = time.time()
         results = self.result_dao.get_top_per_pheno_variant_results_range(chrom, start, end)
-        
-        # add rsids 
+
+        # add rsids
         vars_anno = self.annotation_dao.get_variant_annotations_range(chrom, start, end, self.conf.anno_cpra)
         rsids = {v : v.annotation['annot']['rsid'] for v in vars_anno }
         for r in results:
@@ -189,8 +189,7 @@ class ServerJeeves(object):
 
     def get_pheno_manhattan(self, phenocode) -> str:
         with open(common_filepaths['manhattan'](phenocode)) as f:
-            manhattan = f.read()
-            return manhattan
+            variants = json.load(f)
 
         vars = [ Variant( d['chrom'].replace("chr","").replace("X","23").replace("Y","24").replace("MT","25"), d['pos'], d['ref'], d['alt'] ) for d in variants['unbinned_variants'] if 'peak' in d ]
 
@@ -218,13 +217,13 @@ class ServerJeeves(object):
             if v in ukbbvars:
                 variant['ukbb'] = ukbbvars[v]
         return variants
-    
+
     def get_single_variant_pheno_data(self, variant: Variant, pheno: str):
         """
-            Returns summary statistics for a single variant and a single phenotype. 
+            Returns summary statistics for a single variant and a single phenotype.
         """
         variants = get_pheno_region(pheno, str(variant.chr), variant.pos, variant.pos)['data']
-        
+
         # get cols from results by get_pheno_region function and reaname
         cols = {'beta': 'beta', 'mlogp': 'mlogp', 'pvalue': 'pval', 'maf_cases': 'maf_case', 'maf_controls': 'maf_control'}
         if len(variants.items()) > 0:
@@ -480,7 +479,7 @@ class ServerJeeves(object):
     @functools.lru_cache(None)
     def get_gene_region_mapping(self):
         return {genename: (chrom, pos1, pos2) for chrom, pos1, pos2, genename in get_gene_tuples()}
-    
+
     @functools.lru_cache(None)
     def get_best_phenos_by_gene(self, gene):
         chrom,start,end = self.get_gene_region_mapping()[gene]
@@ -600,10 +599,10 @@ class ServerJeeves(object):
         values = [a for a in aggregated.values()]
 
         if missing_info:
-            
+
             #missing info, replace it from annotation file
             print("Warning: Missing INFO in autoreporting group variant table. Please update autoreporting mysql db with new import script.")
-            
+
             list_of_vars = []
             variants = list(set([a["variant"] for a in values]))
             for variant in variants:
@@ -637,4 +636,4 @@ class ServerJeeves(object):
     def get_colocalization_by_gene_name(self, gene_name: str):
         """ Get gene colocalization data """
         dat = self.pqtl_colocalization.get_gene_colocalization(gene_name) if self.pqtl_colocalization else dict()
-        return dat 
+        return dat

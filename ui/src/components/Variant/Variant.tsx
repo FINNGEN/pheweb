@@ -73,10 +73,10 @@ const default_banner: string = `
                     </div>"
 		 html="true"
 		 data-html="true">
-		AF in gnomAD genomes 2.1: FIN {{afFin}} POPMAX {{afPopmax}} FIN enrichment vs. NFEE:  {{finEnrichment}}
+		AF in gnomAD 4.0: FIN {{afFin}} POPMAX {{afPopmax}} FIN enrichment vs. NFE:  {{finEnrichment}}
 	</p>
 	{{/summary.gnomAD}}
-	{{^summary.gnomAD}} No data found in gnomAD 2.1.1 {{/summary.gnomAD}}
+	{{^summary.gnomAD}} No data found in gnomAD 4.0 {{/summary.gnomAD}}
 
 	{{#summary.infoRange}}
 	<p id="info-range"
@@ -278,7 +278,7 @@ export const createVariantSummary = (variantData : VariantModel.Data) : VariantS
     }
     let afPopmax :string | undefined
     // af pop malet
-    if(gnomad && 'AF_fin' in gnomad && 'afPopmax' in gnomad && !isNaN(+gnomad['AF_popmax']) && isFinite(+gnomad['AF_popmax'])){
+    if(gnomad && 'AF_fin' in gnomad && 'AF_popmax' in gnomad && !isNaN(+gnomad['AF_popmax']) && isFinite(+gnomad['AF_popmax'])){
       afPopmax = scientificFormatter(+gnomad['AF_popmax']);
     } else {
       afPopmax = undefined

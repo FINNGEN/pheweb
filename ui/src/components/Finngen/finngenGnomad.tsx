@@ -31,9 +31,13 @@ export const finEnrichmentLabel = (gnomad : { [key : string ] : (string | number
       ((+gnomad['AC_nfe_nwe'] + +gnomad['AC_nfe_onf'] + +gnomad['AC_nfe_seu']) /
         (+gnomad['AN_nfe_nwe'] + +gnomad['AN_nfe_onf'] + +gnomad['AN_nfe_seu']))
     finEnrichment = scientificFormatter(fin_enrichment_value)
+  } else if ('enrichment_nfe' in gnomad) {
+    finEnrichment = scientificFormatter(+gnomad['enrichment_nfe'])
   } else {
     finEnrichment = 'Not available'
     warn('fin enrichment Not available', gnomad)
   }
+
   return finEnrichment;
 }
+
