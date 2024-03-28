@@ -5,7 +5,77 @@ Array [
   Object {
     "alt": "CA",
     "chrom": 16,
-    "gnomAD": undefined,
+    "gnomAD": Object {
+      "afFin": "2.3e-1",
+      "afPopmax": "1.7e-1",
+      "finEnrichment": "1.4e+0",
+      "properties": Array [
+        Object {
+          "key": "afr",
+          "value": "2.8e-2",
+        },
+        Object {
+          "key": "amr",
+          "value": "1.4e-1",
+        },
+        Object {
+          "key": "asj",
+          "value": "1.8e-1",
+        },
+        Object {
+          "key": "eas",
+          "value": "3.2e-3",
+        },
+        Object {
+          "key": "female",
+          "value": "1.3e-1",
+        },
+        Object {
+          "key": "fin",
+          "value": "2.3e-1",
+        },
+        Object {
+          "key": "gnomad",
+          "value": "1.3e-1",
+        },
+        Object {
+          "key": "male",
+          "value": "1.2e-1",
+        },
+        Object {
+          "key": "nfe",
+          "value": "1.7e-1",
+        },
+        Object {
+          "key": "nfe_est",
+          "value": "1.7e-1",
+        },
+        Object {
+          "key": "nfe_nwe",
+          "value": "1.7e-1",
+        },
+        Object {
+          "key": "nfe_onf",
+          "value": "1.6e-1",
+        },
+        Object {
+          "key": "nfe_seu",
+          "value": "1.5e-1",
+        },
+        Object {
+          "key": "oth",
+          "value": "1.7e-1",
+        },
+        Object {
+          "key": "popmax",
+          "value": "1.7e-1",
+        },
+        Object {
+          "key": "raw",
+          "value": "1.3e-1",
+        },
+      ],
+    },
     "infoRange": Object {
       "properties": Array [
         Object {
@@ -965,7 +1035,77 @@ Array [
   Object {
     "alt": "CA",
     "chrom": 16,
-    "gnomAD": undefined,
+    "gnomAD": Object {
+      "afFin": "2.3e-1",
+      "afPopmax": "1.7e-1",
+      "finEnrichment": "1.4e+0",
+      "properties": Array [
+        Object {
+          "key": "afr",
+          "value": "2.8e-2",
+        },
+        Object {
+          "key": "amr",
+          "value": "1.4e-1",
+        },
+        Object {
+          "key": "asj",
+          "value": "1.8e-1",
+        },
+        Object {
+          "key": "eas",
+          "value": "3.2e-3",
+        },
+        Object {
+          "key": "female",
+          "value": "1.3e-1",
+        },
+        Object {
+          "key": "fin",
+          "value": "2.3e-1",
+        },
+        Object {
+          "key": "gnomad",
+          "value": "1.3e-1",
+        },
+        Object {
+          "key": "male",
+          "value": "1.2e-1",
+        },
+        Object {
+          "key": "nfe",
+          "value": "1.7e-1",
+        },
+        Object {
+          "key": "nfe_est",
+          "value": "1.7e-1",
+        },
+        Object {
+          "key": "nfe_nwe",
+          "value": "1.7e-1",
+        },
+        Object {
+          "key": "nfe_onf",
+          "value": "1.6e-1",
+        },
+        Object {
+          "key": "nfe_seu",
+          "value": "1.5e-1",
+        },
+        Object {
+          "key": "oth",
+          "value": "1.7e-1",
+        },
+        Object {
+          "key": "popmax",
+          "value": "1.7e-1",
+        },
+        Object {
+          "key": "raw",
+          "value": "1.3e-1",
+        },
+      ],
+    },
     "infoRange": Object {
       "properties": Array [
         Object {

@@ -1,6 +1,8 @@
 import React from "react";
 import * as Handlebars from "handlebars/dist/cjs/handlebars";
 
+
+
 /**
  * Compose fuction
  *
@@ -145,3 +147,5 @@ export const warn = (msg : string, context : {} ={}) : void =>{
  */
 export const flatten : <X>(a : X[][]) => X[] = (l) => l.reduce((a, v) =>a.concat(v),[]);
 export const defaultEmptyArray : <X,Y>(a : X[],defaultArray :Y[]) => (X|Y)[] = (a,defaultArray) => a.length == 0?defaultArray:a;
+
+export const isNonEmptyArray : <X>(value : X) => boolean = (value) => Array.isArray(value) && value.length > 0;

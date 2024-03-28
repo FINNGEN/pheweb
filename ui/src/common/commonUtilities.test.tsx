@@ -1,6 +1,6 @@
 /* eslint-env jest */
 // https://stackoverflow.com/questions/59833839/swap-one-typescript-type-with-another-inside-an-object
-import { defaultEmptyArray, compose, flatten, get, mustacheDiv, mustacheSpan, mustacheText } from './commonUtilities';
+import { defaultEmptyArray, compose, flatten, get, mustacheDiv, mustacheSpan, mustacheText, isNonEmptyArray } from './commonUtilities';
 import { configure, mount } from "enzyme";
 import { v4 } from "uuid";
 
@@ -96,4 +96,12 @@ test("default empty array does not default", () => {
   const uuid1 = v4();
   const uuid2 = v4();
   expect(defaultEmptyArray([uuid1],[uuid2])).toStrictEqual([uuid1]);
+});
+
+test("test isNonEmptyArray", () => {
+    expect(isNonEmptyArray(null)).toBe(false);
+    expect(isNonEmptyArray(undefined)).toBe(false);
+    expect(isNonEmptyArray(1)).toBe(false);
+    expect(isNonEmptyArray([])).toBe(false);
+    expect(isNonEmptyArray([1, 2, 3])).toBe(true);
 });

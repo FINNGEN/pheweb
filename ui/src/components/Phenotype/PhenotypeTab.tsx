@@ -3,6 +3,7 @@ import { Tab, TabList, TabPanel, Tabs } from 'react-tabs'
 import { PhenotypeContext, PhenotypeState } from "./PhenotypeContext";
 import VariantTable from './PhenotypeVariantTable';
 import PhenotypeCSTable from "./PhenotypeCSTable";
+import {isNonEmptyArray} from "../../common/commonUtilities";
 
 const PhenotypeTab = () => {
   const { phenotypeCode ,
@@ -22,7 +23,7 @@ const PhenotypeTab = () => {
         { credibleSets && <Tab>Credible Sets</Tab> }
         <Tab>Traditional</Tab>
       </TabList>
-      { credibleSets && <TabPanel>
+      { isNonEmptyArray(credibleSets) && <TabPanel>
         <div id='cs table' className='phenotype-tab'>
           <PhenotypeCSTable/>
         </div>
