@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useCallback } from "react"
-import { Variant as CommonVariantModel, variantFromStr } from "../../common/commonModel"
+import {Variant as CommonVariantModel, variantFromStr, variantToPheweb, variantToStr} from "../../common/commonModel"
 import { Ensembl, Variant as VariantModel, Sumstats } from "./variantModel"
 import { getEnsembl, getVariant, getVariantPhenotype } from "./variantAPI"
 import { ConfigurationWindow } from "../Configuration/configurationModel"
-import { mustacheDiv } from "../../common/commonUtilities"
+import {mustacheDiv, setPageTitle} from "../../common/commonUtilities"
 import { hasError, isLoading } from "../../common/CommonLoading"
 import VariantTable from "./VariantTable"
 import VariantLocusZoom from "./VariantLocusZoom"
@@ -12,8 +12,8 @@ import ReactTooltip from "react-tooltip"
 import { finEnrichmentLabel } from "../Finngen/finngenGnomad"
 import VariantContextProvider from "./VariantContext"
 import VariantLavaaPlot from "./VariantLavaaPlot"
-import { Either, Left, Right } from "purify-ts/Either"
 import { notBottom, promiseValues } from '../../common/commonPromise';
+import {RouteComponentProps} from "react-router-dom";
 declare let window: ConfigurationWindow;
 const { config } = window;
 
@@ -141,7 +141,7 @@ const banner: string = config?.userInterface?.variant?.banner || default_banner;
 
 export type BioBankURL = {rsid: string, url: string}
 interface BannerData { bioBankURL : BioBankURL[] , summary : VariantSummary }
-interface Props {}
+type Props = RouteComponentProps<{ variant : string}>
 
 interface KeyValue {
   key : string
@@ -195,21 +195,6 @@ interface sortOptionsObj {
 export type RSIDMapping = { mapping : Ensembl.Mapping ,
   rsid : string };
 
-
-export const createVariant = (pathanme : string = window.location.pathname) : Either<string,CommonVariantModel>  => {
-  const match = pathanme.match("^/variant/(.+)$")
-  if(match){
-    const [, variantString ] : Array<string> = match;
-    const variant : CommonVariantModel | undefined = variantFromStr(variantString)
-    if(variant == null){
-      return Left(`Could not parse variant from '${variantString}'`)
-    } else {
-      return Right(variant);
-    }
-  } else {
-    Left(`Could not parse variant from url '${pathanme}'`)
-  }
-}
 
 export const createVariantSummary = (variantData : VariantModel.Data) : VariantSummary | undefined => {
 
@@ -398,7 +383,14 @@ export const generateBioBankURL = (variant :  CommonVariantModel | undefined,
 	return  mappings.then( v => v.filter(notBottom).map(createBioBankURL(variant))).then( v => v.filter(notBottom));
 }
 
+export const createTitle = (v : CommonVariantModel| undefined) => v === undefined ?'variant error':`variant ${variantToPheweb(v)}`;
+
 const Variant = (props : Props) => {
+  const variantString = props.match.params.variant;
+  const parsedVariant  : CommonVariantModel | undefined = variantFromStr(variantString);
+  const title : string = createTitle(parsedVariant);
+  setPageTitle(title);
+
   const [variantData, setVariantData] = useState<VariantModel.Data | null>(null);
   const [bioBankURL, setBioBankURL] = useState<BioBankURL[]| null>(null);
   const [error, setError] = useState<string|null>(null);
@@ -411,7 +403,11 @@ const Variant = (props : Props) => {
   const [activePage, setActivePage] = useState<number | null>(null);
 
   useEffect(() => {
-    createVariant().bimap(setError, variant => getVariant(variant, setVariantData, setError));
+    if(parsedVariant === undefined){
+      setError(`Could not parse variant from '${variantString}'`);
+    } else {
+      getVariant(parsedVariant, setVariantData, setError);
+    }
   },[]);
 
   // get summary statistics for a specific phenotype
@@ -492,9 +488,8 @@ const Variant = (props : Props) => {
     }
     // set the biobank urls
     if(variantData && bioBankURL == null) {
-      const variant :  CommonVariantModel | undefined = createVariant().orDefault(undefined);
       const summary : VariantSummary | undefined = createVariantSummary(variantData);
-      generateBioBankURL(variant, summary).then(setBioBankURL);
+      generateBioBankURL(parsedVariant, summary).then(setBioBankURL);
     }
   },[variantData, setBioBankURL,bioBankURL]);
 

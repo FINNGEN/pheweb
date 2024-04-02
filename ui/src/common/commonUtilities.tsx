@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useEffect} from "react";
 import * as Handlebars from "handlebars/dist/cjs/handlebars";
 
 
@@ -100,6 +100,16 @@ export const mustacheDiv: <X>(template: string, content: X) => JSX.Element = (
   ></div>
 );
 
+/**
+ * Set the title of the page.
+ *
+ * @param title
+ */
+export const setPageTitle = (title : string) : void => {
+    useEffect(() => {
+        document.title = title;
+    }, [title]);
+};
 /**
  * mustacheSpan
  *

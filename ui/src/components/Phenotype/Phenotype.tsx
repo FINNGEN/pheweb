@@ -8,6 +8,7 @@ import './phenotype.css';
 import PhenotypeTab from "./PhenotypeTab";
 import PhenotypeQQPlot from "./PhenotypeQQPlot";
 import { hasError, isLoading } from "../../common/CommonLoading";
+import {setPageTitle} from "../../common/commonUtilities";
 
 type Props = RouteComponentProps<PhenotypeParams>;
 
@@ -17,6 +18,7 @@ const Phenotype = (prop : Props) =>
   </PhenotypeContextProvider>
 
 const PhenotypeContent = () => {
+
   const { errorMessage , phenotype} = useContext<Partial<PhenotypeState>>(PhenotypeContext);
 
   const content = () => <div>

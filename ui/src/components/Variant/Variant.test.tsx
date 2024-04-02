@@ -6,10 +6,10 @@ import {
 	getMapping, RSIDMapping,
 	rsidMapping,
 	summaryRSIDS,
-	VariantSummary,
+	VariantSummary, createTitle,
 } from './Variant';
 import { Ensembl, Variant as VariantModel } from './variantModel';
-import { Variant as CommonVariantModel, variantFromStr } from '../../common/commonModel'
+import {Variant as CommonVariantModel, variantFromStr, variantToStr} from '../../common/commonModel'
 import with_rsid from "./data/with_rsid/16-20341705-C-CA.json"
 import without_rsid from "./data/without_rsid/9-97776641-A-G.json"
 
@@ -228,3 +228,10 @@ test('can handle fetch failure', async () => {
 	expect(actual).toStrictEqual(expected);
 	expect(console.warn).toBeCalled();
 })
+
+test('variant title', async () => {
+	expect(createTitle(variantFromStr("9-97776641-A"))).toBe("variant error");
+	expect(createTitle(variantFromStr("9-97776641-A-G"))).toBe("variant 9-97776641-A-G");
+})
+
+

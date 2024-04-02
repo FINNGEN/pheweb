@@ -10,7 +10,7 @@ const PhenotypeTab = () => {
           credibleSets ,
           selectedTab,
           setSelectedTab } = useContext<Partial<PhenotypeState>>(PhenotypeContext);
-          
+
   return <>
     <h3>Lead variants</h3>
     <Tabs
@@ -20,7 +20,7 @@ const PhenotypeTab = () => {
       style={{ width: '100%' }}
     >
       <TabList>
-        { credibleSets && <Tab>Credible Sets</Tab> }
+        { isNonEmptyArray(credibleSets) && <Tab>Credible Sets</Tab> }
         <Tab>Traditional</Tab>
       </TabList>
       { isNonEmptyArray(credibleSets) && <TabPanel>

@@ -1,5 +1,5 @@
 import React from "react";
-import { mustacheDiv } from "../../common/commonUtilities";
+import {mustacheDiv, setPageTitle} from "../../common/commonUtilities";
 import { ConfigurationWindow } from "../Configuration/configurationModel";
 import { commit_sha } from "../../common/commonConstants";
 
@@ -12,6 +12,8 @@ interface Props {}
 const { config } = window;
 
 const About = () => {
+  const title : string = 'about';
+  setPageTitle(title);
 
   const banner: string = config?.userInterface?.about?.banner || default_banner;
   return <div>

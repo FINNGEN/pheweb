@@ -3,11 +3,15 @@ import { Provider } from "react-redux";
 
 import store from "./chipStore";
 import { Table } from "./ChipTable";
+import {setPageTitle} from "../../common/commonUtilities";
 
 interface Props {}
 
 const Chip = () => {
-  return (
+    const title : string = 'chip';
+    setPageTitle(title);
+
+    return (
     <Provider store={store}>
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <div
