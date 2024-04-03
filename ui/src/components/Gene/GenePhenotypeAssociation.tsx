@@ -85,7 +85,7 @@ const GenePhenotypeAssociation = () => {
     tableProperties,
     defaultSorted
   }
-  let view
+  let view;
 
   if(genePhenotype == null || genePhenotype === undefined || selectedPhenotype === undefined){
     view = commonLoading

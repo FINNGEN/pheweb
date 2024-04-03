@@ -1,15 +1,10 @@
 import React, { Fragment, useContext, useEffect, useState } from "react";
-import { cond_fm_regions_types, CondFMRegions, layout_types, Params, LeadVariant } from "../RegionModel";
+import { cond_fm_regions_types, CondFMRegions, layout_types, Params } from "../RegionModel";
 import { RegionContext, RegionState } from "../RegionContext";
 import { async } from "q";
 import { setData } from "../../Chip/features/chipTableSlice";
-import { getFinemapSusieData } from '../RegionAPI';
-import ReactTooltip from "react-tooltip";
+import LeadVariants from './LeadVariants'
 
-import "../Region.css"
-
-const getMaxIndex = (x: Array<number> ) : number => x.indexOf(Math.max(...x));
-const indexOfAll = (arr, val) => arr.reduce((acc, el, i) => (el === val ? [...acc, i] : acc), []);
 
 const Component = (cond_fm_regions : cond_fm_regions_types, dataSources , plot) => {
     const finemapping_methods : layout_types[] =
@@ -22,50 +17,14 @@ const Component = (cond_fm_regions : cond_fm_regions_types, dataSources , plot) 
     const cond_signals : CondFMRegions | undefined = (cond_fm_regions || []).find(region => region.type === 'conditional')
     const n_cond_signals = cond_signals?.n_signals || 0
     const [conditionalIndex, setConditionalIndex] = useState<number | undefined>(n_cond_signals > 0?0:undefined);
-    
-    const { region } = useContext<Partial<RegionState>>(RegionContext);
-    const finemap : CondFMRegions | undefined = (cond_fm_regions || []).find(region => region.type === 'finemap');
-    const finemappedRegion: string = `${finemap.chr}:${finemap.start}-${finemap.end}` || null;
-    const [finemapSusieData, setFinemapSusieData] = useState<any>(null);
-    const [leadVariants, setLeadVariants] = useState<LeadVariant[]|[]>([]);
-    const pheno = region.pheno.phenocode;
-    const [errorFinemapSusie, setErrorFinemapSusie] = useState<string|null>(null);
-    
-    useEffect(() => { 
-        const urlPartial: string = dataSources?.sources?.finemapping?.url;
-        if (urlPartial){
-            getFinemapSusieData(urlPartial, region.region, setFinemapSusieData, setErrorFinemapSusie);
-        }
-    },[dataSources]);
+    const finemap : CondFMRegions | undefined = (cond_fm_regions || []).find(region => region.type === 'finemap' || region.type === 'susie');
+    const finemappedCondRegion: string = `${finemap.chr}:${finemap.start}-${finemap.end}` || null;
 
-    useEffect(() => {
-        errorFinemapSusie && console.error(errorFinemapSusie)
-    }, [errorFinemapSusie])
-
-    useEffect(() => {
-        if (finemapSusieData) {
-            const data = finemapSusieData[0].data;
-            const cs = data.cs.filter((val, ind, arr) => arr.indexOf(val) == ind);
-            
-            cs.map(e => {
-                
-                const indices = indexOfAll([...data.cs], e);
-                const probs = indices.map(i => [...data.prob][i]);
-                const ind = getMaxIndex(probs);
-
-                setLeadVariants(arr => [...arr, {
-                    cs: e,
-                    csSize: indices.length, 
-                    prob: probs[ind], 
-                    varid: indices.map(i => [...data.rsid][i])[ind],
-                    chr: indices.map(i => [...data.chr][i])[ind],
-                    pos: indices.map(i => [...data.position][i])[ind],
-                    pheno: pheno
-                }]);
-
-            });
-        }
-    }, [finemapSusieData]);
+    const [showLeadvars, setShowLeadvars] = useState< {
+        susie: boolean;
+        finemap: boolean;
+        conditional: boolean;
+    }>({susie: false, finemap: false, conditional: false});
 
     useEffect(() => {
         const params = dataSources?.sources?.finemapping?.params as Params ;
@@ -103,46 +62,28 @@ const Component = (cond_fm_regions : cond_fm_regions_types, dataSources , plot) 
     const showFinemapping = (s : layout_types) => () => { 
         dataSources && plot &&  setSelectedMethod(s); 
     }
-
-    const leadVarsContent = leadVariants.map((key, i) => { 
-
-        const url: string = `/region/${key.pheno}/${key.chr}:${Math.max(key.pos - 200 * 1000, 0)}-${key.pos + 200 * 1000}`;
-
+          
+    const signalLabel = (region : CondFMRegions) => {
         return (
-            <div style={{ marginLeft: "7px"}}>
-                <ReactTooltip 
-                className="tooltip-lead-vars"
-                id='tooltip-lead-vars' 
-                html={true}
-                arrowColor="#F4F4F4"
-                effect='solid'/>
-                <a href={url}><span data-tip={
-                    `<div style={{display: "flex", flexDirection: "column"}}>
-                        <span>
-                        <b>CS:</b> ${key.cs}<br>
-                        <b>CS specific prob:</b> ${key.prob}<br>
-                        <b>CS size:</b> ${key.csSize}</span>
-                    </div>`
-                } data-for="tooltip-lead-vars">{key.varid}</span></a>
+            <Fragment>
+            <div className="flex-row-container">
+            <div className="arrow-container">
+                <div className={`arrow ${showLeadvars[region.type] ? "up" : "down"}`} onClick={() => setShowLeadvars(prev => ({...prev, [region.type]: !showLeadvars[region.type]})) }></div>
             </div>
-        )
+            {
+                region.type !== 'finemap' ?
+                <Fragment>
+                    <span>{region.n_signals} {region.type} signals </span><br/>
+                </Fragment> 
+                : <Fragment>
+                    <span>{region.n_signals} {region.type} signals (prob. {region.n_signals_prob.toFixed(3)})</span>
+                </Fragment>
+            }
+            </div> 
+            <LeadVariants type={region.type} show={showLeadvars[region.type]}/> 
+            </Fragment>
+            )
         }
-    )
-
-    const signalLabel = (region : CondFMRegions) => region.type !== 'finemap' ?
-        <Fragment>
-            <span>{region.n_signals} {region.type} signals </span><br/>
-            { leadVariants.length > 0 && region.type !== 'conditional' ? 
-                <span style={{display: "flex", flexDirection: "row"}}>Lead variants: { 
-                    leadVarsContent.slice(1).reduce(function(xs, x, i) {
-                        return (xs.concat([(<span>,</span>), x]));
-                    }, [leadVarsContent[0]])
-                    }</span> 
-                : null 
-            } </Fragment> 
-        : <Fragment>
-            <span>{region.n_signals} {region.type} signals in finemapping region <b>{finemappedRegion}</b> (prob. {region.n_signals_prob.toFixed(3)})</span>
-        </Fragment>
           
     const conditionalLabel = (i : number) => <button onClick={showConditional(i)}
                                                      key={i}
@@ -155,7 +96,8 @@ const Component = (cond_fm_regions : cond_fm_regions_types, dataSources , plot) 
     let summaryHTML =
 
     <Fragment>
-            
+          
+          <span>Finemapping/conditional region: <b>{finemappedCondRegion}</b></span>
           { cond_fm_regions.map((region,i) => <div key={i}>{  signalLabel(region) }</div>)}
 
           {n_cond_signals > 0 ?

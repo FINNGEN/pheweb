@@ -355,7 +355,7 @@ class ServerJeeves(object):
                     d['data']['fin_enrichment'].append('Unknown')
         return datalist
 
-    def get_conditional_regions_for_pheno(self, phenocode, chr, start, end, p_threshold=None):
+    def get_conditional_regions_for_pheno(self, phenocode, chr, start, end, p_threshold=None, add_anno=True):
         if p_threshold is None:
             p_threshold = self.conf.locuszoom_conf['p_threshold']
         regions = self.finemapping_dao.get_regions_for_pheno('conditional', phenocode, chr, start, end)
@@ -396,7 +396,7 @@ class ServerJeeves(object):
         print(f'Region data taken for  {chr} {start} {end}')
         print("reading conditional files took {} seconds".format(time.time()-t ) )
         t = time.time()
-        if len(ret) > 0:
+        if len(ret) > 0 and add_anno:
             #self.add_annotations(chr, min_start, max_end, ret)
             ret = self.add_annotations(chr, start, end, ret)
             print("adding annotations to {} conditional results took {} seconds".format(len(ret), time.time()-t ) )
@@ -405,8 +405,8 @@ class ServerJeeves(object):
     def get_finemapped_region_boundaries_for_pheno(self, fm_type, phenocode, chrom, start, end):
         return self.finemapping_dao.get_regions_for_pheno(fm_type, phenocode, chrom, start, end) if self.finemapping_dao is not None else None
 
-    def get_finemapped_regions_for_pheno(self, phenocode, chr, start, end, type, prob_threshold=-1):
-        regions = self.finemapping_dao.get_regions_for_pheno(type, phenocode, chr, start, end)
+    def get_finemapped_regions_for_pheno(self, phenocode, chr, start, end, prob_threshold=-1, add_anno=True):
+        regions = self.finemapping_dao.get_regions_for_pheno('finemapping', phenocode, chr, start, end)
         ret = []
         min_start = 1e30
         max_end = -1
@@ -451,11 +451,10 @@ class ServerJeeves(object):
                 ret.append({'type': region['type'], 'data': data, 'lastpage': None})
             else:
                 print('UNSUPPORTED REGION TYPE: ' + region['type'])
-
         #self.add_annotations(chr, min_start, max_end, ret)
-        if type != 'susie':
+        if add_anno:
             self.add_annotations(chr, start, end, ret)
-        
+                
         return ret
 
     def get_max_finemapped_region(self, phenocode, chrom, start, end):

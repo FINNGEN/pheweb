@@ -85,13 +85,3 @@ export interface Region {
 	readonly cond_fm_regions: cond_fm_regions_types;
 	readonly region: string;
 }
-
-export interface LeadVariant {
-    varid: string;
-	prob: number;
-    cs: number;
-    csSize: number;
-    chr: string;
-    pos: number;
-	pheno: string;
-}

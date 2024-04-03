@@ -42,8 +42,8 @@ const ColocalizationContextProvider = ({ params , children} :  Props) => {
 
     useEffect(() => {
         const parameter : RegionParams<Locus>| undefined = createParameter(params);
-        const finemapRegion : CondFMRegions | undefined = (region?.cond_fm_regions || []).find(element => element.type === 'finemap');
-        region && getSearchResults(
+        const finemapRegion : CondFMRegions | undefined = (region?.cond_fm_regions || []).find(element => element.type === 'finemap' || element.type === 'susie');
+        finemapRegion && getSearchResults(
             {locus: { ...finemapRegion, chromosome: finemapRegion.chr, stop: finemapRegion.end}, 
             phenotype: params?.phenotype}, setColocalization);
         getLocusZoomData(parameter, setLocusZoomData);

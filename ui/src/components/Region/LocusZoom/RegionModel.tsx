@@ -85,3 +85,43 @@ type VariationLOC = {
 }
 
 }
+
+
+export namespace FinemapData {
+
+    export interface Result {
+        id: string[];
+        varid?: string[];
+        chr: string[];
+        position: number[];
+        end: number[];
+        alt: number[];
+        ref: number[];
+        cs?: number[];
+        prob?: number[];
+        pvalue?: number[];
+        index?: number[];
+        maf?: number[];
+        rsid?: string[];
+        beta?: number[];
+        sebeta?: number[];
+    }
+    
+    export interface Data {
+        conditioned_on?: string;
+        data: Result;
+        type: string;
+        lastpage: unknown;
+    }
+
+    export interface LeadVariant {
+        cs?: string|number;
+        conditioned_on?: string;
+        cs_size?: number;
+        cs_specific_prob?: number;
+        pvalue?: number;
+        region_url: string;
+        varid: string;
+    }
+    
+}

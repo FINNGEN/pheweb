@@ -2,6 +2,7 @@ import { Region, RegionParams } from "./RegionModel";
 import { get, Handler } from "../../common/commonUtilities";
 import { resolveURL } from "../Configuration/configurationModel";
 import { Locus } from "../../common/commonModel";
+import { FinemapData } from "./LocusZoom/RegionModel";
 
 /**
  * Given a colocalization parameter
@@ -27,21 +28,22 @@ export const getRegion = (parameter: RegionParams<Locus> | undefined,
 
 
 
-export const finemap_url = (urlPartial : string, region: string) : string => {
+export const get_finemap_cond_region_url = (region: string, type: string, pheno: string) : string => {
     const chr = region.split(":")[0];
     const start = Number(region.split(":")[1].split("-")[0]);
-    const end = Number(region.split(":")[1].split("-")[1])
-    const url: string = `${urlPartial}results/?filter=analysis in 3 and chromosome in '${chr}' and position ge ${start} and position le ${end}&type=susie`;
-    return (url)
+    const end = Number(region.split(":")[1].split("-")[1]);
+    const url: string = `/api/${type === 'finemapping' ? 'finemapped_region' : 'conditional_region'}/${pheno}/lz-results/?` + new URLSearchParams({
+        filter: `analysis in 3 and chromosome in '${chr}' and position ge ${start} and position le ${end}`, 
+        add_anno: 'false'});
+    return (url);
 }
 
 
-export const getFinemapSusieData = ( 
-    urlPartial: string, 
+export const getFinemapCondData = ( 
     region: string,
-    sink: (s: any) => void,
-    setError: (s: string | null) => void,
+    type: string,
+    pheno: string,
+    sink: (s: FinemapData.Data[]) => void,
     getURL = get) => { 
-        const handler : Handler = (url : string) => (e : Error) => setError(`finemap susie data ${e.message}`);
-        getURL<any>(finemap_url(urlPartial, region),sink, handler)
+        getURL<any>(resolveURL(get_finemap_cond_region_url(region, type, pheno)), sink)
     };

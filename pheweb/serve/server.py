@@ -324,18 +324,15 @@ def api_region_page(phenocode, region):
     chrom = chr_se[0]
     chrom = 23 if str(chrom) == 'X' else int(chrom)
     start_end = jeeves.get_max_finemapped_region(phenocode, chrom, chr_se[1].split('-')[0], chr_se[1].split('-')[1])
-
     if start_end is not None:
         cond_fm_regions = jeeves.get_finemapped_region_boundaries_for_pheno('all', phenocode, chrom, int(chr_se[1].split('-')[0]), int(chr_se[1].split('-')[1]))
     else:
         cond_fm_regions = []
     print(cond_fm_regions)
-
     pheno['phenocode'] = phenocode
     data = { 'pheno' : pheno ,
              'region' : region,
              'cond_fm_regions' : cond_fm_regions }
-             
     return jsonify(data)
 
 @app.route('/api/region/<phenocode>/lz-results/') # This API is easier on the LZ side.
@@ -351,28 +348,30 @@ def api_region(phenocode : str,filter_param = None):
     return jsonify(rv)
 
 @app.route('/api/conditional_region/<phenocode>/lz-results/')
-def api_conditional_region(phenocode, filter_param : Optional[str] = None):
+def api_conditional_region(phenocode, filter_param : Optional[str] = None, add_anno_param: Optional[str] = None):
     if phenocode not in use_phenos:
         abort(404)
     if filter_param is None:
         filter_param=request.args.get('filter')
+    if add_anno_param is None:
+        add_anno_param = request.args.get('add_anno', 'true').lower() == 'true'
     groups = re.match(r"analysis in 3 and chromosome in +'(.+?)' and position ge ([0-9]+) and position le ([0-9]+)", filter_param).groups()
     chrom, pos_start, pos_end = groups[0], int(groups[1]), int(groups[2])
-    rv = jeeves.get_conditional_regions_for_pheno(phenocode, chrom, pos_start, pos_end)
+    rv = jeeves.get_conditional_regions_for_pheno(phenocode, chrom, pos_start, pos_end, add_anno=add_anno_param)
     return jsonify(rv)
 
 @app.route('/api/finemapped_region/<phenocode>/lz-results/')
-def api_finemapped_region(phenocode : str, filter_param : Optional[str] = None, type_param: Optional[str] = None):
+def api_finemapped_region(phenocode : str, filter_param : Optional[str] = None, add_anno_param: Optional[str] = None):
     if phenocode not in use_phenos:
         abort(404)
     if filter_param is None:
         filter_param=request.args.get('filter')
-    if type_param is None:
-        type_param = request.args.get('type', "finemapping")
+    if add_anno_param is None:
+        add_anno_param = request.args.get('add_anno', 'true').lower() == 'true'
     groups = re.match(r"analysis in 3 and chromosome in +'(.+?)' and position ge ([0-9]+) and position le ([0-9]+)", filter_param).groups()
     chrom, pos_start, pos_end = groups[0], int(groups[1]), int(groups[2])
     chrom = 23 if str(chrom) == 'X' else int(chrom)
-    rv = jeeves.get_finemapped_regions_for_pheno(phenocode, chrom, pos_start, pos_end, type=type_param, prob_threshold=conf.locuszoom_conf['prob_threshold'])
+    rv = jeeves.get_finemapped_regions_for_pheno(phenocode, chrom, pos_start, pos_end, prob_threshold=conf.locuszoom_conf['prob_threshold'], add_anno=add_anno_param)
     return jsonify(rv)
 
 @app.route('/api/gene_pqtl_colocalization/<genename>')
