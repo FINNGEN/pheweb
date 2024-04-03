@@ -46,16 +46,16 @@ const LeadVariants = (props: { type: string, show: boolean} ) => {
                 const groups: Array<string|number> = element.data.cs.filter((val, ind, arr) => arr.indexOf(val) == ind);
                 groups.forEach(g => {
 
-                    const csIndices = indexAll([...element.data.cs], g);
-                    const ind: number = getMaxIndex(element.data.prob); 
-                    const chr: string = csIndices.map(i => [...element.data.chr][i])[ind];
-                    const pos: number = Number(csIndices.map(i => [...element.data.position][i])[ind]);
-
+                    const csIndices: Array<number> = indexAll(element.data.cs, g);
+                    const probs: Array<number> = csIndices.map(i => element.data.prob[i]);
+                    const ind: number = getMaxIndex(probs); 
+                    const chr: string = csIndices.map(i => element.data.chr[i])[ind];
+                    const pos: number = Number(csIndices.map(i => element.data.position[i])[ind]);
                     result.push({
-                        cs_specific_prob: numberFormatter(csIndices.map(i => [...element.data.prob][i])[ind]),
+                        cs_specific_prob: numberFormatter(probs[ind]),
                         cs: g, 
                         cs_size: csIndices.length,
-                        varid:  csIndices.map(i => [...element.data.id][i])[ind].replaceAll('/', ':').replaceAll('_', ':'),
+                        varid:  csIndices.map(i => element.data.id[i])[ind].replaceAll('/', ':').replaceAll('_', ':'),
                         region_url: `/region/${pheno}/${chr}:${Math.max(pos - 200 * 1000, 0)}-${pos + 200 * 1000}`
                     });
                     
