@@ -1,8 +1,6 @@
 import React, { Fragment, useContext, useEffect, useState } from "react";
 import { cond_fm_regions_types, CondFMRegions, layout_types, Params } from "../RegionModel";
 import { RegionContext, RegionState } from "../RegionContext";
-import { async } from "q";
-import { setData } from "../../Chip/features/chipTableSlice";
 import LeadVariants from './LeadVariants'
 
 
