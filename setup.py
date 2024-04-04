@@ -90,5 +90,7 @@ setup(
     ],
     tests_require=[
         'pytest~=3.4',
+        'selenium~=4.6.1',
+        'testcontainers~=3.7.1'
     ],
 )
