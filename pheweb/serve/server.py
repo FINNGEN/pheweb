@@ -6,7 +6,7 @@ from .auth import GoogleSignIn
 from ..version import version as pheweb_version
 from typing import Optional
 from flask import Blueprint
-
+from text_utils import text_to_boolean
 from .data_access.db import Variant
 
 from flask import Flask, jsonify, render_template, request, redirect, abort, flash, current_app, send_from_directory, send_file, session, url_for,make_response
@@ -280,7 +280,8 @@ def api_gene_functional_variants(gene):
     pThreshold=1.1
     if ('p' in request.args):
         pThreshold= float(request.args.get('p'))
-    annotations = jeeves.gene_functional_variants(gene, pThreshold)
+    use_aliases = text_to_boolean(request.args.get('use_aliases', ''))
+    annotations = jeeves.gene_functional_variants(gene, pThreshold, use_aliases=use_aliases)
     for anno in annotations:
         anno['significant_phenos'] = [pheno for pheno in anno['significant_phenos'] if pheno.phenocode in use_phenos]
     return jsonify(annotations)

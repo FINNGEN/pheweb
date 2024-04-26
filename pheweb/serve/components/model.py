@@ -106,7 +106,7 @@ class CompositeCheck(ComponentCheck):
     
     def __init__(self,
                  checks : Optional[List[ComponentCheck]]=None,
-                 max_checks : int = None):
+                 max_checks : Optional[int] = None):
         # wraped in list
         self.subset=[lambda x : x] if max_checks is None else [stateful_sublist(max_checks)]
         self.checks=checks if checks is not None else []

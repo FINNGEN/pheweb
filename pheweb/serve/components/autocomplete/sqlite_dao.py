@@ -8,7 +8,8 @@ import re
 import copy
 import sqlite3
 from pheweb.serve.components.model import ComponentStatus
-from typing import List,Dict,Optional,Iterator
+from typing import List,Dict,Optional,Iterator,Set
+from contextlib import closing
 
 import logging
 logger = logging.getLogger(__name__)
@@ -27,7 +28,66 @@ logger.setLevel(logging.DEBUG)
 
 def get_sqlite3_readonly_connection(filepath:str):
     # `check_same_thread=False` lets WSGI work. Readonly makes me feel better about disabling `check_same_thread`.
-    return sqlite3.connect('file:{}?mode=ro'.format(urllib.parse.quote(filepath)), uri=True, check_same_thread=False)
+    connection = sqlite3.connect('file:{}?mode=ro'.format(urllib.parse.quote(filepath)), uri=True, check_same_thread=False)
+    connection.row_factory = sqlite3.Row
+    return connection
+    
+class GeneAliasesSqliteDAO:
+    """
+    A data access object (DAO) that provides methods for
+    interacting with a SQLite database to retrieve gene aliases.
+
+    This DAO facilitates the retrieval of canonical names for gene
+    aliases from a SQLite database configured in read-only
+    mode. It assumes that the database schema contains a table
+    `gene_aliases` with the relevant data.
+
+    Attributes:
+    connection (sqlite3.Connection): A SQLite connection object in
+    read-only mode to interact with the database.
+
+    :param filepath: The path to the SQLite database file.
+    """
+
+    def __init__(self, *, filepath: str):
+        """
+        Initializes the GeneAliasesSqliteDAO with a logging of the class name and filepath,
+        and sets up a read-only connection to the SQLite database.
+
+        :param filepath: The file path to the SQLite database.
+        """
+        logger.info(f"autocomplete:{GeneAliasesSqliteDAO.__name__}")
+        logger.info(f"filepath:{filepath}")
+        self.connection = get_sqlite3_readonly_connection(filepath)
+
+    def get_gene_aliases(self, gene: str) -> Set[str]:
+        """
+        Retrieves a set of canonical gene names associated with a given alias from the database.
+
+        This method queries the database for canonical gene names that match the provided alias, either
+        exactly or in uppercase form. It returns a set of these names. If no matches are found, an empty
+        set is returned.
+
+        :param gene: The gene alias to query for. The query will match this alias exactly or in uppercase.
+
+        :return: A set of canonical gene names associated with the provided alias. Returns an empty set
+        if no matches are found.
+
+        Examples:
+        >>> dao.get_gene_aliases("101F10.1")
+        {'KNOP1'}
+        """
+        aliases=set()
+        with closing(self.connection.cursor()) as cursor:
+            sql = """
+                SELECT canonicals_comma 
+                FROM gene_aliases 
+                WHERE alias=? or alias=upper(?)
+                """
+            cursor.execute(sql, [gene, gene])
+            for row in cursor.fetchall():
+                aliases.update(row["canonicals_comma"].split(","))
+        return aliases
 
 class AutocompleterSqliteDAO(AutocompleterDAO):
     def __init__(self,

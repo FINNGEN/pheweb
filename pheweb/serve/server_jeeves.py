@@ -44,12 +44,12 @@ class ServerJeeves(object):
         self.pqtl_colocalization = self.dbs_fact.get_pqtl_colocalization_dao()
         self.health_dao = self.dbs_fact.get_health_dao()
 
-    def gene_functional_variants(self, gene, pThreshold=None):
+    def gene_functional_variants(self, gene, pThreshold=None, use_aliases=None):
         if pThreshold is None:
             pThreshold = self.conf.report_conf["func_var_assoc_threshold"]
 
         startt = time.time()
-        func_var_annot = self.annotation_dao.get_gene_functional_variant_annotations(gene)
+        func_var_annot = self.annotation_dao.get_gene_functional_variant_annotations(gene, use_aliases=use_aliases)
         print(" gene functional variants took {}".format( time.time()-startt) )
         remove_indx =[]
         chrom,start,end = self.get_gene_region_mapping()[gene]
