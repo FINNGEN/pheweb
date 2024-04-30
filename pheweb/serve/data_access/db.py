@@ -1627,8 +1627,8 @@ class TabixAnnotationDao(AnnotationDB):
         if use_aliases is None:
             use_aliases = self._default_use_aliases
             
-        if self._gene_alias_doa is not None and use_aliases:
-            gene_aliases=self._gene_alias_doa.get_gene_aliases(gene)
+        if self._gene_alias_dao is not None and use_aliases:
+            gene_aliases=self._gene_alias_dao.get_gene_aliases(gene)
         else:
             gene_aliases=set()
         
