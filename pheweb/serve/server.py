@@ -60,6 +60,7 @@ log_d = {
     "CRITICAL":logging.CRITICAL,
 }
 logging.basicConfig(level=log_d.get(conf.get("logging_level"),logging.WARNING))
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__,
             # this is hack so this it doesn't get confused on the static subdirectory
@@ -576,9 +577,16 @@ if 'login' in conf:
                                     _external=True)
             return redirect(orig_dest)
 
+    def handle_login_error(message):
+        return make_response(render_template('login_error.html',
+                                             message=message,
+                                             redirect=url_for('get_authorized',
+                                                              _scheme='https',
+                                                              _external=True)), 401)
     @app.route('/callback/google')
     @is_public
     def oauth_callback_google():
+        humgen_link='<a href="mailto:humgen-servicedesk@helsinki.fi">humgen-servicedesk@helsinki.fi</a>'
         if not current_user.is_anonymous and verify_membership(current_user.email):
             return redirect(url_for('homepage',
                                     _scheme='https',
@@ -586,25 +594,24 @@ if 'login' in conf:
         try:
             username, email = google_sign_in.callback() # oauth.callback reads request.args.
         except Exception as exc:
-            print('Error in google_sign_in.callback():')
-            print(exc)
-            print(traceback.format_exc())
-            flash('Something is wrong with authentication. Please contact humgen-servicedesk@helsinki.fi')
-            return redirect(url_for('auth',
-                                    _scheme='https',
-                                    _external=True))
+            logging.exception(exc)
+            message=f"""Something is wrong with authentication.<br/> 
+                        If this issue persists, please reach 
+                        out to our support team at 
+                        {humgen_link} for assistance."""
+            return handle_login_error(message)
+
         if email is None:
             # I need a valid email address for my user identification
-            flash('Authentication failed by failing to get an email address.')
-            return redirect(url_for('auth',
-                                    _scheme='https',
-                                    _external=True))
+            message='Authentication failed by failing to get an email address.'
+            return handle_login_error(message)
 
         if not verify_membership(email):
-            flash('{!r} is not allowed to access FinnGen results. If you think this is an error, please contact humgen-servicedesk@helsinki.fi'.format(email))
-            return redirect(url_for('auth',
-                                    _scheme='https',
-                                    _external=True))
+            message=f"""'{email}' is not allowed to access FinnGen 
+                         results.<br/>
+                         If you think this is an error, please contact 
+                         {humgen_link} ."""
+            return handle_login_error(message)
 
         # Log in the user, by default remembering them for their next visit.
         user = User(username, email)
