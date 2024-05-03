@@ -1686,7 +1686,7 @@ class LofMySQLDao(LofDB):
         conn = self.get_connection()
         try:
             with conn.cursor(pymysql.cursors.DictCursor) as cursori:
-                sql = "SELECT * FROM {self.table_name} WHERE rel=%s AND p_value < %s"
+                sql = f"SELECT * FROM {self.table_name} WHERE rel=%s AND p_value < %s"
                 cursori.execute(sql, [self.release, p_threshold])
                 result = [{"gene_data": data} for data in cursori.fetchall()]
         finally:
