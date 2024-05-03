@@ -158,7 +158,7 @@ task annotation {
 	cat ${variant_list} | (if [[ "${variant_list}" == *.gz || "${variant_list}" == *.bgz ]]; then zcat ; else cat ; fi) > pheweb/generated-by-pheweb/sites/sites-unannotated.tsv
 
  	cd pheweb
-        [[ -z "${bed_file}" ]] && pheweb download-genes 
+        [[ -z "${bed_file}" ]] && pheweb download-genes
         df -h && pheweb add-rsids
         [[ -z "${bed_file}" ]] && pheweb add-genes || pheweb add-genes --genes-filepath /root/.pheweb/cache/genes-b38-v${gene_version}.bed
         df -h && pheweb make-cpras-rsids-sqlite3
@@ -207,7 +207,7 @@ task webdav_directories {
 
     for url in ${sep="\t" output_url}; do
 
-    if [ "$url" = http* ]; then
+    if [[ "$url" = http* ]]; then
       # we ignore failures as directories may alread by created
       curl -X MKCOL "$url/generated-by-pheweb/" || true
       curl -X MKCOL "$url/generated-by-pheweb/sites/" || true
@@ -228,6 +228,7 @@ task webdav_directories {
         disks: "local-disk 100 HDD"
         zones: "europe-west1-b"
         preemptible: 0
+	no_cache: "true"
     }
 }
 
@@ -564,6 +565,7 @@ task exec_cmd {
         disks: "local-disk 5 HDD"
         zones: "europe-west1-b"
         preemptible: 0
+	no_cache: "true"
   }
   meta {
     volatile: "true"
@@ -573,18 +575,20 @@ task exec_cmd {
 }
 
 task filter_sumstat {
-
+    String file_affix
     File sumstat
     String docker
     String pheno_col
     Float pval_thres
     String columns
 
+    String base_name = sub(basename(sumstat), file_affix, "")
+    String pheno_name = sub(base_name, ".gz$", "")
     String fname_prefix = sub(basename(sumstat), ".gz", "")
     Int disk_size = ceil(size(sumstat, "GB") * 3) + 5
 
     command <<<
-    
+
     set -euxo pipefail
 
     # input:  a (gzipped) tab-delimited sumstat uri
@@ -592,15 +596,17 @@ task filter_sumstat {
     #
     # filters the sumstat to p-values below the given threshold (threshold can be 1 for no filtering)
     # sort order in the output will be chromosome, position, alleles and pheno
-    # 
+    #
     # possible chr prefix will be removed, possible 23 will be changed to X
 
     catcmd() {
         zcat -f ${sumstat}
     }
-    pheno=`basename ${sumstat} | sed 's/.gz$//'`    
+
+
+
     catcmd() {
-        zcat -f ${sumstat} | awk -v pheno=$pheno -v col=${pheno_col} 'BEGIN {FS=OFS="\t"} NR==1 {print col,$0} NR>1 {print pheno,$0}'
+        zcat -f ${sumstat} | awk -v pheno=${pheno_name} -v col=${pheno_col} 'BEGIN {FS=OFS="\t"} NR==1 {print col,$0} NR>1 {print pheno,$0}'
     }
 
     catcmd | awk -v columns="${columns}"  '
@@ -633,7 +639,7 @@ task filter_sumstat {
     uniq | \
     bgzip > ${fname_prefix}.filtered.tsv.gz
 
-    >>>    
+    >>>
 
     output {
         File out = "${fname_prefix}.filtered.tsv.gz"
@@ -677,7 +683,7 @@ task get_phenolist {
         pheweb phenolist glob generated-by-pheweb/pheno_gz/* && \
         pheweb phenolist extract-phenocode-from-filepath --simple
 
-    >>>    
+    >>>
 
     output {
         File phenolist = "pheweb/pheno-list.json"
@@ -723,7 +729,7 @@ task matrix_longformat {
 
     find "/cromwell_root/$in_dir" -name "*.tsv.gz" | xargs -P $n_cpu -I{} gzip -d --force {}
     find "/cromwell_root/$in_dir" -name "*.tsv" | tr '\n' '\0' > merge_these
-    
+
     echo `date` merge
     time \
     cat \
@@ -751,7 +757,7 @@ task matrix_longformat {
 
     echo `date` end
 
-    >>>    
+    >>>
 
     runtime {
         docker: "${docker}"
@@ -833,7 +839,7 @@ workflow import_pheweb {
 	}
 
     if (!generate_longformat_matrix) {
-        call matrix { 
+        call matrix {
             input: sites=annotation.sites_list ,
                    pheno_gz=pheno.pheno_gz,
                    manhattan=pheno.pheno_manhattan,
@@ -856,7 +862,8 @@ workflow import_pheweb {
 
         scatter (file in preprocess.out_file) {
             call filter_sumstat{
-                input: sumstat = file,
+                input: file_affix = file_affix,
+		       sumstat = file,
                        pval_thres = pval_thres,
                        docker = docker
             }
@@ -869,7 +876,7 @@ workflow import_pheweb {
                     docker = docker
         }
     }
-    
+
     File phenolist = select_first([get_phenolist.phenolist, matrix.phenolist])
 
 	call fix_json{
