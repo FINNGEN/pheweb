@@ -19,7 +19,7 @@ from ...file_utils import MatrixReader, common_filepaths
 from ...utils import get_phenolist, get_gene_tuples, pvalue_to_mlogp, get_use_phenocode_pheno_map
 from ..components.health.health_check import default_dao as health_default_dao, HealthSimpleDAO, HealthNotificationDAO, HealthTrivialDAO
 from pheweb.serve.components.autocomplete.sqlite_dao import GeneAliasesSqliteDAO
-
+from pheweb.serve.data_access.gene_info import NCBIGeneInfoDao
 from collections import namedtuple
 import requests
 import importlib
@@ -207,16 +207,6 @@ class PhenoResults(JSONifiable):
 
     def json_rep(self):
         return self.__dict__
-
-
-class GeneInfoDB(object):
-    @abc.abstractmethod
-    def get_gene_info(self, symbol):
-        """Retrieve gene basic info given gene symbol.
-        Args: symbol gene symbol
-        Returns: dictionary with elements 'description': short desc, 'summary':extended summary, 'maploc':chrmaplos   'start': startpb 'stop': stopbp
-        """
-        return
 
 
 class ExternalResultDB(object):
@@ -462,47 +452,6 @@ class MichinganGWASUKBBCatalogDao(KnownHitsDB):
         normalize_string = re.sub("\\\\u\d+", "", decode_string)
         rep = json.loads(normalize_string)
         return rep["data"]
-
-
-class NCBIGeneInfoDao(GeneInfoDB):
-    def __init__(self):
-        pass
-
-    def get_gene_info(self, symbol):
-        r = requests.get(
-            "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=gene&term="
-            + symbol
-            + "[gene])%20AND%20(Homo%20sapiens[orgn])%20AND%20alive[prop]%20NOT%20newentry[gene]&sort=weight&retmode=json"
-        )
-
-        ret = r.json()["esearchresult"]
-        if "ERROR" in ret:
-            raise Exception(
-                "Error querying NCBI. Error:" + ret["esearchresult"]["ERROR"]
-            )
-        if ret["count"] == 0:
-            raise Exception("Gene: " + symbol + " not found in NCBI db")
-        id = ret["idlist"][0]
-        r = requests.get(
-            "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=gene&id="
-            + id
-            + "&retmode=json"
-        )
-        rep = r.json()
-        if "result" not in rep:
-            raise Exception("Could not access NCBI gene summary. Response:" + str(rep))
-        data = rep["result"][id]
-        ## chr stop seems to be missing from top level annotation
-        loc = list(
-            filter(lambda x: x["annotationrelease"] == "109", data["locationhist"])
-        )[0]
-        return {
-            "description": data["description"],
-            "summary": data["summary"],
-            "start": data["chrstart"],
-            "stop": loc["chrstop"],
-            "maploc": data["maplocation"],
-        }
 
 
 class ElasticAnnotationDao(AnnotationDB):

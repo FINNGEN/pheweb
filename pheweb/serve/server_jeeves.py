@@ -173,6 +173,8 @@ class ServerJeeves(object):
 
     def get_gene_data(self, gene):
         try:
+            print(gene)
+            print(self.dbs_fact.get_geneinfo_dao)
             gene_data = self.dbs_fact.get_geneinfo_dao().get_gene_info(gene)
         except Exception as exc:
             print("Could not fetch data for gene {!r}. Error: {}".format(gene,traceback.extract_tb(exc.__traceback__).format() ))
@@ -481,10 +483,9 @@ class ServerJeeves(object):
     def get_best_phenos_by_gene(self, gene):
         chrom,start,end = self.get_gene_region_mapping()[gene]
         results = self.result_dao.get_top_per_pheno_variant_results_range(chrom, start, end)
-        if 'pval' in results.assoc:
-            phenolist = [r.assoc.phenocode for r in results if r.assoc.pval < 1e-08]
-        else:
-            phenolist = [r.assoc.phenocode for r in results if r.assoc.mlogp > 16.8]
+        phenolist_pval = [r.assoc.phenocode for r in results if hasattr(r.assoc, 'pval') and r.assoc.pval < 1e-08]
+        phenolist_mlogp = [r.assoc.phenocode for r in results if hasattr(r.assoc, 'mlogp') and r.assoc.mlogp > 16.8]
+        phenolist = phenolist_pval + phenolist_mlogp
         return phenolist
 
     def get_autoreport(self, phenocode) -> List[Dict[str,Union[str,int,float,bool]]] :
