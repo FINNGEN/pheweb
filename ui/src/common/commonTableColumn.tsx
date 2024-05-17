@@ -2,7 +2,7 @@ import { Column, HeaderProps, Renderer } from "react-table";
 import React from "react";
 import ReactDOMServer from "react-dom/server";
 import { variantFromStr, variantToPheweb, variantToStr } from "./commonModel";
-import { scientificFormatter, shortNumberFormatter } from "./commonFormatter";
+import { scientificFormatter, shortNumberFormatter, decimalFormatter } from "./commonFormatter";
 import { LabelKeyObject , Headers } from "react-csv/components/CommonPropTypes";
 import matchSorter from 'match-sorter';
 import { string } from 'purify-ts';
@@ -171,7 +171,7 @@ const finnGenPhenotypeCellRow = ({ beta , pval, phenocode, phenostring} : Functi
   const body = <tr className={"gene_func_var_tab"} key={phenocode}>
     <td className={"gene_func_var_row"} style={{ width : "100px"}}>
       { arrow }
-      OR {scientificFormatter(beta)}<br/>
+      beta {decimalFormatter(beta)}<br/>
       p-val {scientificFormatter(pval)}
     </td>
     <td>
@@ -945,7 +945,7 @@ const phenotypeColumns = {
 
     finEnrichmentText:
       {
-        Header: () => (<span title="AF enrichment FIN / Non-Finnish-non-Estonian European"
+        Header: () => (<span title="AF enrichment FIN / Non-Finnish European"
                              style={{ textDecoration: "underline" }}>FIN enrichment</span>),
         accessor: "fin_enrichment",
         filterMethod: numberFilter,
@@ -957,7 +957,7 @@ const phenotypeColumns = {
 
     finEnrichment:
       {
-        Header: () => (<span title="AF enrichment FIN / Non-Finnish-non-Estonian European"
+        Header: () => (<span title="AF enrichment FIN / Non-Finnish European"
                              style={{ textDecoration: "underline" }}>FIN enrichment</span>),
         accessor: "fin_enrichment",
         filterMethod: (filter, row) => row[filter.id] > +filter.value,

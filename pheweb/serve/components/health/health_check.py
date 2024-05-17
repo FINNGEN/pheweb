@@ -6,6 +6,8 @@ import requests
 from pheweb.serve.components.model import ComponentStatus, total_check
 from pheweb.serve.components.health.dao import HealthDAO, HealthSummary
 from pheweb.serve.components.health.service import get_status_check
+from datetime import datetime, timedelta
+from typing import Callable, Optional
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -26,13 +28,67 @@ class HealthTrivialDAO(HealthDAO):
     def get_status(self, ) -> ComponentStatus:
         return ComponentStatus(True, [])
 
+def timed_selector(minutes: Optional[int] = None,
+                   now: Callable[[], datetime] = lambda: datetime.now()) -> Callable[[Callable[[], any], Callable[[], any]], any]:
+    """
+    Creates and returns a selector function that decides between two actions based on time elapsed.
+
+    The selector function, when called, executes and returns the result of one of two input functions (a or b)
+    depending on the time elapsed since the last time function a was executed. If the elapsed time is greater
+    than the specified 'minutes', or if 'minutes' is None (indicating no time restriction), function a is executed.
+    Otherwise, function b is executed. The time of the last execution of function a is internally tracked.
+
+    Args:
+        minutes (int, optional): The minimum number of minutes that must elapse between successive executions of
+                                 function a. If None, function a is executed without time restriction. Defaults to None.
+        now (callable, optional): A function that returns the current time. This parameter primarily exists to facilitate
+                                  testing with a fixed or mock time. Defaults to `datetime.now`.
+
+    Returns:
+        callable: A function that takes two callables (a and b) as its arguments. When called, it selects and executes
+                  either a or b based on the elapsed time since the last execution of a as determined by the 'minutes' parameter.
+
+    Example:
+        def action_a():
+            return "Action A executed"
+
+        def action_b():
+            return "Action B executed"
+
+        # Create a timed selector with a 5-minute restriction between executions of action_a
+        selector = timed_selector(minutes=5)
+
+        # Immediately executing action_a because it's the first call
+        print(selector(action_a, action_b))  # Outputs: "Action A executed"
+
+        # Subsequent calls within 5 minutes will execute action_b
+        # If called after 5 minutes, action_a will be executed again.
+    """
+    state = [None]
+
+    def f(a, b):
+        nonlocal state
+        last_call_time=state[0]
+        current_time = now()
+        if minutes is None:
+            return a()
+        elif last_call_time is None or current_time - last_call_time > timedelta(minutes=minutes):
+            state[0] = current_time
+            return a()
+        else:
+            return b()
+        
+    return f
 
 class HealthSimpleDAO(HealthTrivialDAO):
     """
     This is a simple check that always returns
     the normal checks.
     """
-
+    def __init__(self, minutes=30):
+        self.minutes=minutes
+        self.selector=[timed_selector(minutes)]
+        
     def get_summary(self, ) -> HealthSummary:
         """
         Run the health check and return
@@ -42,11 +98,15 @@ class HealthSimpleDAO(HealthTrivialDAO):
 
         :returns a dictionary with the service statuses
         """
-        checks = get_status_check()
-        messages = dict(map(lambda c: (c.get_name(), total_check(c)), checks))
-        is_okay = all(message.is_okay for message in messages.values())
-        return HealthSummary(is_okay, messages)
-
+        def run_summary():
+            checks = get_status_check()
+            messages = dict(map(lambda c: (c.get_name(), total_check(c)), checks))
+            is_okay = all(message.is_okay for message in messages.values())
+            return HealthSummary(is_okay, messages)
+        def okay_summary():
+            return HealthSummary(True, {})
+        selector=self.selector[0]
+        return selector(run_summary, okay_summary)
 
 class HealthNotificationDAO(HealthSimpleDAO):
     """

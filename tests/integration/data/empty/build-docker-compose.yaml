@@ -1,0 +1,27 @@
+version: '3.7'
+
+services:
+  pheweb:
+    build:
+      context: ../../..
+      dockerfile: deploy/Dockerfile
+    volumes:
+      - .:/data/pheweb/test
+    environment:
+      PHEWEB_DIR: '/data/pheweb/test'
+    ports:
+      - "8080:8080"
+    networks:
+      - unit-test
+
+  selenium:
+    image: selenium/standalone-chrome:4.16.1
+    volumes:
+      - /dev/shm:/dev/shm
+    ports:
+      - "4444:4444"
+    networks:
+      - unit-test
+
+networks:
+  unit-test:

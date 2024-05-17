@@ -9,10 +9,15 @@ import ColocalizationContextProvider from "./Colocalization/ColocalizationContex
 import RegionSelection from "./RegionSelection";
 import { RouteComponentProps } from "react-router-dom";
 import { RegionParams } from "./RegionModel";
+import {setPageTitle} from "../../common/commonUtilities";
 
 type Props = RouteComponentProps<RegionParams>;
 
 const Region = (props : Props) => {
+    const {locus, phenotype} = props.match.params;
+    const title : string = `region ${locus} ${phenotype}`;
+    setPageTitle(title);
+
     return (
         <RegionContextProvider params={props.match.params}>
             <ColocalizationContextProvider params={props.match.params}>

@@ -1,6 +1,7 @@
 import React, { createContext, useEffect, useState } from "react";
 import { GeneParams, GenePhenotypes } from "./geneModel";
 import { getGenePhenotypes } from "./geneAPI";
+import {setPageTitle} from "../../common/commonUtilities";
 
 interface Props {
   readonly  children: React.ReactNode
@@ -23,11 +24,16 @@ export interface GeneState {
 
 export const GeneContext = createContext<Partial<GeneState>>({})
 
+export const createTitle = (gene : string, phenotype : string|undefined) => typeof phenotype === 'string'? `gene ${gene} ${phenotype}`:`gene ${gene}`;
+
 const GeneContextProvider = ({ params : { gene , phenotype }, children } : Props) => {
   const [genePhenotype, setGenePhenotype] = useState<GenePhenotypes.Data| undefined>(undefined);
   const [selectedPhenotype, setSelectedPhenotype] = useState<GenePhenotypes.Phenotype| undefined>(undefined);
   const [errorMessage, setErrorMessage] = useState<string| undefined>(undefined);
   const [selectedTab, setSelectedTab] = useState<number>(0)
+
+  const title : string = createTitle(gene, phenotype);
+  setPageTitle(title);
 
   useEffect(() => { getGenePhenotypes(gene,setGenePhenotype, setErrorMessage) },[gene, setGenePhenotype]);
   useEffect(() => {

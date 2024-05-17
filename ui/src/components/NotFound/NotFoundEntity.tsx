@@ -1,5 +1,5 @@
 import React from "react";
-import { mustacheDiv } from "../../common/commonUtilities";
+import {mustacheDiv, setPageTitle} from "../../common/commonUtilities";
 import { ConfigurationWindow } from "../Configuration/configurationModel";
 import { NotFoundReferentType } from "./notFoundModel";
 
@@ -21,6 +21,9 @@ const default_message_template: string = `
 const NotFoundEntity =
   (referentType: NotFoundReferentType) =>
   ({ location }: Props) => {
+    const title : string = 'notfound';
+    setPageTitle(title);
+
     const { config } = window;
     const query =
       (location?.search &&

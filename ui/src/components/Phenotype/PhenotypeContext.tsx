@@ -2,6 +2,7 @@ import React, { createContext, useEffect, useState } from "react";
 import { CredibleSet, PhenotypeParams, PhenotypeVariantData, QQ } from "./phenotypeModel";
 import { Phenotype } from "./../../common/commonModel";
 import { getUKBBN, getManhattan, getPhenotype, getCredibleSets, getQQ } from "./phenotypeAPI";
+import {setPageTitle} from "../../common/commonUtilities";
 
 export interface PhenotypeState {
   phenotypeVariantData : PhenotypeVariantData
@@ -23,6 +24,8 @@ interface Props { readonly  children: React.ReactNode ,
 
 const PhenotypeContextProvider = (props : Props) => {
   const phenotypeCode : string = props.params.pheno;
+  const title : string = `pheno ${phenotypeCode}`;
+  setPageTitle(title);
   const [selectedTab, setSelectedTab] = useState<number>(0)
   const [credibleSets, setCredibleSets] = useState<CredibleSet[]|undefined>(undefined)
   const [phenotypeVariantData, setPhenotypeVariantData] = useState<PhenotypeVariantData| undefined>(undefined);

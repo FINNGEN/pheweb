@@ -1,5 +1,7 @@
-import React from "react";
+import React, {useEffect} from "react";
 import * as Handlebars from "handlebars/dist/cjs/handlebars";
+
+
 
 /**
  * Compose fuction
@@ -32,17 +34,13 @@ const defaultHandler : Handler = (url : string) => (e : Error) => {
  * @param sink
  * @param fetchURL
  */
-export const get: <X>(url: string,
-                      sink: (x: X) => void,
-                      handler? :  Handler) => Promise<void> = (
-  url,
-  sink,
-  handler = defaultHandler
-) =>
-  fetch(url)
+export function get<X,Y = void>(url: string,
+                         sink: (x: X) => Y,
+                         handler :  Handler= defaultHandler) : Promise<void | Y> {
+  return fetch(url)
     .then((response) => {
       if (response.status === 200) {
-        return response.json();
+        return response.json() as Promise<X>;
       } else {
         const msg = `${response.statusText}`;
         throw new Error(msg);
@@ -50,6 +48,7 @@ export const get: <X>(url: string,
     })
     .then(sink)
     .catch(handler(url));
+};
 
 /**
  * Delete url
@@ -102,6 +101,16 @@ export const mustacheDiv: <X>(template: string, content: X) => JSX.Element = (
 );
 
 /**
+ * Set the title of the page.
+ *
+ * @param title
+ */
+export const setPageTitle = (title : string) : void => {
+    useEffect(() => {
+        document.title = title;
+    }, [title]);
+};
+/**
  * mustacheSpan
  *
  * return a span that contains as it's inner html
@@ -148,3 +157,5 @@ export const warn = (msg : string, context : {} ={}) : void =>{
  */
 export const flatten : <X>(a : X[][]) => X[] = (l) => l.reduce((a, v) =>a.concat(v),[]);
 export const defaultEmptyArray : <X,Y>(a : X[],defaultArray :Y[]) => (X|Y)[] = (a,defaultArray) => a.length == 0?defaultArray:a;
+
+export const isNonEmptyArray : <X>(value : X) => boolean = (value) => Array.isArray(value) && value.length > 0;

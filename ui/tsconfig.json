@@ -8,9 +8,9 @@
     "lib": [
       "dom",
       "es6",
+      "es2022",
       "scripthost",
-      "es2018.promise",
-      "es2018.RegExp"
+      "es2020.promise"
     ],
     "allowJs": true,
     "allowSyntheticDefaultImports": true,

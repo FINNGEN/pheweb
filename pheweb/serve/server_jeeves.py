@@ -44,20 +44,20 @@ class ServerJeeves(object):
         self.pqtl_colocalization = self.dbs_fact.get_pqtl_colocalization_dao()
         self.health_dao = self.dbs_fact.get_health_dao()
 
-    def gene_functional_variants(self, gene, pThreshold=None):
+    def gene_functional_variants(self, gene, pThreshold=None, use_aliases=None):
         if pThreshold is None:
             pThreshold = self.conf.report_conf["func_var_assoc_threshold"]
 
         startt = time.time()
-        func_var_annot = self.annotation_dao.get_gene_functional_variant_annotations(gene)
+        func_var_annot = self.annotation_dao.get_gene_functional_variant_annotations(gene, use_aliases=use_aliases)
         print(" gene functional variants took {}".format( time.time()-startt) )
         remove_indx =[]
         chrom,start,end = self.get_gene_region_mapping()[gene]
-        
+
         startt = time.time()
         ## if there are not many functional variants and gene is large it is better to get them one by one
         results = self.result_dao.get_variant_results_range( chrom, start, end )
-        
+
         # add rsids
         vars_anno = self.annotation_dao.get_variant_annotations_range(chrom, start, end, self.conf.anno_cpra)
         rsids = { v : v.annotation['annot']['rsid'] for v in vars_anno }
@@ -115,8 +115,8 @@ class ServerJeeves(object):
         start, end = pad_gene(start, end)
         starttime = time.time()
         results = self.result_dao.get_top_per_pheno_variant_results_range(chrom, start, end)
-        
-        # add rsids 
+
+        # add rsids
         vars_anno = self.annotation_dao.get_variant_annotations_range(chrom, start, end, self.conf.anno_cpra)
         rsids = {v : v.annotation['annot']['rsid'] for v in vars_anno }
         for r in results:
@@ -189,8 +189,7 @@ class ServerJeeves(object):
 
     def get_pheno_manhattan(self, phenocode) -> str:
         with open(common_filepaths['manhattan'](phenocode)) as f:
-            manhattan = f.read()
-            return manhattan
+            variants = json.load(f)
 
         vars = [ Variant( d['chrom'].replace("chr","").replace("X","23").replace("Y","24").replace("MT","25"), d['pos'], d['ref'], d['alt'] ) for d in variants['unbinned_variants'] if 'peak' in d ]
 
@@ -218,13 +217,13 @@ class ServerJeeves(object):
             if v in ukbbvars:
                 variant['ukbb'] = ukbbvars[v]
         return variants
-    
+
     def get_single_variant_pheno_data(self, variant: Variant, pheno: str):
         """
-            Returns summary statistics for a single variant and a single phenotype. 
+            Returns summary statistics for a single variant and a single phenotype.
         """
         variants = get_pheno_region(pheno, str(variant.chr), variant.pos, variant.pos)['data']
-        
+
         # get cols from results by get_pheno_region function and reaname
         cols = {'beta': 'beta', 'mlogp': 'mlogp', 'pvalue': 'pval', 'maf_cases': 'maf_case', 'maf_controls': 'maf_control'}
         if len(variants.items()) > 0:
@@ -356,7 +355,7 @@ class ServerJeeves(object):
                     d['data']['fin_enrichment'].append('Unknown')
         return datalist
 
-    def get_conditional_regions_for_pheno(self, phenocode, chr, start, end, p_threshold=None):
+    def get_conditional_regions_for_pheno(self, phenocode, chr, start, end, p_threshold=None, add_anno=True):
         if p_threshold is None:
             p_threshold = self.conf.locuszoom_conf['p_threshold']
         regions = self.finemapping_dao.get_regions_for_pheno('conditional', phenocode, chr, start, end)
@@ -397,7 +396,7 @@ class ServerJeeves(object):
         print(f'Region data taken for  {chr} {start} {end}')
         print("reading conditional files took {} seconds".format(time.time()-t ) )
         t = time.time()
-        if len(ret) > 0:
+        if len(ret) > 0 and add_anno:
             #self.add_annotations(chr, min_start, max_end, ret)
             ret = self.add_annotations(chr, start, end, ret)
             print("adding annotations to {} conditional results took {} seconds".format(len(ret), time.time()-t ) )
@@ -406,7 +405,7 @@ class ServerJeeves(object):
     def get_finemapped_region_boundaries_for_pheno(self, fm_type, phenocode, chrom, start, end):
         return self.finemapping_dao.get_regions_for_pheno(fm_type, phenocode, chrom, start, end) if self.finemapping_dao is not None else None
 
-    def get_finemapped_regions_for_pheno(self, phenocode, chr, start, end, prob_threshold=-1):
+    def get_finemapped_regions_for_pheno(self, phenocode, chr, start, end, prob_threshold=-1, add_anno=True):
         regions = self.finemapping_dao.get_regions_for_pheno('finemapping', phenocode, chr, start, end)
         ret = []
         min_start = 1e30
@@ -453,7 +452,9 @@ class ServerJeeves(object):
             else:
                 print('UNSUPPORTED REGION TYPE: ' + region['type'])
         #self.add_annotations(chr, min_start, max_end, ret)
-        self.add_annotations(chr, start, end, ret)
+        if add_anno:
+            self.add_annotations(chr, start, end, ret)
+                
         return ret
 
     def get_max_finemapped_region(self, phenocode, chrom, start, end):
@@ -477,7 +478,7 @@ class ServerJeeves(object):
     @functools.lru_cache(None)
     def get_gene_region_mapping(self):
         return {genename: (chrom, pos1, pos2) for chrom, pos1, pos2, genename in get_gene_tuples()}
-    
+
     @functools.lru_cache(None)
     def get_best_phenos_by_gene(self, gene):
         chrom,start,end = self.get_gene_region_mapping()[gene]
@@ -597,10 +598,10 @@ class ServerJeeves(object):
         values = [a for a in aggregated.values()]
 
         if missing_info:
-            
+
             #missing info, replace it from annotation file
             print("Warning: Missing INFO in autoreporting group variant table. Please update autoreporting mysql db with new import script.")
-            
+
             list_of_vars = []
             variants = list(set([a["variant"] for a in values]))
             for variant in variants:
@@ -634,4 +635,4 @@ class ServerJeeves(object):
     def get_colocalization_by_gene_name(self, gene_name: str):
         """ Get gene colocalization data """
         dat = self.pqtl_colocalization.get_gene_colocalization(gene_name) if self.pqtl_colocalization else dict()
-        return dat 
+        return dat

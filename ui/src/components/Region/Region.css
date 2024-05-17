@@ -27,3 +27,50 @@ svg.lz-locuszoom path.lz-highlight {
 div.lz-data_layer-tooltip th, div.lz-data_layer-tooltip td {
     padding: 2px;
 }
+
+.tooltip-lead-vars {
+    color: #000 !important;
+    border-color: #d4d4d4 !important;
+    border-style: solid !important;
+    background-color: #F4F4F4 !important;
+    border-radius: 5px  !important;
+    &.place-top {
+    &:after {
+    border-color:#d4d4d4 !important;
+    border-style: solid !important;
+    }
+    }
+}
+
+.flex-row-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.arrow-container {
+    width: 17px;
+    height: 17px;
+    padding-left: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: left;
+    flex-direction: row;
+}
+
+.arrow {
+    border: solid black;
+    border-width: 0 2px 2px 0;
+    display: inline-block;
+    padding: 2px;
+}
+
+.up {
+    transform: rotate(-135deg);
+    -webkit-transform: rotate(-135deg);
+}
+
+.down {
+    transform: rotate(45deg);
+    -webkit-transform: rotate(45deg);
+}

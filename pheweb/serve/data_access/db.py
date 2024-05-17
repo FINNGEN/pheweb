@@ -14,10 +14,11 @@ import pandas as pd
 import numpy as np
 import pymysql
 import imp
-from typing import List, Tuple, Dict, Union
+from typing import List, Tuple, Dict, Union, Optional
 from ...file_utils import MatrixReader, common_filepaths
 from ...utils import get_phenolist, get_gene_tuples, pvalue_to_mlogp, get_use_phenocode_pheno_map
 from ..components.health.health_check import default_dao as health_default_dao, HealthSimpleDAO, HealthNotificationDAO, HealthTrivialDAO
+from pheweb.serve.components.autocomplete.sqlite_dao import GeneAliasesSqliteDAO
 
 from collections import namedtuple
 import requests
@@ -282,7 +283,7 @@ class AnnotationDB(object):
         """
 
     @abc.abstractmethod
-    def get_gene_functional_variant_annotations(self, gene):
+    def get_gene_functional_variant_annotations(self, gene : str,  use_aliases : Optional[bool]):
         """Retrieve annotations of functional variants for a given gene.
         Args: gene gene symbol
         Returns: A list of dictionaries. Dictionary has 2 elements:
@@ -549,7 +550,7 @@ class ElasticAnnotationDao(AnnotationDB):
             for anno in annotation["hits"]["hits"]
         ]
 
-    def get_gene_functional_variant_annotations(self, gene):
+    def get_gene_functional_variant_annotations(self, gene : str, use_aliases : Optional[bool]):
         annotation = self.elastic.search(
             index=self.index,
             body={
@@ -682,10 +683,12 @@ class TabixGnomadDao(GnomadDB):
         t = time.time()
         ##print("There are {} active tabix handles for gnomad".format( len(self.tabix_handles)))
         tabix = pysam.TabixFile(self.matrix_path, parser=None)
+        header = [h.lower() for h in self.headers]
         for var_i, variant in enumerate(var_list):
             # print("There are {} active tabix handles for gnomad. Current pid {}".format( len(self.tabix_handles), os.getpid()))
 
             ### TODO get rid of this chr shit once the annotation files have been fixed
+
             fetch_chr = (
                 str(variant.chr)
                 .replace("23", "X")
@@ -698,12 +701,16 @@ class TabixGnomadDao(GnomadDB):
 
             for row in tabix_iter:
                 split = row.split("\t")
-                if split[3] == variant.ref and split[4] == variant.alt:
+                ref = split[header.index('ref')]
+                alt = split[header.index('alt')]            
+                if ref == variant.ref and alt == variant.alt:
                     for i, s in enumerate(split):
                         if (
                             self.headers[i].startswith("AF")
                             and split[i] != "NaN"
+                            and split[i] != "NA"
                             and split[i] != "."
+                            and split[i] != ""
                         ):
                             split[i] = float(s)
                     annotations.append(
@@ -782,6 +789,8 @@ class TabixResultDao(ResultDB):
         self.longformat = False
     
     def get_variant_results_range(self, chrom, start, end):
+        
+        chrom = "23" if chrom == "X" else chrom
         try:
             tabix_iter = pysam.TabixFile(self.matrix_path, parser=None).fetch(
                 chrom, start - 1, end)
@@ -1437,9 +1446,22 @@ class TabixAnnotationDao(AnnotationDB):
         "string": lambda x: x,
     }
 
-    def __init__(self, matrix_path, gene_column="gene"):
-        self.gene_column = gene_column
+    def __init__(self, matrix_path,
+                 gene_column="gene",
+                 gene_aliases_path : Optional[str] = None,
+                 default_use_aliases : bool = True):
+
         self.matrix_path = matrix_path
+        
+        self.gene_column = gene_column
+
+        if gene_aliases_path is None:
+            self._gene_alias_dao=None
+        else:
+            self._gene_alias_dao=GeneAliasesSqliteDAO(filepath=gene_aliases_path)
+        
+        self._default_use_aliases=default_use_aliases
+        
         self.gene_region_mapping = {
             genename: (chrom, pos1, pos2)
             for chrom, pos1, pos2, genename in get_gene_tuples()
@@ -1554,6 +1576,8 @@ class TabixAnnotationDao(AnnotationDB):
         return annotations
 
     def get_variant_annotations_range(self, chrom, start, end, cpra):
+
+        chrom = "23" if chrom == "X" else chrom
         try:
             tabix_iter =pysam.TabixFile(self.matrix_path, parser=None).fetch(chrom, start - 1, end)
         except ValueError:
@@ -1582,7 +1606,7 @@ class TabixAnnotationDao(AnnotationDB):
 
         return annotations
 
-    def get_gene_functional_variant_annotations(self, gene):
+    def get_gene_functional_variant_annotations(self, gene : str, use_aliases : Optional[bool]):
         if gene not in self.gene_region_mapping:
             return []
         chrom, start, end = self.gene_region_mapping[gene]
@@ -1598,12 +1622,24 @@ class TabixAnnotationDao(AnnotationDB):
         except Exception as e:
             print("Error occurred {}".format(e))
             return annotations
+
+        # use default if not supplied
+        if use_aliases is None:
+            use_aliases = self._default_use_aliases
+            
+        if self._gene_alias_dao is not None and use_aliases:
+            gene_aliases=self._gene_alias_dao.get_gene_aliases(gene)
+        else:
+            gene_aliases=set()
+        
+        gene_aliases.add(gene.upper())
+        
         for row in tabix_iter:
             split = row.split("\t")
             chrom, pos, ref, alt = split[0].split(":")
             if (
                 split[self.header_i["most_severe"]] in self.functional_variants
-                and split[self.header_i[self.gene_column]].upper() == gene.upper()
+                and split[self.header_i[self.gene_column]].upper() in gene_aliases
             ):
                 v = Variant(chrom, pos, ref, alt)
                 var_dat = {
@@ -1631,7 +1667,7 @@ class TabixAnnotationDao(AnnotationDB):
 
 
 class LofMySQLDao(LofDB):
-    def __init__(self, authentication_file):
+    def __init__(self, authentication_file, table_name="lof"):
         self.authentication_file = authentication_file
         auth_module = imp.load_source("mysql_auth", self.authentication_file)
         self.user = getattr(auth_module, "mysql")["user"]
@@ -1639,6 +1675,7 @@ class LofMySQLDao(LofDB):
         self.host = getattr(auth_module, "mysql")["host"]
         self.db = getattr(auth_module, "mysql")["db"]
         self.release = getattr(auth_module, "mysql")["release"]
+        self.table_name=table_name
 
     def get_connection(self):
         return pymysql.connect(
@@ -1649,7 +1686,7 @@ class LofMySQLDao(LofDB):
         conn = self.get_connection()
         try:
             with conn.cursor(pymysql.cursors.DictCursor) as cursori:
-                sql = "SELECT * FROM lof WHERE rel=%s AND p_value < %s"
+                sql = f"SELECT * FROM {self.table_name} WHERE rel=%s AND p_value < %s"
                 cursori.execute(sql, [self.release, p_threshold])
                 result = [{"gene_data": data} for data in cursori.fetchall()]
         finally:
@@ -1660,7 +1697,7 @@ class LofMySQLDao(LofDB):
         conn = self.get_connection()
         try:
             with conn.cursor(pymysql.cursors.DictCursor) as cursori:
-                sql = "SELECT * FROM lof WHERE rel=%s AND gene=%s"
+                sql = f"SELECT * FROM {self.table_name} WHERE rel=%s AND gene=%s"
                 cursori.execute(sql, [self.release, gene])
                 result = [{"gene_data": data} for data in cursori.fetchall()]
         finally:

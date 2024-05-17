@@ -6,6 +6,7 @@ import json
 import logging
 import random
 from datetime import date
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 logger.setLevel(logging.ERROR)
@@ -228,6 +229,7 @@ class DrugsCheck(ComponentCheck):
         genename=get_random_gene()
         return check_url(f'/api/drugs/{genename}')
 
+
 last_ncbi_check_date = None
 class NCBICheck(ComponentCheck):
     # Only call this once a day
@@ -235,7 +237,6 @@ class NCBICheck(ComponentCheck):
     def get_status(self,) -> ComponentStatus:
         global last_ncbi_check_date
         today = date.today()
-        print(today, last_ncbi_check_date)
         if last_ncbi_check_date != today:
             last_ncbi_check_date  = today
             
@@ -277,14 +278,13 @@ all_checks=[
 
 class ConfigurationCheck(CompositeCheck):
 
-    def __init__(self, allowed_checks=None):
-        super().__init__()
+    def __init__(self,
+                 max_checks=None):
+        super().__init__(max_checks=max_checks)
         for check in all_checks:
             self.add_check(check)
-            
     def get_name(self,) -> str:
         return "configuration"
-
     
-component = ComponentDTO(configuration, ConfigurationCheck())
+component = ComponentDTO(configuration, ConfigurationCheck(max_checks=1))
 

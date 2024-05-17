@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { createTableColumns, topHitTableColumns } from "../../common/commonTableColumn";
-import { mustacheDiv } from "../../common/commonUtilities";
+import {mustacheDiv, setPageTitle} from "../../common/commonUtilities";
 import { TopHitsData, TopHitsRow } from "./topHitsModel";
 import { getTopHits } from "./topHitsAPI";
 import { ConfigurationWindow } from "../Configuration/configurationModel";
@@ -33,6 +33,7 @@ const defaultSorted = [{
 }]
 
 const TopHits = (props : Props) => {
+  setPageTitle("tophits");
   const [topHitData, setTopHitData] = useState<TopHitsData | null>(null);
   useEffect(() => {
     getTopHits(setTopHitData)

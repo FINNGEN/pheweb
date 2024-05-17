@@ -96,8 +96,8 @@ const userInterface = {
     }
   },
   gene: { lossOfFunction: null , lz_config : { ld_panel_version : "sisu42" }, 
-          pqtlColocalizations: null,
-          geneColocalizations: null,
+          pqtlColocalizations: {},
+          geneColocalizations: {},
           tableOfContentsTitles: {
             "associationResults": "Disease associations within gene region",
             "geneFunctionalVariants": "Coding variant associations",

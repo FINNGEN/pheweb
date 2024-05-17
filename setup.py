@@ -55,8 +55,8 @@ setup(
         'Werkzeug~=2.0.0',
         'pyasn1~=0.4.6',
         'google-api-python-client~=2.33.0',
-        'google-auth~=2.3.3',
-        'google-auth-httplib2~=0.1.0',
+        'google-auth~=2.29.0',
+        'google-auth-httplib2~=0.1.1',
         'google-compute-engine~=2.8.13',
         'rauth~=0.7',
         'pysam~=0.21.0',
@@ -90,5 +90,7 @@ setup(
     ],
     tests_require=[
         'pytest~=3.4',
+        'selenium~=4.6.1',
+        'testcontainers~=3.7.1'
     ],
 )

@@ -38,6 +38,7 @@
     "react-csv": "^2.2.2",
     "react-dom": "^16.14.0",
     "react-dom-coding": "npm:react@^17.0.2",
+    "react-gtm-module": "^2.0.11",
     "react-plotly.js": "^2.6.0",
     "react-router-dom": "^5.3.4",
     "react-scripts": "^5.0.1",
@@ -82,7 +83,7 @@
   },
   "scripts": {
     "watch": "npm-watch",
-    "test": "react-scripts test",
+    "test": "rm -f node_modules/lavaa/node_modules/d3/src/index.js && react-scripts test",
     "start": "env-cmd -r env-cmdrc.json -e development react-scripts start",
     "build": "env-cmd -r env-cmdrc.json -e production react-scripts build && cp -R build/* ../pheweb/serve/static/",
     "eject": "react-scripts eject",

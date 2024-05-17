@@ -6,7 +6,7 @@ from .auth import GoogleSignIn
 from ..version import version as pheweb_version
 from typing import Optional
 from flask import Blueprint
-
+from ..text_utils import text_to_boolean
 from .data_access.db import Variant
 
 from flask import Flask, jsonify, render_template, request, redirect, abort, flash, current_app, send_from_directory, send_file, session, url_for,make_response
@@ -60,6 +60,7 @@ log_d = {
     "CRITICAL":logging.CRITICAL,
 }
 logging.basicConfig(level=log_d.get(conf.get("logging_level"),logging.WARNING))
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__,
             # this is hack so this it doesn't get confused on the static subdirectory
@@ -172,7 +173,7 @@ def api_metrics():
         return response
     else:
         abort(403)  # Forbidden access
-    
+
 @app.route('/health')
 @is_public
 def health():
@@ -192,7 +193,7 @@ def homepage(path):
 def api_404(path):
    abort(404, description="Resource not found")
 
-    
+
 @app.route('/api/autoreport/<phenocode>')
 def autoreport(phenocode):
     return jsonify(jeeves.get_autoreport(phenocode))
@@ -244,7 +245,7 @@ def api_variant_pheno(query, phenocode):
         v = Variant(q[0].replace('X', '23'),q[1],q[2], q[3])
 
         # get single variant data
-        variantdat = jeeves.get_single_variant_pheno_data(v, phenocode)     
+        variantdat = jeeves.get_single_variant_pheno_data(v, phenocode)
         if variantdat is None:
             die("Sorry, I couldn't find the variant {}".format(query))
         result = { "results" : variantdat }
@@ -258,7 +259,7 @@ def api_pheno(phenocode):
     if phenocode not in use_phenos:
         abort(404)
     try:
-        return json.loads(jeeves.get_pheno_manhattan(phenocode))
+        return jeeves.get_pheno_manhattan(phenocode)
     except Exception as exc:
         die("Sorry, your manhattan request for phenocode {!r} didn't work".format(phenocode), exception=exc)
 
@@ -280,7 +281,8 @@ def api_gene_functional_variants(gene):
     pThreshold=1.1
     if ('p' in request.args):
         pThreshold= float(request.args.get('p'))
-    annotations = jeeves.gene_functional_variants(gene, pThreshold)
+    use_aliases = text_to_boolean(request.args.get('use_aliases', ''))
+    annotations = jeeves.gene_functional_variants(gene, pThreshold, use_aliases=use_aliases)
     for anno in annotations:
         anno['significant_phenos'] = [pheno for pheno in anno['significant_phenos'] if pheno.phenocode in use_phenos]
     return jsonify(annotations)
@@ -348,26 +350,30 @@ def api_region(phenocode : str,filter_param = None):
     return jsonify(rv)
 
 @app.route('/api/conditional_region/<phenocode>/lz-results/')
-def api_conditional_region(phenocode, filter_param : Optional[str] = None):
+def api_conditional_region(phenocode, filter_param : Optional[str] = None, add_anno_param: Optional[str] = None):
     if phenocode not in use_phenos:
         abort(404)
     if filter_param is None:
         filter_param=request.args.get('filter')
+    if add_anno_param is None:
+        add_anno_param = request.args.get('add_anno', 'true').lower() == 'true'
     groups = re.match(r"analysis in 3 and chromosome in +'(.+?)' and position ge ([0-9]+) and position le ([0-9]+)", filter_param).groups()
     chrom, pos_start, pos_end = groups[0], int(groups[1]), int(groups[2])
-    rv = jeeves.get_conditional_regions_for_pheno(phenocode, chrom, pos_start, pos_end)
+    rv = jeeves.get_conditional_regions_for_pheno(phenocode, chrom, pos_start, pos_end, add_anno=add_anno_param)
     return jsonify(rv)
 
 @app.route('/api/finemapped_region/<phenocode>/lz-results/')
-def api_finemapped_region(phenocode : str, filter_param : Optional[str] = None):
+def api_finemapped_region(phenocode : str, filter_param : Optional[str] = None, add_anno_param: Optional[str] = None):
     if phenocode not in use_phenos:
         abort(404)
     if filter_param is None:
         filter_param=request.args.get('filter')
+    if add_anno_param is None:
+        add_anno_param = request.args.get('add_anno', 'true').lower() == 'true'
     groups = re.match(r"analysis in 3 and chromosome in +'(.+?)' and position ge ([0-9]+) and position le ([0-9]+)", filter_param).groups()
     chrom, pos_start, pos_end = groups[0], int(groups[1]), int(groups[2])
     chrom = 23 if str(chrom) == 'X' else int(chrom)
-    rv = jeeves.get_finemapped_regions_for_pheno(phenocode, chrom, pos_start, pos_end, prob_threshold=conf.locuszoom_conf['prob_threshold'])
+    rv = jeeves.get_finemapped_regions_for_pheno(phenocode, chrom, pos_start, pos_end, prob_threshold=conf.locuszoom_conf['prob_threshold'], add_anno=add_anno_param)
     return jsonify(rv)
 
 @app.route('/api/gene_pqtl_colocalization/<genename>')
@@ -575,9 +581,16 @@ if 'login' in conf:
                                     _external=True)
             return redirect(orig_dest)
 
+    def handle_login_error(message):
+        return make_response(render_template('login_error.html',
+                                             message=message,
+                                             redirect=url_for('get_authorized',
+                                                              _scheme='https',
+                                                              _external=True)), 401)
     @app.route('/callback/google')
     @is_public
     def oauth_callback_google():
+        humgen_link='<a href="mailto:humgen-servicedesk@helsinki.fi">humgen-servicedesk@helsinki.fi</a>'
         if not current_user.is_anonymous and verify_membership(current_user.email):
             return redirect(url_for('homepage',
                                     _scheme='https',
@@ -585,25 +598,24 @@ if 'login' in conf:
         try:
             username, email = google_sign_in.callback() # oauth.callback reads request.args.
         except Exception as exc:
-            print('Error in google_sign_in.callback():')
-            print(exc)
-            print(traceback.format_exc())
-            flash('Something is wrong with authentication. Please contact humgen-servicedesk@helsinki.fi')
-            return redirect(url_for('auth',
-                                    _scheme='https',
-                                    _external=True))
+            logging.exception(exc)
+            message=f"""Something is wrong with authentication.<br/> 
+                        If this issue persists, please reach 
+                        out to our support team at 
+                        {humgen_link} for assistance."""
+            return handle_login_error(message)
+
         if email is None:
             # I need a valid email address for my user identification
-            flash('Authentication failed by failing to get an email address.')
-            return redirect(url_for('auth',
-                                    _scheme='https',
-                                    _external=True))
+            message='Authentication failed by failing to get an email address.'
+            return handle_login_error(message)
 
         if not verify_membership(email):
-            flash('{!r} is not allowed to access FinnGen results. If you think this is an error, please contact humgen-servicedesk@helsinki.fi'.format(email))
-            return redirect(url_for('auth',
-                                    _scheme='https',
-                                    _external=True))
+            message=f"""'{email}' is not allowed to access FinnGen 
+                         results.<br/>
+                         If you think this is an error, please contact 
+                         {humgen_link} ."""
+            return handle_login_error(message)
 
         # Log in the user, by default remembering them for their next visit.
         user = User(username, email)

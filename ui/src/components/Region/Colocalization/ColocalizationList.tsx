@@ -110,20 +110,21 @@ const ColocalizationList = (props : Props) => {
       && locusZoomContext
       && setSelectedPosition 
       && refreshLocusZoom(setSelectedPosition,selectedColocalization, locusZoomData, locusZoomContext); },
-    [ setSelectedPosition , colocalization , locusZoomData , selectedColocalization, locusZoomContext]);
+    [ setSelectedPosition , colocalization , locusZoomData , selectedColocalization, locusZoomContext ]);
+
+    const rowid = selectedRow?.split('-')?.at(-1);
 
     const toggleSelection = (key : string, shift, row : Colocalization) => {
-        setSelectedColocalization && setSelectedColocalization(selectedRow ? undefined : row);
-        setRowSelected(selectedRow ? undefined : key);
+        const clearSelection = selectedRow !== undefined && selectedRow == key;
+        setSelectedColocalization && setSelectedColocalization(clearSelection? undefined : row);
+        setRowSelected(	clearSelection ? undefined : key);
     }
 
-    const isSelected = (key : string) => {
-        return selectedRow === key;
-    }
+    const isSelected = (key : string) => rowid == key || false;
 
     const rowFn = (state : {}, rowInfo : Row<Colocalization>, column : Column<Colocalization>, instance) => {
         return { onClick: (e : Event, handleOriginal : (undefined | (() => void))) => handleOriginal && handleOriginal() ,
-                 style: { background: (rowInfo && selectedRow && +selectedRow === rowInfo.original.colocalization_id)? "lightgrey" : undefined }
+                 style: { background: (rowInfo && selectedRow && rowid == rowInfo.original.colocalization_id)? "lightgrey" : undefined		     }
         };
     };
 
