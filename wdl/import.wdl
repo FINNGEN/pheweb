@@ -580,7 +580,7 @@ task filter_sumstat {
     String docker
     String pheno_col
     Float pval_thres
-    String columns
+    Array[String] columns
 
     String base_name = sub(basename(sumstat), file_affix, "")
     String pheno_name = sub(base_name, ".gz$", "")
@@ -609,7 +609,7 @@ task filter_sumstat {
         zcat -f ${sumstat} | awk -v pheno=${pheno_name} -v col=${pheno_col} 'BEGIN {FS=OFS="\t"} NR==1 {print col,$0} NR>1 {print pheno,$0}'
     }
 
-    catcmd | awk -v columns="${columns}"  '
+    catcmd | awk -v columns='${sep=" " columns}'  '
     BEGIN {FS=OFS="\t"}
     NR==1 {
         for(i=1;i<=NF;i++) {
@@ -709,7 +709,7 @@ task matrix_longformat {
     Array[String] output_url
     Int batch_size
     String docker
-    String out_columns
+    Array[String] out_columns
     Int disk
     Int cpu
     Int mem
@@ -727,13 +727,13 @@ task matrix_longformat {
 
     echo `date` decompress
 
-    find "/cromwell_root/$in_dir" -name "*.tsv.gz" | xargs -P $n_cpu -I{} gzip -d --force {}
-    find "/cromwell_root/$in_dir" -name "*.tsv" | tr '\n' '\0' > merge_these
+    find "${dir}/$in_dir" -name "*.tsv.gz" | xargs -P $n_cpu -I{} gzip -d --force {}
+    find "${dir}/$in_dir" -name "*.tsv" | tr '\n' '\0' > merge_these
 
     echo `date` merge
     time \
     cat \
-    <(echo "${out_columns}" | tr ' ' '\t') \
+    <(echo "${sep=' ' out_columns}" | tr ' ' '\t') \
     <(sort \
     -m \
     -T . \
@@ -772,12 +772,14 @@ task matrix_longformat {
 }
 
 workflow import_pheweb {
+	 # dir : cr
+
          # this variable is to make sure the json file matches the import version
 	 String docker
 	 String summary_files
-     Boolean generate_longformat_matrix
+	 Boolean generate_longformat_matrix
 
-	 String? file_affix
+	 String? file_affix = ""
          String? sites_file
          Array[String]? post_import = []
          Array[String]? output_url = []
@@ -794,8 +796,9 @@ workflow import_pheweb {
 	 File bed_file
 	 File? rsids_file
 
-    # for merging sumstats files into a long format file
-    Float pval_thres
+
+	 # for merging sumstats files into a long format file
+    	 Float pval_thres
 
          call webdav_directories { input :
  	     output_url = output_url ,
@@ -832,7 +835,7 @@ workflow import_pheweb {
 	 	 call pheno { input :
 	 	      	      variant_list = annotation.sites_list ,
 	       	      	      pheno_file = pheno_file ,
-	       	       	      file_affix = if defined(file_affix) then file_affix else "",
+	       	       	      file_affix = file_affix,
                               docker = docker,
 	                      output_url = output_url
 	 	 }
