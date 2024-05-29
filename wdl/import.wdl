@@ -48,9 +48,6 @@ task preprocess {
 
   command <<<
 	   set -euxo pipefail
-	   set -euxo pipefail
-
-       set -euxo pipefail
 
        cat "${summary_file}" | \
            cat | (if [[ "${summary_file}" == *.gz || "${summary_file}" == *.bgz ]]; then zcat ; else cat ; fi) | \
