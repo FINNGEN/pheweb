@@ -809,6 +809,7 @@ workflow import_pheweb {
 	 call annotation { input :
 	    output_url = output_url,
             variant_list = if defined(sites_file) then sites_file else sites.variant_list ,
+        mem = mem ,
 	    bed_file = bed_file ,
 	    rsids_file = rsids_file ,
             docker = docker
