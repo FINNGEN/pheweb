@@ -15,7 +15,21 @@ import random
 import itertools
 import sys
 from types import GeneratorType
+import time
+import logging
 
+def timeit(f):
+
+    def timed(*args, **kw):
+
+        ts = time.time()
+        result = f(*args, **kw)
+        te = time.time()
+
+        print(f"{f.__name__}  {round(te-ts,4)} sec")
+        return result
+
+    return timed
 
 def get_maf(variant, pheno):
     mafs = []

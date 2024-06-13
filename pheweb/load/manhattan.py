@@ -8,24 +8,10 @@ This script creates json files which can be used to render Manhattan plots.
 from ..utils import chrom_order
 from ..conf_utils import conf
 from ..file_utils import VariantFileReader, write_json, common_filepaths
-from .load_utils import MaxPriorityQueue, parallelize_per_pheno
+from .load_utils import MaxPriorityQueue, parallelize_per_pheno, timeit
 
 
 import numpy as np
-import math,time
-
-def timeit(f):
-
-    def timed(*args, **kw):
-
-        ts = time.time()
-        result = f(*args, **kw)
-        te = time.time()
-
-        print(f"func:{f.__name__}  took: {round(te-ts,4)} sec")
-        return result
-
-    return timed
 
 @timeit
 def run(argv):
