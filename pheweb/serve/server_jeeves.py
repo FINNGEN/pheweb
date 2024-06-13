@@ -15,6 +15,42 @@ import math
 from typing import List, Dict,Tuple, Union
 from .server_utils import get_pheno_region
 
+def annotate_manhattan(*,
+                       threadpool,
+                       manhattan_filepath : str,
+                       annotation_dao,
+                       gnomad_dao,
+                       anno_cpra,
+                       ):
+        with open(manhattan_filepath, encoding="utf-8") as f:
+            variants = json.load(f)
+
+        vars = [ Variant( d['chrom'].replace("chr","").replace("X","23").replace("Y","24").replace("MT","25"), d['pos'], d['ref'], d['alt'] ) for d in variants['unbinned_variants'] if 'peak' in d ]
+
+        f_annotations = threadpool.submit( annotation_dao.get_variant_annotations,
+                                           vars,
+                                           anno_cpra)
+        f_gnomad = threadpool.submit( gnomad_dao.get_variant_annotations,
+                                           vars)
+
+        annotations = f_annotations.result()
+        gnomad = f_gnomad.result()
+        d = { v:v  for v in annotations }
+        # TODO... refactor gnomaddao to behave similary as annotation dao i.e. returning stuff as Variant annotations.
+        gd = { v["variant"]:v["var_data"] for v in gnomad}
+
+        for variant in variants['unbinned_variants']:
+            ## TODO remove chr dickery when new annots ready
+
+            chrom =  variant['chrom'].replace("chr","").replace('X','23').replace('Y','24').replace("MT","25")
+            v = Variant( chrom, variant['pos'], variant['ref'], variant['alt'])
+            if v in d:
+                variant['annotation'] = d[v].get_annotations()["annot"]
+            if v in gd:
+                variant['gnomad'] = gd[v]
+
+        return variants
+        
 class ServerJeeves(object):
     '''
         Class that handles data aggregation and munging for server.py
@@ -43,7 +79,8 @@ class ServerJeeves(object):
         self.autocompleter_dao = self.dbs_fact.get_autocompleter_dao()
         self.pqtl_colocalization = self.dbs_fact.get_pqtl_colocalization_dao()
         self.health_dao = self.dbs_fact.get_health_dao()
-
+        self.manhattan_dao = self.dbs_fact.get_manhattan_dao()
+        
     def gene_functional_variants(self, gene, pThreshold=None, use_aliases=None):
         if pThreshold is None:
             pThreshold = self.conf.report_conf["func_var_assoc_threshold"]
@@ -190,35 +227,16 @@ class ServerJeeves(object):
             raise
 
     def get_pheno_manhattan(self, phenocode) -> str:
-        with open(common_filepaths['manhattan'](phenocode)) as f:
-            variants = json.load(f)
-
-        vars = [ Variant( d['chrom'].replace("chr","").replace("X","23").replace("Y","24").replace("MT","25"), d['pos'], d['ref'], d['alt'] ) for d in variants['unbinned_variants'] if 'peak' in d ]
-
-        f_annotations = self.threadpool.submit( self.annotation_dao.get_variant_annotations, vars, self.conf.anno_cpra)
-        f_gnomad = self.threadpool.submit( self.gnomad_dao.get_variant_annotations, vars)
-
-        annotations = f_annotations.result()
-        gnomad = f_gnomad.result()
-        d = { v:v  for v in annotations }
-        # TODO... refactor gnomaddao to behave similary as annotation dao i.e. returning stuff as Variant annotations.
-        gd = { v["variant"]:v["var_data"] for v in gnomad}
-
-        ukbbvars = self.ukbb_dao.get_matching_results(phenocode, vars)
-
-        for variant in variants['unbinned_variants']:
-            ## TODO remove chr dickery when new annots ready
-
-            chrom =  variant['chrom'].replace("chr","").replace('X','23').replace('Y','24').replace("MT","25")
-            v = Variant( chrom, variant['pos'], variant['ref'], variant['alt'])
-            if v in d:
-                variant['annotation'] = d[v].get_annotations()["annot"]
-            if v in gd:
-                variant['gnomad'] = gd[v]
-
-            if v in ukbbvars:
-                variant['ukbb'] = ukbbvars[v]
-        return variants
+        manhattan_filepath = common_filepaths['manhattan'](phenocode)    
+        if self.manhattan_dao is None:
+                manhattan = annotate_manhattan(threadpool=self.threadpool,
+                                               manhattan_filepath=manhattan_filepath,
+                                               annotation_dao=self.annotation_dao,
+                                               gnomad_dao=self.gnomad_dao,
+                                               anno_cpra=self.conf.anno_cpra)
+        else:
+                manhattan = self.manhattan_dao.get_resource(manhattan_filepath)
+        return manhattan
 
     def get_single_variant_pheno_data(self, variant: Variant, pheno: str):
         """
