@@ -40,6 +40,8 @@ from .drug_db import DrugDB, DrugDao
 from ..components.autocomplete.tries_dao import AutocompleterTriesDAO
 from ..components.autocomplete.sqlite_dao import AutocompleterSqliteDAO
 from ..components.autocomplete.mysql_dao import AutocompleterMYSQLDAO
+from pheweb.serve.data_access.file import FilePathResultDao, ManhattanFileResultDao, ManhattanCompressedResultDao
+
 
 from .pqtl_colocalization import PqtlColocalisationDao
 
@@ -2002,6 +2004,9 @@ class DataFactory(object):
             ## if external results not configured initialize dao always returning empty results
             self.dao_impl["externalresult"] = ExternalFileResultDao(None)
 
+    def get_manhattan_dao(self):
+        return self.dao_impl["manhattan"] if "manhattan" in self.dao_impl else None
+    
     def get_health_dao(self):
         return self.dao_impl["health"]
 

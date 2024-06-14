@@ -235,7 +235,9 @@ class ServerJeeves(object):
                                                gnomad_dao=self.gnomad_dao,
                                                anno_cpra=self.conf.anno_cpra)
         else:
-                manhattan = self.manhattan_dao.get_resource(manhattan_filepath)
+                manhattan = self.manhattan_dao.get_resource(manhattan_filepath,
+                                                            phenocode=phenocode,
+                                                            filepath=manhattan_filepath)
         return manhattan
 
     def get_single_variant_pheno_data(self, variant: Variant, pheno: str):
