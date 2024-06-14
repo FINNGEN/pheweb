@@ -237,6 +237,10 @@ task pheno {
         String base_name = sub(basename(pheno_file), file_affix, "")
         String pheno_name = sub(base_name, ".gz$", "")
 
+        String gnomad_filepath
+        String annotation_filepath
+        Boolean manhattan_compress = false
+  
         Array[String] output_url
 
 
@@ -245,6 +249,7 @@ task pheno {
 	String manhattan_file = "pheweb/generated-by-pheweb/manhattan/${pheno_name}.json"
     	String qq_jsons = "pheweb/generated-by-pheweb/qq/${pheno_name}.json"
 
+        
         command <<<
 
         set -euxo pipefail
@@ -266,6 +271,8 @@ task pheno {
         pheweb phenolist extract-phenocode-from-filepath --simple && \
         pheweb augment-phenos && \
         pheweb manhattan && \
+	pheweb annotate-manhattan  --gnomad_filepath=${gnomad_filepath} --annotation_filepath=${annotation_filepath} --compress=${manhattan_compress} && \
+	pheweb annotate-manhattan && \  
         pheweb qq && \
         pheweb bgzip-phenos &&
         find ./
@@ -762,7 +769,7 @@ workflow import_pheweb {
          # this variable is to make sure the json file matches the import version
 	 String docker
 	 String summary_files
-     Boolean generate_longformat_matrix
+         Boolean generate_longformat_matrix
 
 	 String? file_affix
          String? sites_file

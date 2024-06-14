@@ -52,6 +52,7 @@ for submodule in '''
  make_tries
  augment_phenos
  manhattan
+ annotate_manhattan
  qq
  matrix
  bgzip_phenos
