@@ -1,6 +1,7 @@
 import { Locus, locusFromStr } from '../../common/commonModel';
 import { VisConfiguration } from '../Configuration/configurationModel';
 import { Phenotype } from './../../common/commonModel';
+import { ColocalizationConfiguration } from './Colocalization/ColocalizationModel';
 
 export type DataSourceKeys =
 	| 'association'
@@ -55,6 +56,7 @@ export namespace RegionModel {
 	export interface Configuration {
 		readonly vs_configuration?: VisConfiguration;
 		readonly lz_configuration?: LzConfiguration;
+		readonly colocalization? : ColocalizationConfiguration;
 	}
 }
 export type layout_types =

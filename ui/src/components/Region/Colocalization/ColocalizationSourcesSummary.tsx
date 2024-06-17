@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { colocalizationSourceTypeConfiguration } from "./ColocalizationModel";
+import { ColocalizationSourceType } from "./ColocalizationModel";
 import { ConfigurationWindow } from "../../Configuration/configurationModel";
 import {colocTypesSummaryData as Data} from '../../../common/commonModel'
 
@@ -9,7 +9,7 @@ import './Colocalization.css'
 
 declare let window: ConfigurationWindow;
 const { config } = window;
-const colocalizationSourceTypes : Array<colocalizationSourceTypeConfiguration>|null = config?.userInterface?.region['colocalizationSourceTypes'] || null;
+const colocalizationSourceTypes : ColocalizationSourceType[]|null = config?.userInterface?.region?.colocalization?.colocalizationSourceTypes || null;
 
 
 const ColocalizationSourcesSummary = ( props: {data: Data[], showSourceTypes: boolean}) => {
