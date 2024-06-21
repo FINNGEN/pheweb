@@ -154,7 +154,7 @@ task annotation {
 	cat ${variant_list} | (if [[ "${variant_list}" == *.gz || "${variant_list}" == *.bgz ]]; then zcat ; else cat ; fi) > pheweb/generated-by-pheweb/sites/sites-unannotated.tsv
 
  	cd pheweb
-        [[ -z "${bed_file}" ]] && pheweb download-genes 
+        [[ -z "${bed_file}" ]] && pheweb download-genes
         df -h && pheweb add-rsids
         [[ -z "${bed_file}" ]] && pheweb add-genes || pheweb add-genes --genes-filepath /root/.pheweb/cache/genes-b38-v${gene_version}.bed
         df -h && pheweb make-cpras-rsids-sqlite3
@@ -203,7 +203,7 @@ task webdav_directories {
 
     for url in ${sep="\t" output_url}; do
 
-    if [ "$url" = http* ]; then
+    if [[ "$url" = http* ]]; then
       # we ignore failures as directories may alread by created
       curl -X MKCOL "$url/generated-by-pheweb/" || true
       curl -X MKCOL "$url/generated-by-pheweb/sites/" || true
@@ -237,10 +237,10 @@ task pheno {
         String base_name = sub(basename(pheno_file), file_affix, "")
         String pheno_name = sub(base_name, ".gz$", "")
 
-        String gnomad_filepath
-        String annotation_filepath
-        Boolean manhattan_compress = false
-  
+        File? gnomad_filepath
+        File? annotation_filepath
+        String manhattan_compress = if defined(gnomad_filepath) && defined(annotation_filepath) then "true" else "false"
+
         Array[String] output_url
 
 
@@ -249,7 +249,7 @@ task pheno {
 	String manhattan_file = "pheweb/generated-by-pheweb/manhattan/${pheno_name}.json"
     	String qq_jsons = "pheweb/generated-by-pheweb/qq/${pheno_name}.json"
 
-        
+
         command <<<
 
         set -euxo pipefail
@@ -272,7 +272,7 @@ task pheno {
         pheweb augment-phenos && \
         pheweb manhattan && \
 	pheweb annotate-manhattan  --gnomad_filepath=${gnomad_filepath} --annotation_filepath=${annotation_filepath} --compress=${manhattan_compress} && \
-	pheweb annotate-manhattan && \  
+	pheweb annotate-manhattan && \
         pheweb qq && \
         pheweb bgzip-phenos &&
         find ./
@@ -551,11 +551,12 @@ task exec_cmd {
   # https://cromwell.readthedocs.io/en/stable/optimizations/VolatileTasks/
   # https://github.com/broadinstitute/cromwell/issues/1695
   Array[String] cmd
+  File? input_file
   String docker
-
 
   command <<<
     set -euxo pipefail
+    echo ${input_file}
     date
     ${sep="&&" cmd}
   >>>
@@ -575,18 +576,21 @@ task exec_cmd {
 }
 
 task filter_sumstat {
-
+    String file_affix
     File sumstat
     String docker
     String pheno_col
     Float pval_thres
-    String columns
+    Array[String] columns
+
+    String base_name = sub(basename(sumstat), file_affix, "")
+    String pheno_name = sub(base_name, ".gz$", "")
 
     String fname_prefix = sub(basename(sumstat), ".gz", "")
     Int disk_size = ceil(size(sumstat, "GB") * 3) + 5
 
     command <<<
-    
+
     set -euxo pipefail
 
     # input:  a (gzipped) tab-delimited sumstat uri
@@ -594,18 +598,18 @@ task filter_sumstat {
     #
     # filters the sumstat to p-values below the given threshold (threshold can be 1 for no filtering)
     # sort order in the output will be chromosome, position, alleles and pheno
-    # 
+    #
     # possible chr prefix will be removed, possible 23 will be changed to X
 
     catcmd() {
         zcat -f ${sumstat}
     }
-    pheno=`basename ${sumstat} | sed 's/.gz$//'`    
+    pheno=`basename ${sumstat} | sed 's/.gz$//'`
     catcmd() {
-        zcat -f ${sumstat} | awk -v pheno=$pheno -v col=${pheno_col} 'BEGIN {FS=OFS="\t"} NR==1 {print col,$0} NR>1 {print pheno,$0}'
+        zcat -f ${sumstat} | awk -v pheno=${pheno_name} -v col=${pheno_col} 'BEGIN {FS=OFS="\t"} NR==1 {print col,$0} NR>1 {print pheno,$0}'
     }
 
-    catcmd | awk -v columns="${columns}"  '
+    catcmd | awk -v columns='${sep=" " columns}' '
     BEGIN {FS=OFS="\t"}
     NR==1 {
         for(i=1;i<=NF;i++) {
@@ -635,7 +639,7 @@ task filter_sumstat {
     uniq | \
     bgzip > ${fname_prefix}.filtered.tsv.gz
 
-    >>>    
+    >>>
 
     output {
         File out = "${fname_prefix}.filtered.tsv.gz"
@@ -679,7 +683,7 @@ task get_phenolist {
         pheweb phenolist glob generated-by-pheweb/pheno_gz/* && \
         pheweb phenolist extract-phenocode-from-filepath --simple
 
-    >>>    
+    >>>
 
     output {
         File phenolist = "pheweb/pheno-list.json"
@@ -705,7 +709,7 @@ task matrix_longformat {
     Array[String] output_url
     Int batch_size
     String docker
-    String out_columns
+    Array[String] out_columns
     Int disk
     Int cpu
     Int mem
@@ -727,7 +731,7 @@ task matrix_longformat {
     echo `date` merge
     time \
     cat \
-    <(echo "${out_columns}" | tr ' ' '\t') \
+    <(echo "${sep=' ' out_columns}" | tr ' ' '\t') \
     <(sort \
     -m \
     -T . \
@@ -751,7 +755,7 @@ task matrix_longformat {
 
     echo `date` end
 
-    >>>    
+    >>>
 
     runtime {
         docker: "${docker}"
@@ -771,10 +775,10 @@ workflow import_pheweb {
 	 String summary_files
          Boolean generate_longformat_matrix
 
-	 String? file_affix
-         String? sites_file
-         Array[String]? post_import = []
-         Array[String]? output_url = []
+	 String file_affix = ""
+         File? sites_file
+         Array[String] post_import = []
+         Array[String] output_url = []
 
          File custom_json
          Array[String] fields
@@ -815,8 +819,8 @@ workflow import_pheweb {
 
 	 call annotation { input :
 	    output_url = output_url,
-            variant_list = if defined(sites_file) then sites_file else sites.variant_list ,
-        mem = mem ,
+            variant_list = select_first([sites_file, sites.variant_list]) ,
+            mem = mem ,
 	    bed_file = bed_file ,
 	    rsids_file = rsids_file ,
             docker = docker
@@ -826,14 +830,14 @@ workflow import_pheweb {
 	 	 call pheno { input :
 	 	      	      variant_list = annotation.sites_list ,
 	       	      	      pheno_file = pheno_file ,
-	       	       	      file_affix = if defined(file_affix) then file_affix else "",
+	       	       	      file_affix = file_affix,
                               docker = docker,
 	                      output_url = output_url
 	 	 }
 	}
 
     if (!generate_longformat_matrix) {
-        call matrix { 
+        call matrix {
             input: sites=annotation.sites_list ,
                    pheno_gz=pheno.pheno_gz,
                    manhattan=pheno.pheno_manhattan,
@@ -856,7 +860,8 @@ workflow import_pheweb {
 
         scatter (file in preprocess.out_file) {
             call filter_sumstat{
-                input: sumstat = file,
+                input: file_affix = file_affix,
+		       sumstat = file,
                        pval_thres = pval_thres,
                        docker = docker
             }
@@ -869,7 +874,7 @@ workflow import_pheweb {
                     docker = docker
         }
     }
-    
+
     File phenolist = select_first([get_phenolist.phenolist, matrix.phenolist])
 
 	call fix_json{
@@ -883,10 +888,9 @@ workflow import_pheweb {
           fields = fields
         }
 
-        if(defined(post_import)){
-          call exec_cmd { input :
+	call exec_cmd { input :
 	  docker = docker ,
-	  cmd = post_import }
+	  cmd = post_import ,
+	  input_file = fix_json.json
 	}
-
 }

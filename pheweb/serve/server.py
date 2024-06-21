@@ -266,6 +266,8 @@ def api_pheno(phenocode):
 @app.route('/api/gene_phenos/<gene>')
 def api_gene_phenotypes(gene):
     gene_region_mapping = jeeves.get_gene_region_mapping()
+    if gene not in gene_region_mapping:
+        abort(404)
     chrom, start, end = gene_region_mapping[gene]
     start, end = pad_gene(start, end)
     phenotypes = [res for res in jeeves.gene_phenos(gene) if res.pheno['phenocode'] in use_phenos]

@@ -40,7 +40,7 @@ RUN apt-get update && apt-get install --no-install-recommends texlive wget --yes
 RUN wget --no-check-certificate https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 -O /usr/local/bin/cloud_sql_proxy && \
     chmod +x /usr/local/bin/cloud_sql_proxy
 
-RUN apt-get install bzip2 -y 
+RUN apt-get install bzip2 -y
 RUN curl -LO https://github.com/samtools/htslib/releases/download/1.9/htslib-1.9.tar.bz2 && \
     tar -xvjf htslib-1.9.tar.bz2 && cd htslib-1.9 && \
     ./configure && make && make install && cd .. && rm -rf htslib-1.9*
@@ -57,7 +57,7 @@ RUN python3 -m pip install /pheweb
 RUN python3 -m pip freeze
 
 # create react js bundle
-RUN cd /pheweb/ui && npm install
+RUN cd /pheweb/ui && npm config set fetch-retries 10 && npm install
 RUN cd /pheweb/ui && npm run build
 RUN cp -R /pheweb/pheweb/serve/static/* /usr/local/lib/python3.7/dist-packages/pheweb/serve/static/
 RUN rm -r /pheweb
@@ -72,6 +72,6 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.c
 
 # remove build tools
 RUN apt-get purge git gcc rustc cmake --yes
-    
+
 EXPOSE 8080
 CMD cloud_sql_proxy -instances=$CLOUD_SQL_PROXY_INSTANCES -credential_file=$CLOUD_SQL_PROXY_CREDENTIAL_FILE & cd $PHEWEB_DIR && pheweb serve --port 8080 --num-workers 1
