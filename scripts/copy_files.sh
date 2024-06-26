@@ -22,6 +22,6 @@ else
 	fi
 	($cp_cmd "$src" "$dst" )
     else
-	echo "cannot read destination '${dst}'"
+	echo "cannot read source '${src}'"
     fi
 fi

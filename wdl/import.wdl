@@ -162,8 +162,6 @@ task annotation {
         cd ..
         find ./
 
-        gcloud auth list
-
         for url in ${sep="\t" output_url}; do
 
         /pheweb/scripts/copy_files.sh pheweb/generated-by-pheweb/sites/sites.tsv                $url/generated-by-pheweb/sites/sites.tsv
@@ -233,22 +231,29 @@ task pheno {
 	File variant_list
 	File pheno_file
     	String file_affix
+        File bed_file
+	Int gene_version
+
+        File? gnomad_filepath
+        File? annotation_filepath
+	Array[File]? annotation_indexes
 
         String base_name = sub(basename(pheno_file), file_affix, "")
         String pheno_name = sub(base_name, ".gz$", "")
 
-        File? gnomad_filepath
-        File? annotation_filepath
-        String manhattan_compress = if defined(gnomad_filepath) && defined(annotation_filepath) then "true" else "false"
+        Boolean annotate_manhattan = defined(gnomad_filepath) && defined(annotation_filepath) && defined(annotation_indexes)
+	Boolean compress_manhattan = false
 
+	# translate manhattan flags
+	String compress_suffix=if compress_manhattan then ".br" else ""
+	String compress_flag=if compress_manhattan then "true" else "false"
+	String annotate_manhattan_command = if annotate_manhattan then "pheweb annotate-manhattan --gnomad_filepath=${gnomad_filepath} --annotation_filepath=${annotation_filepath} --compress=${compress_flag}" else "true"
         Array[String] output_url
-
 
 	String gz_file = "pheweb/generated-by-pheweb/pheno_gz/${pheno_name}.gz"
  	String tbi_file = "pheweb/generated-by-pheweb/pheno_gz/${pheno_name}.gz.tbi"
-	String manhattan_file = "pheweb/generated-by-pheweb/manhattan/${pheno_name}.json"
+	String manhattan_file = "pheweb/generated-by-pheweb/manhattan/${pheno_name}.json${compress_suffix}"
     	String qq_jsons = "pheweb/generated-by-pheweb/qq/${pheno_name}.json"
-
 
         command <<<
 
@@ -257,8 +262,11 @@ task pheno {
         mkdir -p pheweb/generated-by-pheweb/parsed
 	mkdir -p pheweb/generated-by-pheweb/sites
 	mkdir -p pheweb/generated-by-pheweb/pheno_gz
+	mkdir -p /root/.pheweb/cache
 
 	mv ${variant_list} pheweb/generated-by-pheweb/sites/
+
+	[[ -z "${bed_file}" ]] || cp ${bed_file} /root/.pheweb/cache/genes-b38-v${gene_version}.bed
 
 	# pipeline to file without compression suffix if there is one
 	cat ${pheno_file} | \
@@ -271,9 +279,8 @@ task pheno {
         pheweb phenolist extract-phenocode-from-filepath --simple && \
         pheweb augment-phenos && \
         pheweb manhattan && \
-	pheweb annotate-manhattan  --gnomad_filepath=${gnomad_filepath} --annotation_filepath=${annotation_filepath} --compress=${manhattan_compress} && \
-	pheweb annotate-manhattan && \
-        pheweb qq && \
+        ${annotate_manhattan_command} && \
+	pheweb qq && \
         pheweb bgzip-phenos &&
         find ./
 	# find just to make sure the whole sequence is completed
@@ -281,10 +288,10 @@ task pheno {
 
         for url in ${sep="\t" output_url}; do
 
-        /pheweb/scripts/copy_files.sh pheweb/generated-by-pheweb/pheno_gz/${pheno_name}.gz      $url/generated-by-pheweb/pheno_gz/${pheno_name}.gz
-	/pheweb/scripts/copy_files.sh pheweb/generated-by-pheweb/pheno_gz/${pheno_name}.gz.tbi  $url/generated-by-pheweb/pheno_gz/${pheno_name}.gz.tbi
-	/pheweb/scripts/copy_files.sh pheweb/generated-by-pheweb/manhattan/${pheno_name}.json   $url/generated-by-pheweb/manhattan/${pheno_name}.json
-	/pheweb/scripts/copy_files.sh pheweb/generated-by-pheweb/qq/${pheno_name}.json          $url/generated-by-pheweb/qq/${pheno_name}.json
+        /pheweb/scripts/copy_files.sh generated-by-pheweb/pheno_gz/${pheno_name}.gz                        $url/generated-by-pheweb/pheno_gz/${pheno_name}.gz
+	/pheweb/scripts/copy_files.sh generated-by-pheweb/pheno_gz/${pheno_name}.gz.tbi                    $url/generated-by-pheweb/pheno_gz/${pheno_name}.gz.tbi
+	/pheweb/scripts/copy_files.sh generated-by-pheweb/manhattan/${pheno_name}.json${compress_suffix}   $url/generated-by-pheweb/manhattan/${pheno_name}.json${compress_suffix}
+	/pheweb/scripts/copy_files.sh generated-by-pheweb/qq/${pheno_name}.json                            $url/generated-by-pheweb/qq/${pheno_name}.json
 
 	done
 	>>>
@@ -425,13 +432,12 @@ EOF
       for url in ${sep="\t" output_url}; do
 
       #skipping pheno-list.json as it is written in the the fix json step
-      #/pheweb/scripts/copy_files.sh "pheweb/pheno-list.json"                                "$url/pheno-list.json")
-      /pheweb/scripts/copy_files.sh pheweb/generated-by-pheweb/matrix.tsv.gz              $url/generated-by-pheweb/matrix.tsv.gz
-      /pheweb/scripts/copy_files.sh pheweb/generated-by-pheweb/matrix.tsv.gz.tbi          $url/generated-by-pheweb/matrix.tsv.gz.tbi
-      /pheweb/scripts/copy_files.sh pheweb/generated-by-pheweb/top_hits.json              $url/generated-by-pheweb/top_hits.json
-      /pheweb/scripts/copy_files.sh pheweb/generated-by-pheweb/top_hits.tsv               $url/generated-by-pheweb/top_hits.tsv
-      /pheweb/scripts/copy_files.sh pheweb/generated-by-pheweb/top_hits_1k.json           $url/generated-by-pheweb/top_hits_1k.json
-      /pheweb/scripts/copy_files.sh pheweb/generated-by-pheweb/best-phenos-by-gene.json   $url/generated-by-pheweb/best-phenos-by-gene.json
+      /pheweb/scripts/copy_files.sh generated-by-pheweb/matrix.tsv.gz              $url/generated-by-pheweb/matrix.tsv.gz
+      /pheweb/scripts/copy_files.sh generated-by-pheweb/matrix.tsv.gz.tbi          $url/generated-by-pheweb/matrix.tsv.gz.tbi
+      /pheweb/scripts/copy_files.sh generated-by-pheweb/top_hits.json              $url/generated-by-pheweb/top_hits.json
+      /pheweb/scripts/copy_files.sh generated-by-pheweb/top_hits.tsv               $url/generated-by-pheweb/top_hits.tsv
+      /pheweb/scripts/copy_files.sh generated-by-pheweb/top_hits_1k.json           $url/generated-by-pheweb/top_hits_1k.json
+      /pheweb/scripts/copy_files.sh generated-by-pheweb/best-phenos-by-gene.json   $url/generated-by-pheweb/best-phenos-by-gene.json
 
       done
     >>>
@@ -774,6 +780,7 @@ workflow import_pheweb {
 	 String docker
 	 String summary_files
          Boolean generate_longformat_matrix
+	 Int gene_version
 
 	 String file_affix = ""
          File? sites_file
@@ -822,13 +829,16 @@ workflow import_pheweb {
             variant_list = select_first([sites_file, sites.variant_list]) ,
             mem = mem ,
 	    bed_file = bed_file ,
+	    gene_version = gene_version ,
 	    rsids_file = rsids_file ,
             docker = docker
          }
 
 	 scatter (pheno_file in preprocess.out_file) {
 	 	 call pheno { input :
-	 	      	      variant_list = annotation.sites_list ,
+		              gene_version = gene_version ,
+	 	      	      bed_file = bed_file,
+                   	      variant_list = annotation.sites_list ,
 	       	      	      pheno_file = pheno_file ,
 	       	       	      file_affix = file_affix,
                               docker = docker,
