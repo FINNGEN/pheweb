@@ -276,6 +276,7 @@ task pheno {
         pheweb qq && \
         pheweb bgzip-phenos &&
         find ./
+        cd .. # move out from pheweb folder so relative paths work
 	# find just to make sure the whole sequence is completed
 	# and you know what you have.
 
