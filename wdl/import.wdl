@@ -170,13 +170,16 @@ task annotation {
         /pheweb/scripts/copy_files.sh /root/.pheweb/cache/genes-b38-v${gene_version}.bed $url/cache/genes-b38-v${gene_version}.bed
 
         done
-
+        #copy bed file so that it's used as an output,
+        #since cromwell often leaves inputs out even though theyy have been requested in the metadata.
+        cp ${bed_file} pheweb/genes-b38-v${gene_version}.bed
     >>>
 
     output {
 	File sites_list = "pheweb/generated-by-pheweb/sites/sites.tsv"
 	File gene_aliases_sqlite3 = "pheweb/generated-by-pheweb/resources/gene_aliases.sqlite3"
 	File cpras_rsids_sqlite3 = "pheweb/generated-by-pheweb/sites/cpras-rsids.sqlite3"
+	File? bed_file_output = "pheweb/genes-b38-v${gene_version}.bed"
    }
 
    runtime {
@@ -768,6 +771,11 @@ task matrix_longformat {
         zones: "europe-west1-b"
         disks: "local-disk ${disk} HDD"
         preemptible: 0
+    }
+
+    output{
+        File matrix_long = "${filename}"
+        File matrix_long_tbi = "${filename}.tbi"
     }
 
 }
