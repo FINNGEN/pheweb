@@ -171,15 +171,15 @@ task annotation {
 
         done
         #copy bed file so that it's used as an output,
-        #since cromwell often leaves inputs out even though theyy have been requested in the metadata.
-        cp ${bed_file} pheweb/genes-b38-v${gene_version}.bed
+        #since cromwell often leaves inputs out even though they have been requested in the metadata.
+        cp /root/.pheweb/cache/genes-b38-v${gene_version}.bed pheweb/genes-b38-v${gene_version}.bed
     >>>
 
     output {
 	File sites_list = "pheweb/generated-by-pheweb/sites/sites.tsv"
 	File gene_aliases_sqlite3 = "pheweb/generated-by-pheweb/resources/gene_aliases.sqlite3"
 	File cpras_rsids_sqlite3 = "pheweb/generated-by-pheweb/sites/cpras-rsids.sqlite3"
-	File? bed_file_output = "pheweb/genes-b38-v${gene_version}.bed"
+	File bed_file_output = "pheweb/genes-b38-v${gene_version}.bed"
    }
 
    runtime {
