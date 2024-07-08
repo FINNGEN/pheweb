@@ -13,6 +13,25 @@
 	  console.warn('configuration not loaded ... using default configuration')
       }
     </script>
+    <!-- https://stackoverflow.com/questions/75413887/how-to-append-google-analytics-code-in-head-using-js -->
+    <script>
+      const trackingId = window?.config?.application?.trackingId;
+      if(trackingId) {
+        (function () {
+          const head = document.getElementsByTagName("head")[0];
+          const trackingScript = document.createElement('script');
+          trackingScript.setAttribute('src', `https://www.googletagmanager.com/gtag/js?id=${trackingId}`);
+          trackingScript.onload = function () {
+            window.dataLayer = window.dataLayer || [];
+            function gtag () { dataLayer.push(arguments); }
+            gtag('js', new Date());
+            console.log('window.dataLayer Executed', window.dataLayer)
+            gtag('config', trackingId);
+          }
+          head.appendChild(trackingScript);
+        })();
+      }
+    </script>
     <!-- configuration -->
   </head>
   <body>

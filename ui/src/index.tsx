@@ -12,7 +12,6 @@ import Region from './components/Region/Region'
 import About from './components/About/About'
 import Gene from './components/Gene/Gene'
 import TopHits from './components/TopHits/TopsHits'
-import Tracking from './Tracking'
 import 'react-table/react-table.css'
 import 'react-tabs/style/react-tabs.css'
 import './assets/common.css'
@@ -26,7 +25,6 @@ const element = document.getElementById('root')
 if (typeof (element) !== 'undefined' && element != null) {
   ReactDOM.render(
     <BrowserRouter>
-      <Tracking />
       <Nav />
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <div style={{
