@@ -11,7 +11,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 from smart_open import open as smart_open
-
+from google.cloud.exceptions import NotFound
 from pheweb.serve.components.chip.model import ChipData, ChipDAO
 
 
@@ -53,7 +53,7 @@ def read_path(path: str) -> typing.Optional[bytes]:
     try:
         with smart_open(path, "rb") as file:
             result = file.read()
-    except FileNotFoundError:
+    except (FileNotFoundError, NotFound):
         result = None
     return result
 

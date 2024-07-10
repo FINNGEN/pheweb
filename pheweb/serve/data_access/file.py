@@ -2,7 +2,7 @@
 This module provides Data Access Object (DAO) classes for managing
 file path resources with customizable headers.  It includes classes
 for handling standard file paths, JSON file paths, and compressed file
-paths with Brotli encoding.
+paths with gzip encoding.
 
 Classes:
     - FilePathResultDao: Base class for managing file path resources
@@ -10,7 +10,7 @@ Classes:
     - ManhattanFileResultDao: Subclass for handling file results with
       a default JSON content type.
     - ManhattanCompressedResultDao: Subclass for handling compressed
-      file results with Brotli encoding and JSON content type.
+      file results with gzip encoding and JSON content type.
 """
 from typing import Optional, Dict
 from flask import send_file
@@ -98,21 +98,21 @@ class ManhattanFileResultDao(FilePathResultDao):
 class ManhattanCompressedResultDao(FilePathResultDao):
     """
     A subclass of FilePathResultDao specifically for handling
-    compressed file results with Brotli encoding and a default JSON
+    compressed file results with gzip encoding and a default JSON
     content type.
 
-    :param file_template: A template string for the file path, default is "{}.br".
+    :param file_template: A template string for the file path, default is "{}.gzip".
     :type file_template: str, optional
     :param headers: A dictionary of headers to include in the response, default is None.
                     If not provided, it defaults to 
-                    {'Content-Encoding': 'br',
+                    {'Content-Encoding': 'gzip',
                      'Content-Type': 'application/json'}.
     :type headers: Optional[Dict[str, str]], optional
     """
     def __init__(self,
                  file_template : str = common_filepaths['compressed-manhattan'],
                  headers: Optional[Dict[str,str]] = None):
-        default_headers={ 'Content-Encoding' : 'br' ,
+        default_headers={ 'Content-Encoding' : 'gzip' ,
                           'Content-Type' : 'application/json' }
         super().__init__(file_template,
                          default_headers if headers is None else headers)

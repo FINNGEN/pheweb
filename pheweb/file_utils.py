@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 """ File utilities
 """
@@ -36,7 +35,7 @@ dbsnp_version = "151"
 genes_version = "39"
 
 common_filepaths = {
-    "compressed-manhattan": "{}.br",
+    "compressed-manhattan": "{}.gz",
     "phenolist": os.path.join(conf.data_dir, "pheno-list.json"),
     "use_phenos": os.path.join(conf.data_dir, "use_phenos.txt"),
     "genes": get_cacheable_file_location(

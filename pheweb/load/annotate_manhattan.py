@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Sequence
 
-import brotli
+import gzip
 
 from pheweb.file_utils import common_filepaths
 
@@ -79,8 +79,7 @@ def process_manhattan(arguments : Arguments) -> None:
                                    gnomad_dao=gnomad_dao)
     json_data = json.dumps(manhattan)
     if compress:
-        data = brotli.compress(json_data.encode('utf-8'),
-                               mode=brotli.MODE_TEXT)
+        data = gzip.compress(json_data.encode('utf-8'))
     else:
         data = json_data.encode('utf-8')
     with open(arguments.output_filepath, 'wb') as output_file:
