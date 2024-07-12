@@ -248,7 +248,7 @@ task pheno {
 	Boolean compress_manhattan = false
 
 	# translate manhattan flags
-	String compress_suffix=if compress_manhattan then ".br" else ""
+	String compress_suffix=if compress_manhattan then ".gz" else ""
 	String compress_flag=if compress_manhattan then "true" else "false"
         Array[String] output_url
 
