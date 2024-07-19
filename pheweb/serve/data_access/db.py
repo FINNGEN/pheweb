@@ -58,7 +58,7 @@ class Variant(JSONifiable):
         try:
             self.chr = int(chr)
         except:
-            raise Exception("Chromosome can be only numeric! Use x=23, y=24 and MT=25")
+            raise Exception(f"Chromosome '{chr}' can be only numeric! Use x=23, y=24 and MT=25")
 
         self.pos = int(pos)
         self.ref = ref
