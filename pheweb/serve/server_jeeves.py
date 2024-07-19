@@ -318,7 +318,7 @@ class ServerJeeves(object):
     def add_annotations_large_region(self, datalist, pvalue_threshold=None):
         for d in datalist:
             if pvalue_threshold is None:
-                pvalue_threshold=0.00001
+                pvalue_threshold=0.001
             d['data']['varid'] = []
             d['data']['fin_enrichment'] = []
             d['data']['most_severe'] = []
@@ -346,19 +346,19 @@ class ServerJeeves(object):
                     
             f_annotations = self.threadpool.submit(self.annotation_dao.get_variant_annotations, significant_variants, True)
             f_gnomad = self.threadpool.submit(self.gnomad_dao.get_variant_annotations, significant_variants)
+
             annotations = f_annotations.result()
             gnomad = f_gnomad.result()
 
             annotations_index = { v:v  for v in annotations }
             gnomad_index = { v["variant"]:v["var_data"] for v in gnomad }
-
             for index_position,variant_position in enumerate(variant_index):
                 current_variant=significant_variants[index_position]
                 a=annotations_index[current_variant].get_annotations()
                 most_severe = (a['most_severe'] if 'most_severe' in a else (a['consequence'] if 'consequence' in a else 'unknown')).replace('_', ' ')
                 info=a['INFO'] if 'INFO' in a else 'NA'
                 af= a['AF'] if 'AF' in a else 'NA'
-                g = gnomad_index[current_variant]['var_data'] if current_variant in gnomad_index and 'var_data' in gnomad_index[current_variant] else {}
+                g = gnomad_index[current_variant] if current_variant in gnomad_index else {}
                 if 'enrichment_nfe' in g:
                     fin_enrichment=g['enrichment_nfe']
                 elif 'AF_fin' in g and 'AC_nfe_nwe' in g and 'AC_nfe_onf' in g and 'AC_nfe_seu' in g:
