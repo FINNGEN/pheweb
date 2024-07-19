@@ -311,9 +311,9 @@ class ServerJeeves(object):
             small_region_cuttoff = 1000000
         
         if end - start > small_region_cuttoff:
-            self.add_annotations_large_region(datalist)
+            return self.add_annotations_large_region(datalist)
         else:
-            self.add_annotations_small_region(chr, start, end, datalist)
+            return self.add_annotations_small_region(chr, start, end, datalist)
 
     def add_annotations_large_region(self, datalist, pvalue_threshold=None):
         for d in datalist:
@@ -374,6 +374,7 @@ class ServerJeeves(object):
                 d['data']['most_severe'][variant_position]=most_severe
                 d['data']['INFO'][variant_position]=info
                 d['data']['fin_enrichment'][variant_position]=fin_enrichment
+        return datalist
         
     def add_annotations_small_region(self, chr, start, end, datalist):
         if chr == 'X':
