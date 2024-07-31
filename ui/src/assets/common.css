@@ -209,7 +209,7 @@ border {}
 /* ---- */
 .variant-tooltip {
     max-width: none;
-    width: 100%;
+    width: fit-content;
 }
 /* LocusZoom */
 .lz-data_layer-tooltip {
