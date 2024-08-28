@@ -145,7 +145,8 @@ def create_runner(annotation_filepath: str,
         nonlocal gnomad_filepath
         phenocode = pheno['phenocode']
         manhattan_filepath = common_filepaths['manhattan'](phenocode)
-        output_filepath = common_filepaths['compressed-manhattan'].format(manhattan_filepath)
+        compressed_filepath = common_filepaths['compressed-manhattan'].format(manhattan_filepath)
+        output_filepath = compressed_filepath if compress else manhattan_filepath
         arguments = Arguments(manhattan_filepath=manhattan_filepath,
                               gnomad_filepath=gnomad_filepath,
                               annotation_filepath=annotation_filepath,
