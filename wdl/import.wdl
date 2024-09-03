@@ -547,8 +547,8 @@ CODE
    runtime {
         docker: "${docker}"
         cpu: 1
-        memory: "2 GB"
-        disks: "local-disk 5 HDD"
+        memory: "4 GB"
+        disks: "local-disk 40 HDD"
         zones: "europe-west1-b"
         preemptible: 0
     }
