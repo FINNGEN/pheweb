@@ -10,7 +10,7 @@ the wdl to use is 'import.wdl'.
 There is a variable that is prefixed by version_ that needs to
 be set appropriately to ensure the version import.wdl and json
 match.  For example `version_r9_1` is a boolean variable that
-has to be set in the configuration json to run the wdl.  Check 
+has to be set in the configuration json to run the wdl.  Check
 the history of import.wdl to find the appropriate version.
 
 ## Parameters
@@ -21,7 +21,7 @@ the history of import.wdl to find the appropriate version.
 **pheweb.summary_files** : file containing the list of summary files
 
 **pheweb.bed_file** : the bed file
-      
+
 **pheweb.disk** : disk space needed for the whole export
 
 **pheweb.matrix.cpu** : cpu's need for the matrix step
@@ -97,6 +97,35 @@ Optional commands to run after import e.g.
 ```
   "import_pheweb.post_import" : [ "gcloud container clusters get-credentials staging-pheweb --zone europe-west1-b && kubectl delete pods --all --wait=false" ]
 ```
+
+
+## Manhattan annotation
+
+The annotations are added to the Manhattan JSON to improve the
+performance of the phenotype page. However, this increases the size of
+the files, so enabling compression is recommended.  Below are the
+recommended settings.
+
+  "import\_pheweb.pheno.gnomad_filepath" the gnomad annotation file
+  "import\_pheweb.pheno.annotation_filepath" the annotation file path
+  "import\_pheweb.pheno.annotation_indexes" : the list of tabix index files for the above files
+  "import\_pheweb.pheno.compress_manhattan" : true, to enable compression
+
+*NOTE* This requires the following settings in the pheweb configuration
+
+If compression enabled
+`{ "manhattan" : { "ManhattanCompressedResultDao" : { }  } }`
+If uncompressed
+`{ "manhattan" : { "ManhattanFileResultDao" : { }  } }`
+
+Below is an example of these settings from 'wdl/r12/mvp.json'
+
+`
+  "import\_pheweb.pheno.gnomad\_filepath" : "gs://fg-mvp/meta\_analysis\_results/pheweb/annotation/gnomad.v4.0.munged.sites\_v1.tsv.bgz",
+  "import\_pheweb.pheno.annotation\_filepath" : "gs://fg-mvp/meta\_analysis\_results/pheweb/annotation/R12\_annotated\_variants\_v1\_fixed.gz",
+  "import\_pheweb.pheno.annotation\_indexes" : [ "gs://fg-mvp/meta\_analysis\_results/pheweb/annotation/gnomad.v4.0.munged.sites\_v1.tsv.bgz.tbi" ,
+                                               "gs://fg-mvp/meta\_analysis\_results/pheweb/annotation/R12\_annotated\_variants\_v1\_fixed.gz.tbi" ],
+`
 
 ## Development and testing
 
