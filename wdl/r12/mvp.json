@@ -1,13 +1,13 @@
 {
-  "import_pheweb.pheno.gnomad_filepath" : "gs://fg-mvp/meta_analysis_results/pheweb/annotation/gnomad.v4.0.munged.sites_v1.tsv.bgz",
-  "import_pheweb.pheno.annotation_filepath" : "gs://fg-mvp/meta_analysis_results/pheweb/annotation/R12_annotated_variants_v1_fixed.gz",
-  "import_pheweb.pheno.annotation_indexes" : [ "gs://fg-mvp/meta_analysis_results/pheweb/annotation/gnomad.v4.0.munged.sites_v1.tsv.bgz.tbi" ,
-                                               "gs://fg-mvp/meta_analysis_results/pheweb/annotation/R12_annotated_variants_v1_fixed.gz.tbi" ],
+  "import_pheweb.pheno.gnomad_filepath" : "gs://r12-data-green/mvp/annotation/gnomad.v4.0.munged.sites_v1.tsv.bgz",
+  "import_pheweb.pheno.annotation_filepath" : "gs://r12-data-green/mvp/annotation/R12_annotated_variants_v1_fixed.gz",
+  "import_pheweb.pheno.annotation_indexes" : [ "gs://r12-data-green/mvp/annotation/gnomad.v4.0.munged.sites_v1.tsv.bgz.tbi" ,
+                                               "gs://r12-data-green/mvp/annotation/R12_annotated_variants_v1_fixed.gz.tbi" ],
   "import_pheweb.pheno.compress_manhattan" : true,
   "import_pheweb.docker": "eu.gcr.io/phewas-development/pheweb:wip-36a698114a40aa841cf95078694c3371a4a4328b",
-  "import_pheweb.summary_files": "gs://fg-mvp/meta_analysis_results/pheweb/unformatted.all.tsv",
-  "import_pheweb.bed_file": "gs://fg-mvp/meta_analysis_results/pheweb/genes-b38-v39.bed",
-  "import_pheweb.custom_json": "gs://fg-mvp/meta_analysis_results/pheweb/pheno-list.json",
+  "import_pheweb.summary_files": "gs://r12-data-green/mvp/unformatted.all.tsv",
+  "import_pheweb.bed_file": "gs://r12-data-green/mvp/genes-b38-v39.bed",
+  "import_pheweb.custom_json": "gs://r12-data-green/mvp/pheno-list.json",
   "import_pheweb.disk": 8000,
   "import_pheweb.matrix.cpu": 8,
   "import_pheweb.mem": 64,
@@ -33,8 +33,10 @@
         "num_cases",
         "num_controls"
   ],
-  "import_pheweb.sites_file": "gs://fg-mvp/meta_analysis_results/pheweb/sites.tsv",
-  "import_pheweb.output_url": ["gs://fg-mvp/meta_analysis_results/pheweb/import"],
+  "import_pheweb.sites_file": "gs://r12-data-green/mvp/sites.tsv",
+  "import_pheweb.output_url": [
+      "gs://r12-data-green/mvp/import"
+  ],
   "import_pheweb.preprocess.chrom_column": "#CHR",
   "import_pheweb.preprocess.pos_column": "POS",
   "import_pheweb.preprocess.ref_column": "REF",
@@ -196,5 +198,5 @@
   "import_pheweb.matrix_longformat.cpu": 6,
   "import_pheweb.generate_longformat_matrix": true,
   "import_pheweb.matrix_longformat.batch_size": 16,
-  "import_pheweb.preprocess.preprocessor" : "awk -v cols=\"$(gsutil cat gs://fg-mvp/meta_analysis_results/pheweb/summary_stats_columns.tsv | tr '\n' '\t' | sed 's/\t*$//' )\" 'BEGIN {FS=OFS=\"\t\"; n=split(cols, col_list, FS)} NR==1 {for (i=1; i<=NF; i++) col_idx[$i]=i; for (i=1; i<=n; i++) printf (i>1?OFS:\"\") col_list[i]; print \"\"} NR>1 {for (i=1; i<=n; i++) printf (i>1?OFS:\"\") (col_list[i] in col_idx ? $col_idx[col_list[i]] : \"\"); print \"\"}'"
+  "import_pheweb.preprocess.preprocessor" : "awk -v cols=\"$(gsutil cat gs://r12-data-green/mvp/summary_stats_columns.tsv | tr '\n' '\t' | sed 's/\t*$//' )\" 'BEGIN {FS=OFS=\"\t\"; n=split(cols, col_list, FS)} NR==1 {for (i=1; i<=NF; i++) col_idx[$i]=i; for (i=1; i<=n; i++) printf (i>1?OFS:\"\") col_list[i]; print \"\"} NR>1 {for (i=1; i<=n; i++) printf (i>1?OFS:\"\") (col_list[i] in col_idx ? $col_idx[col_list[i]] : \"\"); print \"\"}'"
 }

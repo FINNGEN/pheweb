@@ -118,15 +118,6 @@ If compression enabled
 If uncompressed
 `{ "manhattan" : { "ManhattanFileResultDao" : { }  } }`
 
-Below is an example of these settings from 'wdl/r12/mvp.json'
-
-`
-  "import\_pheweb.pheno.gnomad\_filepath" : "gs://fg-mvp/meta\_analysis\_results/pheweb/annotation/gnomad.v4.0.munged.sites\_v1.tsv.bgz",
-  "import\_pheweb.pheno.annotation\_filepath" : "gs://fg-mvp/meta\_analysis\_results/pheweb/annotation/R12\_annotated\_variants\_v1\_fixed.gz",
-  "import\_pheweb.pheno.annotation\_indexes" : [ "gs://fg-mvp/meta\_analysis\_results/pheweb/annotation/gnomad.v4.0.munged.sites\_v1.tsv.bgz.tbi" ,
-                                               "gs://fg-mvp/meta\_analysis\_results/pheweb/annotation/R12\_annotated\_variants\_v1\_fixed.gz.tbi" ],
-`
-
 ## Development and testing
 
 To run the pipeline on a trivial dataset to test the pipeline

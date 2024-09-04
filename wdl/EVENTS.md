@@ -127,7 +127,7 @@ gsutil cp - gs://r9_data_green/genes-without-M-b38-v39.bed
 	for the actual settings used.
 
 ### import preprocessor
-The import preprocessor script requires the file `gs://fg-mvp/meta_analysis_results/pheweb/summary_stats_columns.tsv`
+The import preprocessor script requires the file `gs://r12-data-green/mvp/summary_stats_columns.tsv`
 
 This file is a list of the pattern `columnname-1(\ncolumnname-i)*` containing
 all the column names expected in the file.  If a file is missing a column in
@@ -183,17 +183,8 @@ COPY (
 ### required files
 
 The following files were obtained from r12:
-  "gs://fg-mvp/meta_analysis_results/pheweb/annotation/gnomad.v4.0.munged.sites_v1.tsv.bgz",
-  "gs://fg-mvp/meta_analysis_results/pheweb/annotation/R12_annotated_variants_v1_fixed.gz",
-  "gs://fg-mvp/meta_analysis_results/pheweb/annotation/gnomad.v4.0.munged.sites_v1.tsv.bgz.tbi"
-  "gs://fg-mvp/meta_analysis_results/pheweb/annotation/R12_annotated_variants_v1_fixed.gz.tbi"
-  "gs://fg-mvp/meta_analysis_results/pheweb/genes-b38-v39.bed"
 
-  "import_pheweb.pheno.compress_manhattan" : true,
-  "import_pheweb.docker": "eu.gcr.io/phewas-development/pheweb:wip-36a698114a40aa841cf95078694c3371a4a4328b",
-  "import_pheweb.summary_files": "gs://fg-mvp/meta_analysis_results/pheweb/unformatted.all.tsv",
-  "import_pheweb.bed_file":
-  "import_pheweb.custom_json": "gs://fg-mvp/meta_analysis_results/pheweb/pheno-list.json",
-
-
-N
+-  "import\_pheweb.pheno.gnomad\_filepath"
+-  "import\_pheweb.pheno.annotation\_filepath"
+-  "import\_pheweb.pheno.annotation\_indexes"
+-  "import\_pheweb.bed\_file"
