@@ -3,6 +3,7 @@
   "import_pheweb.pheno.annotation_filepath" : "gs://r12-data-green/mvp/annotation/R12_annotated_variants_v1_fixed.gz",
   "import_pheweb.pheno.annotation_indexes" : [ "gs://r12-data-green/mvp/annotation/gnomad.v4.0.munged.sites_v1.tsv.bgz.tbi" ,
                                                "gs://r12-data-green/mvp/annotation/R12_annotated_variants_v1_fixed.gz.tbi" ],
+  "import_pheweb.pheno.compress_manhattan" : true,
   "import_pheweb.docker": "eu.gcr.io/phewas-development/pheweb:wip-36a698114a40aa841cf95078694c3371a4a4328b",
   "import_pheweb.summary_files": "gs://r12-data-green/mvp/unformatted.1.tsv",
   "import_pheweb.bed_file": "gs://r12-data-green/mvp/genes-b38-v39.bed",
