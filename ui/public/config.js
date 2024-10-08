@@ -73,6 +73,10 @@ const userInterface = {
       columns: [
         { type: 'phenotype' },
         { type: 'risteysLink' },
+	{ type: 'hasRisteys',
+	  accessor: 'hasRisteys',
+	  show: false
+	},
         { type: 'category' },
         { type: 'numCases' },
         {
@@ -95,7 +99,7 @@ const userInterface = {
       ]
     }
   },
-  gene: { lossOfFunction: null , lz_config : { ld_panel_version : "sisu42" }, 
+  gene: { lossOfFunction: null , lz_config : { ld_panel_version : "sisu42" },
           pqtlColocalizations: {},
           geneColocalizations: {},
           tableOfContentsTitles: {

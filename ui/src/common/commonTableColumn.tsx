@@ -165,10 +165,11 @@ export const risteysLinkFormatter = (risteysURL : string) => <a style={{
  */
 export const risteysURLFormatter = (props) => {
     const phenocode=props?.value?.replace("_EXALLC", "").replace("_EXMORE", "");
-    const hasRisteys=(typeof(props.row?.hasRisteys) === "boolean") ? props.row?.hasRisteys         : true;
-    const risteysPhenocode=props.row?.risteysPhenocode             ? props.row?.risteysPhenocode   : phenocode;
-    const risteysURLPrefix=props.row?.risteysURLPrefix             ? props.row?.risteysURLPrefix   : defaultRisteysURLPrefix;
-    const risteysURL : string=props.row?.risteysURL                ? props.row?.risteysURL         : `${risteysURLPrefix}${risteysPhenocode}`;
+    const row = props.row;
+    const hasRisteys=(typeof(row?.hasRisteys) === "boolean") ? row?.hasRisteys         : true;
+    const risteysPhenocode=row?.risteysPhenocode             ? row?.risteysPhenocode   : phenocode;
+    const risteysURLPrefix=row?.risteysURLPrefix             ? row?.risteysURLPrefix   : defaultRisteysURLPrefix;
+    const risteysURL : string=row?.risteysURL                ? row?.risteysURL         : `${risteysURLPrefix}${risteysPhenocode}`;
     return hasRisteys?risteysURL:null;
 }
 
@@ -713,6 +714,29 @@ const phenotypeColumns = {
         },
         minWidth: 80
       },
+    hasRisteys : {
+      accessor: 'hasRisteys',
+      show: false
+    },
+   risteysPhenocode : {
+       accessor: 'risteysPhenocode',
+    show: false
+  },
+    risteysURL : {
+      accessor: 'risteysURL',
+      show: false
+    },
+    risteysURLPrefix : {
+      accessor: 'risteysURLPrefix',
+      show: false
+    },
+  /**
+   * To use this column, with the optional risteys flags you need to
+   * add the following columns to the table:
+   * hasRisteys, risteysPhenocode, risteysURL, risteysURLPrefix
+   * these columns will be hidden but make the row attributes available
+   * to the risteysLinkFormatter.
+   */
     risteysLink:
       { Header: () => (<span title="Risteys link" style={{ textDecoration: "underline" }}>Risteys</span>),
         label: "phenocode",
