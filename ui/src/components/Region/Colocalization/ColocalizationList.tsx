@@ -60,7 +60,8 @@ const listMetadata : Metadata[] = [
     { title: "beta1", accessor: "beta1", label: "beta cs1", width: 100,  Cell: cellNumber}, 
     { title: "beta2", accessor: "beta2", label: "beta cs2", width: 100,  Cell: cellNumber},
     { title: "pval1", accessor: "pval1", label: "p-value cs1", width: 100,  Cell: cellNumber}, 
-    { title: "pval2", accessor: "pval2", label: "p-value cs2", width: 100,  Cell: cellNumber} 
+    { title: "pval2", accessor: "pval2", label: "p-value cs2", width: 100,  Cell: cellNumber},
+    { title: "pp_h4_abf", accessor: "pp_h4_abf", label: "PP.H4.abf", width: 100,  Cell: cellNumber} 
 ];
 
 const subComponentMetadata = [ { title: "Variant" , accessor: "varid1" , label: "Variant" , Cell : compose(cell_variant,variantLink) },

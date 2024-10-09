@@ -113,9 +113,9 @@ const userInterface = {
   region: {
     colocalization: {
       colocalizationSourceTypes: [
-        {type: "Endpoints/Biomarkers", sources: ["FinnGen", "UKBB"]},
+        {type: "Endpoints/Biomarkers", sources: ["FinnGen-R12", "UKB-finucane"]},
         {type: "pQTL", sources: ["Somascan", "Olink", "UKBB-PPP"]},
-        {type: "mQTL", sources: ["geneRISK"]},
+        {type: "mQTL", sources: ["GeneRisk"]},
         {type: "INTERVAL", sources: ["INTERVAL"]},
         {type: "eQTL", sources: ["Alasoo_2018","BLUEPRINT",
                    "Bossini-Castillo_2019",
@@ -128,7 +128,8 @@ const userInterface = {
                    "Peng_2018","PhLiPS","Quach_2016","ROSMAP",
                    "Schmiedel_2018","Schwartzentruber_2018",
                    "Steinberg_2020","TwinsUK","Young_2019",
-                   "iPSCORE","van_de_Bunt_2015"]}
+                   "iPSCORE","van_de_Bunt_2015", "Sun_2018"]}
+
       ]
     }
   }
