@@ -113,9 +113,9 @@ const userInterface = {
   region: {
     colocalization: {
       colocalizationSourceTypes: [
-        {type: "Endpoints/Biomarkers", sources: ["FinnGen-R12", "UKB-finucane"]},
+        {type: "Endpoints/Biomarkers", sources: ["FinnGen", "UKBB"]},
         {type: "pQTL", sources: ["Somascan", "Olink", "UKBB-PPP"]},
-        {type: "mQTL", sources: ["GeneRisk"]},
+        {type: "mQTL", sources: ["geneRISK"]},
         {type: "INTERVAL", sources: ["INTERVAL"]},
         {type: "eQTL", sources: ["Alasoo_2018","BLUEPRINT",
                    "Bossini-Castillo_2019",
