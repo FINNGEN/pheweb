@@ -16,8 +16,8 @@ const tableProperties = {
   className : "-striped -highlight",
   defaultFilterMethod : (filter : {id : string , value : string}, row : { [ key : string ] : string }) => row[filter.id].toLowerCase().includes(filter.value.toLowerCase())
 }
-
-const dataToTableRows = (data : PhenotypeVariantData| null) :  UnbinnedVariant[] => data?.unbinned_variants?.filter(v => !!v.peak) || []
+export const add_locus_id = (v : UnbinnedVariant) => { v.locus_id=`${v?.chrom}-${v?.pos}-${v?.ref}-${v?.alt}`; return v; }
+const dataToTableRows = (data : PhenotypeVariantData| null) :  UnbinnedVariant[] => data?.unbinned_variants?.filter(v => !!v.peak).map(add_locus_id) || []
 declare let window: ConfigurationWindow;
 
 const variant = window?.config?.userInterface?.phenotype?.variant;
@@ -30,6 +30,7 @@ const PhenotypeVariantTable = () => {
   const { phenotype , phenotypeCode , phenotypeVariantData } = useContext<Partial<PhenotypeState>>(PhenotypeContext);
   const tableData : PhenotypeVariantData | null = phenotypeVariantData || null;
   const tableColumns = phenotype.is_binary == false?quantitativeTableColumns : binaryTableColumns;
+  console.log(tableData);
   const filename : string = `${phenotypeCode}.tsv`
   const props : DownloadTableProps<PhenotypeVariantData, PhenotypeVariantRow>  = {
     filename,

@@ -58,6 +58,7 @@ export interface GcLambda {
 }
 
 export interface UnbinnedVariant {
+  locus_id? : string
   af_alt? : number
   af_alt_cases: number
   af_alt_controls: number

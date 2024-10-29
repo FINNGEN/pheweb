@@ -903,6 +903,14 @@ const phenotypeColumns = {
         },
         minWidth: 100
       },
+    variantLabel:
+      {
+        Header: () => "locus_id",
+        label: "locus_id",
+        accessor: "locus_id",
+        Cell: props => `${props.original.chrom}-${props.original.pos}-${props.original.ref}-${props.original.alt}`,
+	show : false
+      },
     pos:
       {
         Header: () => (<span title="position in build 38" style={{ textDecoration: "underline" }}>pos</span>),
@@ -1916,6 +1924,7 @@ export const phenotypeListTableColumns = [
   phenotypeColumns.controlLambda];
 
 export const phenotypeBinaryTableColumns = [
+  phenotypeColumns.variantLabel,
   phenotypeColumns.chrom,
   phenotypeColumns.pos,
   phenotypeColumns.ref,
@@ -1937,6 +1946,7 @@ export const phenotypeBinaryTableColumns = [
 ]
 
 export const phenotypeQuantitativeTableColumns = [
+  phenotypeColumns.variantLabel,
   phenotypeColumns.chrom,
   phenotypeColumns.pos,
   phenotypeColumns.ref,
