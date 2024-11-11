@@ -44,7 +44,7 @@ task preprocess {
 
   String normalized_filename = sub(sub(basename(summary_file), ".gz$", ""), ".bgz$", "")
   String out_filename = "${normalized_filename}.gz"
-
+  String out_variants = "${normalized_filename}.variants.gz"
 
   command <<<
 	   set -euxo pipefail
@@ -56,11 +56,14 @@ task preprocess {
            sort -t$'\t' -k1,1n -k2,2n -k3,3 -k4,4 | \
            bgzip > "${out_filename}"
 
-           du -h "${out_filename}"
+        zcat "${out_filename}" | sed '1d' | cut -f 1-4 | bgzip > "${out_variants}"
+
+        du -h "${out_filename}"
   >>>
 
   output {
      	    File out_file = "${out_filename}"
+            File out_variantsfile = "${out_variants}"
   }
 
   runtime {
@@ -75,42 +78,37 @@ task preprocess {
 }
 
 task sites {
-           Array[File] summary_files
-     	   String docker
-           String disk
-	   # There is a pheweb command `pheweb sites`
-     	   # that generates the list of variants.
-     	   # this is a bash replacement for that command
+        Array[File] variant_files
+        String docker
+        String disk
+	    # There is a pheweb command `pheweb sites`
+        # that generates the list of variants.
+        # this is a bash replacement for that command
 
   command <<<
         set -euxo pipefail
 
-        for file in ${sep="\t" summary_files}; do
-
-	   # decompress if suffixes indicate compression
-	   cat "$file" | \
-
-       (if [[ "$file" == *.gz || "$file" == *.bgz ]]; then zcat ; else cat ; fi)  | \
-	      cut -d$'\t' -f1-4| \
-	      sed '1d' | \
-	      sort -t$'\t' -k1,1n -k2,2n -k3,3 -k4,4 > "$file.tmp"
-	   # replace orginal file
-	   mv "$file.tmp" "$file"
-	   # write the list of files to file in case too long
-	   # for commandline
-	   echo $file >> summary_files.tsv
-	done
-	# output header
+        for file in ${sep="\t" variant_files}; do
+            # decompress if suffixes indicate compression
+            cat "$file" | \
+            (if [[ "$file" == *.gz || "$file" == *.bgz ]]; then zcat ; else cat ; fi) > "$file.tmp"
+            # replace orginal file
+            mv "$file.tmp" "$file"
+            # write the list of files to file in case too long
+            # for commandline
+            echo $file >> variant_files.tsv
+        done
+	    # output header
         # then using the list of files sort and merge
         # python memory script
-     	(echo -e 'chrom\tpos\tref\talt' ; cat summary_files.tsv | tr '\n' '\0' | sort --merge --unique --files0-from=- -t$'\t' -k1,1n -k2,2n -k3,3 -k4,4) > sites.tsv
+     	(echo -e 'chrom\tpos\tref\talt' ; cat variant_files.tsv | tr '\n' '\0' | sort --merge --unique --files0-from=- -t$'\t' -k1,1n -k2,2n -k3,3 -k4,4) > sites.tsv
      >>>
 
-     output {
+    output {
         File variant_list = "sites.tsv"
-     }
+    }
 
-   runtime {
+    runtime {
         docker: "${docker}"
     	cpu: 2
     	memory: "2 GB"
@@ -826,7 +824,7 @@ workflow import_pheweb {
 
 	 if (!defined(sites_file)) {
 	   call sites { input :
-              summary_files = preprocess.out_file ,
+              variant_files = preprocess.out_variantsfile ,
               docker = docker,
 	      disk=disk
            }
