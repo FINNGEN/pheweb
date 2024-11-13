@@ -46,7 +46,7 @@ setup(
         'pytest-runner~=4.0',
     ],
     install_requires=[
-        'pheweb_colocalization@git+https://github.com/FINNGEN/pheweb-colocalization.git@16a60620ae2dc7a9c8e5f1a126831e95d61c85cb#egg=pheweb_colocalization',
+        'pheweb_colocalization@git+https://github.com/FINNGEN/pheweb-colocalization.git@93ba102210602791bd54444b530df87529bf584a#egg=pheweb_colocalization',
         'Jinja2~=3.0.3',
         'Flask~=2.0.3',
         'Flask-Compress~=1.10.1',
@@ -86,7 +86,7 @@ setup(
         'tiledb==0.18.3',
     ],
     dependency_links=[
-        'pheweb_colocalization@git+https://github.com/FINNGEN/pheweb-colocalization.git@fcea03fd32e89b0f61a6016485533a1f85b329c7#egg=pheweb_colocalization',
+        'pheweb_colocalization@git+https://github.com/FINNGEN/pheweb-colocalization.git@93ba102210602791bd54444b530df87529bf584a#egg=pheweb_colocalization',
     ],
     tests_require=[
         'pytest~=3.4',

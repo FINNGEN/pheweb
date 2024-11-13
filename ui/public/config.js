@@ -128,7 +128,8 @@ const userInterface = {
                    "Peng_2018","PhLiPS","Quach_2016","ROSMAP",
                    "Schmiedel_2018","Schwartzentruber_2018",
                    "Steinberg_2020","TwinsUK","Young_2019",
-                   "iPSCORE","van_de_Bunt_2015"]}
+                   "iPSCORE","van_de_Bunt_2015", "Sun_2018"]}
+
       ]
     }
   }
