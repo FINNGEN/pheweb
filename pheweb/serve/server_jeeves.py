@@ -50,7 +50,8 @@ def annotate_manhattan(*,
                 variant['gnomad'] = gd[v]
 
         return variants
-        
+
+    
 class ServerJeeves(object):
     '''
         Class that handles data aggregation and munging for server.py
@@ -80,6 +81,44 @@ class ServerJeeves(object):
         self.pqtl_colocalization = self.dbs_fact.get_pqtl_colocalization_dao()
         self.health_dao = self.dbs_fact.get_health_dao()
         self.manhattan_dao = self.dbs_fact.get_manhattan_dao()
+
+    
+    def get_annotation_af(self, a):
+        if 'AF' in a:
+            af=a['AF']
+        else:
+            af='NA'
+        return af
+
+    def get_annotation_most_severe(self, a):
+        if 'most_severe' in a:
+            most_severe=a['most_severe']
+        elif 'consequence' in a:
+            most_severe=a['consequence']
+        else:
+            most_severe='unknown'
+        return most_severe.replace('_', ' ')
+
+    def get_annotation_info(self, a):
+        if 'INFO' in a:
+            info=a['INFO']
+        else:
+            info='NA'
+        return info
+
+    def get_annotation_fin_enrichment(self, g):
+        if 'enrichment_nfe' in g:
+            fin_enrichment=g['enrichment_nfe']
+        elif 'AF_fin' in g and 'AC_nfe_nwe' in g and 'AC_nfe_onf' in g and 'AC_nfe_seu' in g:
+            if g['AF_fin'] == '.' or float(g['AF_fin']) == 0:
+                fin_enrichment='No FIN in gnomAD'
+            elif float(g['AC_nfe_nwe']) + float(g['AC_nfe_onf']) + float(g['AC_nfe_seu']) == 0:
+                fin_enrichment='No NFEE in gnomAD'
+            else:
+                fin_enrichment=round(float(g['AF_fin']) / ((float(g['AC_nfe_nwe']) + float(g['AC_nfe_onf']) + float(g['AC_nfe_seu'])) / (float(g['AN_nfe_nwe']) + float(g['AN_nfe_onf']) + float(g['AN_nfe_seu']))), 3)
+        else:
+            fin_enrichment='Unknown'
+        return fin_enrichment
         
     def gene_functional_variants(self, gene, pThreshold=None, use_aliases=None):
         if pThreshold is None:
@@ -306,8 +345,69 @@ class ServerJeeves(object):
             return var,r[1]
         else:
             return None
+    def add_annotations(self, chr, start, end, datalist, small_region_cuttoff=None):
+        if small_region_cuttoff is None:
+            if "small_region_cuttoff" in self.conf.report_conf:
+                small_region_cuttoff=self.conf.report_conf["small_region_cuttoff"]
+            else:
+                small_region_cuttoff = 1000000
+        
+        if end - start > small_region_cuttoff:
+            return self.add_annotations_large_region(datalist)
+        else:
+            return self.add_annotations_small_region(chr, start, end, datalist)
 
-    def add_annotations(self, chr, start, end, datalist):
+    def add_annotations_large_region(self, datalist, large_region_pvalue_threshold=None):
+        for d in datalist:
+            if large_region_pvalue_threshold is None:
+                if "large_region_pvalue_threshold" in self.conf.report_conf:
+                    large_region_pvalue_threshold=self.conf.report_conf["large_region_pvalue_threshold"]
+                else:
+                    large_region_pvalue_threshold=0.001
+            d['data']['varid'] = []
+            d['data']['fin_enrichment'] = []
+            d['data']['most_severe'] = []
+            d['data']['AF'] = []
+            d['data']['INFO'] = []
+            significant_variants = [] # we save these to pass on to the different annotating threads
+            variant_index=[] # we to place the updated values back in the orginal place
+            for i,r in enumerate(d['data']['id']):
+                # normalize varid
+                varid = r.replace("X","23").replace("Y","24").replace("MT","25").replace("M","25").replace('_', ':').replace('/', ':')
+                # render 
+                if not 'pvalue' in d['data']  or ('pvalue' in d['data'] and d['data']['pvalue'][i] < large_region_pvalue_threshold):
+                    v=varid.split(":")
+                    significant_variants.append(Variant(v[0],
+                                                        v[1],
+                                                        v[2],
+                                                        v[3]))
+                    variant_index.append(i)
+                    
+                d['data']['varid'].append(varid)
+                d['data']['most_severe'].append('NA')
+                d['data']['AF'].append('NA')
+                d['data']['INFO'].append('NA')
+                d['data']['fin_enrichment'].append('Unknown')
+                    
+            f_annotations = self.threadpool.submit(self.annotation_dao.get_variant_annotations, significant_variants, True)
+            f_gnomad = self.threadpool.submit(self.gnomad_dao.get_variant_annotations, significant_variants)
+
+            annotations = f_annotations.result()
+            gnomad = f_gnomad.result()
+
+            annotations_index = { v:v  for v in annotations }
+            gnomad_index = { v["variant"]:v["var_data"] for v in gnomad }
+            for index_position,variant_position in enumerate(variant_index):
+                current_variant=significant_variants[index_position]
+                a=annotations_index[current_variant].get_annotations()['annot']
+                g = gnomad_index[current_variant] if current_variant in gnomad_index else {}
+                d['data']['AF'][variant_position]=self.get_annotation_af(a)
+                d['data']['most_severe'][variant_position]=self.get_annotation_most_severe(a)
+                d['data']['INFO'][variant_position]=self.get_annotation_info(a)
+                d['data']['fin_enrichment'][variant_position]=self.get_annotation_fin_enrichment(g)
+        return datalist
+        
+    def add_annotations_small_region(self, chr, start, end, datalist):
         if chr == 'X':
             chr = 23
         if start == 0:
@@ -351,25 +451,14 @@ class ServerJeeves(object):
                         continue
 
                     a = annot_hash[varid]['annot']
-                    ms = (a['most_severe'] if 'most_severe' in a else (a['consequence'] if 'consequence' in a else 'unknown')).replace('_', ' ')
-                    d['data']['most_severe'].append(ms)
-                    d['data']['AF'].append(a['AF'] if 'AF' in a else 'NA')
-                    d['data']['INFO'].append(a['INFO'] if 'INFO' in a else 'NA')
+                    d['data']['most_severe'].append(self.get_annotation_most_severe(a))
+                    d['data']['AF'].append(self.get_annotation_af(a))
+                    d['data']['INFO'].append(self.get_annotation_info(a))
                     if varid not in gnomad_hash:
                         d['data']['fin_enrichment'].append('No gnomAD data')
                     else:
                         g = gnomad_hash[varid]['gnomad']
-                        if 'enrichment_nfe' in g:
-                            d['data']['fin_enrichment'].append(g['enrichment_nfe'])
-                        elif 'AF_fin' in g and 'AC_nfe_nwe' in g and 'AC_nfe_onf' in g and 'AC_nfe_seu' in g:
-                            if g['AF_fin'] == '.' or float(g['AF_fin']) == 0:
-                                d['data']['fin_enrichment'].append('No FIN in gnomAD')
-                            elif float(g['AC_nfe_nwe']) + float(g['AC_nfe_onf']) + float(g['AC_nfe_seu']) == 0:
-                                d['data']['fin_enrichment'].append('No NFEE in gnomAD')
-                            else:
-                                d['data']['fin_enrichment'].append(round(float(g['AF_fin']) / ((float(g['AC_nfe_nwe']) + float(g['AC_nfe_onf']) + float(g['AC_nfe_seu'])) / (float(g['AN_nfe_nwe']) + float(g['AN_nfe_onf']) + float(g['AN_nfe_seu']))), 3))
-                        else:
-                            d['data']['fin_enrichment'].append('Unknown')
+                        d['data']['fin_enrichment'].append(self.get_annotation_fin_enrichment(g))
 
                 except KeyError as ke:
                     ##print('no annotation for ' + varid + ', is annotation file out of sync or is the variant correctly id\'d?')
