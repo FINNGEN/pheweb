@@ -72,8 +72,6 @@ flycheck_*.el
 
 .idea
 coverage
-finngen_common_data_model
-pheweb_colocalization
 
 # git ignore
 *~
