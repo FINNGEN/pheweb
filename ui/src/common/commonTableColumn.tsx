@@ -7,12 +7,11 @@ import { LabelKeyObject , Headers } from "react-csv/components/CommonPropTypes";
 import matchSorter from 'match-sorter';
 import { string } from 'purify-ts';
 import ReactTooltip from "react-tooltip";
+import { ConfigurationWindow } from '../components/Configuration/configurationModel';
 
-interface PhewebWindow extends Window {
-  release_prev: number;
-}
+declare let window: ConfigurationWindow;
+const defaultRisteysURLPrefix = window?.config?.application?.risteysURLPrefix||'https://risteys.finregistry.fi/phenocode/';
 
-declare let window: PhewebWindow;
 
 // https://stackoverflow.com/questions/10463518/converting-em-to-px-in-javascript-and-getting-default-font-size
 function getSize(size = '1em', parent = document.body) {
@@ -75,7 +74,7 @@ export const pValueCellFormatter = (props) => {
 }
 
 const betaVariantTableFormatter = (props) => {
-  
+
   let result;
 
   if (isNaN(+props.value)){
@@ -84,8 +83,8 @@ const betaVariantTableFormatter = (props) => {
     result =  (+props.value).toExponential(1);
   } else if (props.value === null ){
     result =  (
-      <p style={{ fontWeight: 'bold', minWidth: props.width * 3, 
-                  textAlign: 'center', position: 'absolute', 
+      <p style={{ fontWeight: 'bold', minWidth: props.width * 3,
+                  textAlign: 'center', position: 'absolute',
                   overflow: 'overlay'}}>Not significant. Click to see stats</p>
     )
   } else {
@@ -139,6 +138,60 @@ const variantCell = (value : string) => {
   } else {
     return <span>{value}</span>
   }
+}
+
+/**
+ * Formats a link to the RISTEYS website with custom styling.
+ *
+ * @param {string} risteysURL - The URL to be linked.
+ * @returns {JSX.Element} A styled anchor element pointing to the provided URL.
+ */
+export const risteysLinkFormatter = (risteysURL : string) => <a style={{
+        fontSize: "1.25rem",
+        padding: ".25rem .5rem",
+        backgroundColor: "#2779bd",
+        color: "#fff",
+        borderRadius: ".25rem",
+        fontWeight: 700,
+        boxShadow: "0 0 5px rgba(0,0,0,.5)"
+    }}
+    href={risteysURL}>RISTEYS</a>
+
+/**
+ * Formats a Risteys URL based on the provided props.
+ *
+ * @param props
+ * @param {string} props.value - return null if the phenocode should not have a Risteys link.
+ */
+export const risteysURLFormatter = (props) => {
+    const phenocode=props?.value?.replace("_EXALLC", "").replace("_EXMORE", "");
+    const row = props.row;
+    const hasRisteys=(typeof(row?.hasRisteys) === "boolean") ? row?.hasRisteys         : true;
+    const risteysPhenocode=row?.risteysPhenocode             ? row?.risteysPhenocode   : phenocode;
+    const risteysURLPrefix=row?.risteysURLPrefix             ? row?.risteysURLPrefix   : defaultRisteysURLPrefix;
+    const risteysURL : string=row?.risteysURL                ? row?.risteysURL         : `${risteysURLPrefix}${risteysPhenocode}`;
+    return hasRisteys?risteysURL:null;
+}
+
+/**
+ * Renders a link to a Risteys phenocode based on the provided props.
+ *
+ * This component checks if a specific phenocode has a corresponding Risteys URL.
+ * If it does, it displays a styled link; otherwise, it returns an empty fragment.
+ *
+ * @param {Object} props - The properties object for the component.
+ * @param {string} props.value - The value of the phenocode, which may contain suffixes like "_EXALLC" or "_EXMORE".
+ * @param {Object} props.row - An object that may contain additional data related to the row.
+ * @param {boolean} [props.row.hasRisteys] - Indicates if the phenocode has a Risteys link.
+ * @param {string} [props.row.risteysPhenocode] - An optional Risteys-specific phenocode.
+ * @param {string} [props.row.risteysURLPrefix] - An optional URL prefix for Risteys links.
+ * @param {string} [props.row.risteysURL] - An optional specific URL for the Risteys link.
+ *
+ * @returns {JSX.Element} A link to the Risteys page if available, otherwise an empty fragment.
+ */
+export const risteysLinkCell = (props) => {
+    const risteysURL=risteysURLFormatter(props)
+    return risteysURL?risteysLinkFormatter(risteysURL):<></>;
 }
 
 interface FunctionalVariantFinnGen {
@@ -288,7 +341,7 @@ const nullToBottomSorter = (a, b, desc) => {
   return a -b
 }
 
-const naToBottomSorter = (a, b, desc) => {  
+const naToBottomSorter = (a, b, desc) => {
   if (isNaN(a) && !isNaN(b) ) {
     return desc ? -1 : 1;
   }
@@ -335,7 +388,7 @@ const maxTableWidth = 1600;
 const columnWith = (size) => Math.min(size, size / maxTableWidth * window.innerWidth);
 
 const phenotypeColumns = {
-    
+
     chipPhenotype: {
       Header: () => (<span title="phenotype" style={{ textDecoration: "underline" }}>pheno</span>),
       accessor: "LONGNAME",
@@ -661,22 +714,34 @@ const phenotypeColumns = {
         },
         minWidth: 80
       },
-
+    hasRisteys : {
+      accessor: 'hasRisteys',
+      show: false
+    },
+   risteysPhenocode : {
+       accessor: 'risteysPhenocode',
+    show: false
+  },
+    risteysURL : {
+      accessor: 'risteysURL',
+      show: false
+    },
+    risteysURLPrefix : {
+      accessor: 'risteysURLPrefix',
+      show: false
+    },
+  /**
+   * To use this column, with the optional risteys flags you need to
+   * add the following columns to the table:
+   * hasRisteys, risteysPhenocode, risteysURL, risteysURLPrefix
+   * these columns will be hidden but make the row attributes available
+   * to the risteysLinkFormatter.
+   */
     risteysLink:
-      {
-        Header: () => (<span title="Risteys link" style={{ textDecoration: "underline" }}>Risteys</span>),
+      { Header: () => (<span title="Risteys link" style={{ textDecoration: "underline" }}>Risteys</span>),
         label: "phenocode",
         accessor: "phenocode",
-        Cell: props => (<a style={{
-          fontSize: "1.25rem",
-          padding: ".25rem .5rem",
-          backgroundColor: "#2779bd",
-          color: "#fff",
-          borderRadius: ".25rem",
-          fontWeight: 700,
-          boxShadow: "0 0 5px rgba(0,0,0,.5)"
-        }}
-                           href={"https://risteys.finregistry.fi/phenocode/" + props.value.replace("_EXALLC", "").replace("_EXMORE", "")}>RISTEYS</a>),
+        Cell: risteysLinkCell,
         Filter: () => null,
         minWidth: emsize * 5
       },
@@ -838,6 +903,14 @@ const phenotypeColumns = {
         },
         minWidth: 100
       },
+    variantLabel:
+      {
+        Header: () => "locus_id",
+        label: "locus_id",
+        accessor: "locus_id",
+        Cell: props => `${props.original.chrom}-${props.original.pos}-${props.original.ref}-${props.original.alt}`,
+	show : false
+      },
     pos:
       {
         Header: () => (<span title="position in build 38" style={{ textDecoration: "underline" }}>pos</span>),
@@ -923,7 +996,7 @@ const phenotypeColumns = {
         Cell: props => Math.exp(props.value).toFixed(2),
         minWidth: 80
       },
-      
+
     pValue:
       {
         Header: () => (<span title="p-value" style={{ textDecoration: "underline" }}>p-value</span>),
@@ -1016,9 +1089,9 @@ const phenotypeColumns = {
       {
         Header: () => (<span title="mlog" style={{ textDecoration: "underline" }}>-log10(p)</span>),
         accessor: "mlogp",
-        filterMethod: (filter, row) =>  row[filter.id] !== null && row[filter.id] >= +filter.value, 
-        Cell: (props) =>  isNaN(+props.value) ? "NA" : 
-          typeof props.value === 'string' && !isNaN(+props.value) ? (+props.value).toPrecision(3) : 
+        filterMethod: (filter, row) =>  row[filter.id] !== null && row[filter.id] >= +filter.value,
+        Cell: (props) =>  isNaN(+props.value) ? "NA" :
+          typeof props.value === 'string' && !isNaN(+props.value) ? (+props.value).toPrecision(3) :
           props.value,
         minWidth: emsize * 5,
         id: "mlogp"
@@ -1471,7 +1544,7 @@ const pqtColumns = {
       var totalCounts = getCounts(arr);
       var pos = getCounts(posBeta);
       var neg = getCounts(negBeta);
-    
+
       Object.keys(totalCounts).forEach(key => {
         if(!neg.hasOwnProperty(key)) {
           neg[key] = 0;
@@ -1480,8 +1553,8 @@ const pqtColumns = {
           pos[key] = 0;
         }
       })
-      
-      var rows = Object.keys(totalCounts).map((key, i) => { 
+
+      var rows = Object.keys(totalCounts).map((key, i) => {
           return `<div style="margin-right: 20px" key=${key}> ↑${pos[key]} ↓${neg[key]} · ${key} </div>`
         }
       )
@@ -1491,7 +1564,7 @@ const pqtColumns = {
         <>
           <ReactTooltip
             id="tooltip-n-colocs"
-            place="left" 
+            place="left"
             arrowColor="transparent"
             html={true}
             effect="solid"
@@ -1569,10 +1642,10 @@ const pqtColumns = {
   pqtlColocNumber: {
     Header: () => (<span style={{ textDecoration: "underline" }}>number of disease colocalizations</span>),
     accessor: "disease_colocalizations",
-    filterMethod: (filter, row) => row[filter.id] >= filter.value,    
+    filterMethod: (filter, row) => row[filter.id] >= filter.value,
     Cell: props => <div>{props.original.disease_colocalizations[0].length}</div>,
     minWidth: columnWith(80)
-  },  
+  },
   pqtlBeta: {
     Header: () => (<span style={{ textDecoration: "underline" }}>beta</span>),
     accessor: "beta",
@@ -1676,28 +1749,28 @@ const colocColumns = {
   beta1: {
     Header: () => (<span style={{ textDecoration: "underline" }}>beta cs1</span>),
     accessor: "beta1",
-    filterMethod: (filter, row) => row[filter.id] >= filter.value,    
+    filterMethod: (filter, row) => row[filter.id] >= filter.value,
     Cell: decimalCellFormatter,
     minWidth: columnWith(80)
   },
   beta2: {
     Header: () => (<span style={{ textDecoration: "underline" }}>beta cs2</span>),
     accessor: "beta2",
-    filterMethod: (filter, row) => row[filter.id] >= filter.value,    
+    filterMethod: (filter, row) => row[filter.id] >= filter.value,
     Cell: decimalCellFormatter,
     minWidth: columnWith(80)
   },
   pval1: {
     Header: () => (<span style={{ textDecoration: "underline" }}>p-value cs1</span>),
     accessor: "pval1",
-    filterMethod: (filter, row) => row[filter.id] <= filter.value,    
+    filterMethod: (filter, row) => row[filter.id] <= filter.value,
     Cell: pValueCellFormatter,
     minWidth: columnWith(80)
   },
   pval2: {
     Header: () => (<span style={{ textDecoration: "underline" }}>p-value cs2</span>),
     accessor: "pval2",
-    filterMethod: (filter, row) => row[filter.id] <= filter.value,    
+    filterMethod: (filter, row) => row[filter.id] <= filter.value,
     Cell: pValueCellFormatter,
     minWidth: columnWith(80)
   },
@@ -1705,10 +1778,10 @@ const colocColumns = {
     Header: () => (<span style={{ textDecoration: "underline" }}>lead variant cs1</span>),
     accessor: "locus_id1_chromosome",
     Cell: (props) => <div>{
-      [props.original.locus_id1_chromosome, 
-       props.original.locus_id1_position, 
-       props.original.locus_id1_ref, 
-       props.original.locus_id1_alt].join(":") 
+      [props.original.locus_id1_chromosome,
+       props.original.locus_id1_position,
+       props.original.locus_id1_ref,
+       props.original.locus_id1_alt].join(":")
     }</div>,
     minWidth: columnWith(120)
   },
@@ -1716,10 +1789,10 @@ const colocColumns = {
     Header: () => (<span style={{ textDecoration: "underline" }}>lead variant cs2</span>),
     accessor: "locus_id2_chromosome",
     Cell: (props) => <div>{
-      [props.original.locus_id2_chromosome, 
-       props.original.locus_id2_position, 
-       props.original.locus_id2_ref, 
-       props.original.locus_id2_alt].join(":") 
+      [props.original.locus_id2_chromosome,
+       props.original.locus_id2_position,
+       props.original.locus_id2_ref,
+       props.original.locus_id2_alt].join(":")
     }</div>,
     minWidth: columnWith(120)
   }
@@ -1851,6 +1924,7 @@ export const phenotypeListTableColumns = [
   phenotypeColumns.controlLambda];
 
 export const phenotypeBinaryTableColumns = [
+  phenotypeColumns.variantLabel,
   phenotypeColumns.chrom,
   phenotypeColumns.pos,
   phenotypeColumns.ref,
@@ -1872,6 +1946,7 @@ export const phenotypeBinaryTableColumns = [
 ]
 
 export const phenotypeQuantitativeTableColumns = [
+  phenotypeColumns.variantLabel,
   phenotypeColumns.chrom,
   phenotypeColumns.pos,
   phenotypeColumns.ref,

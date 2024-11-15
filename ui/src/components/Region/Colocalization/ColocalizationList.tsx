@@ -8,6 +8,10 @@ import { cellNumber, cellText, variantLink } from "../../../common/commonFormatt
 import { compose } from "../../../common/commonUtilities";
 import { refreshLocusZoom } from "./ColocalizationLocusZoom";
 import { RegionContext, RegionState } from "../RegionContext";
+import ColocalizationSourcesSummary from './ColocalizationSourcesSummary';
+import {colocTypesSummaryData as summaryData} from '../../../common/commonModel'
+
+import './Colocalization.css'
 
 
 const SelectTable = selectTableHOC(ReactTable);
@@ -17,7 +21,6 @@ export const cell_locus_id1 = (row : Row<Colocalization>) => row.original.locus_
 export const cell_locus_id2 = (row : Row<Colocalization>) => row.original.locus_id2
 export const cell_variant = (row : Row<CasualVariant>) => row.original.variant
 export const cell_quant1 = (row : Row<Colocalization>) => row.original.quant1
-
 
 
 interface Metadata { accessor: string
@@ -53,7 +56,12 @@ const listMetadata : Metadata[] = [
         label: "CLPA",
         width: 80 },
     { title: "cs_size_1", accessor: "cs_size_1", label: "CS Size 1", width: 80 },
-    { title: "cs_size_2", accessor: "cs_size_2", label: "CS Size 2", width: 80 } ];
+    { title: "cs_size_2", accessor: "cs_size_2", label: "CS Size 2", width: 80 },
+    { title: "beta1", accessor: "beta1", label: "beta cs1", width: 100,  Cell: cellNumber}, 
+    { title: "beta2", accessor: "beta2", label: "beta cs2", width: 100,  Cell: cellNumber},
+    { title: "pval1", accessor: "pval1", label: "p-value cs1", width: 100,  Cell: cellNumber}, 
+    { title: "pval2", accessor: "pval2", label: "p-value cs2", width: 100,  Cell: cellNumber} 
+];
 
 const subComponentMetadata = [ { title: "Variant" , accessor: "varid1" , label: "Variant" , Cell : compose(cell_variant,variantLink) },
                                { title: "pip1" , accessor: "pip1" , label:"PIP 1" , Cell : cellNumber },
@@ -86,11 +94,21 @@ const ColocalizationList = (props : Props) => {
     const { locusZoomContext ,setSelectedPosition } = useContext<Partial<RegionState>>(RegionContext);
 
     const [selectedRow, setRowSelected]= useState<string | undefined>(undefined);
+    
+    const [colocFiltBySource, setColocFiltBySource] = useState<Colocalization[]>([]);
+    
+    const [selectedSources, setSelectedSources] = useState<(string|undefined)[]>([]);
+    const [initialSources, setInitialSources] = useState<(string|undefined)[]>([]);
+    const [allChecked, setAllChecked] = useState<boolean>(true);    
+    const [showDropdown, setShowDropdown] = useState<boolean>(false);
+    const [selectorText, setSelectorText] = useState<string>("Select All");
+    const [sourceSummaryData, setSourceSummaryData]  = useState<summaryData[] | undefined>([]);
+
   useEffect(() => {
       colocalization
       && locusZoomData
       && locusZoomContext
-      && setSelectedPosition
+      && setSelectedPosition 
       && refreshLocusZoom(setSelectedPosition,selectedColocalization, locusZoomData, locusZoomContext); },
     [ setSelectedPosition , colocalization , locusZoomData , selectedColocalization, locusZoomContext ]);
 
@@ -113,9 +131,76 @@ const ColocalizationList = (props : Props) => {
     const flatten = (c : Colocalization) => { return { ...c ,
                                                        locus_id1 : c.locus_id1?variantToStr(c.locus_id1):undefined } };
 
-    if(colocalization && locusZoomData){
+    useEffect(() => {
+        if (colocalization){
+            const arr = colocalization?.map(element => {return element.source2_displayname}); 
+            const src = arr?.filter((item,index) => arr.indexOf(item) === index);
+            setInitialSources(src);
+            setSelectedSources(src);
+            setColocFiltBySource;   
+            setSourceSummaryData(colocalization?.map(
+                element => { return {source: element['source2_displayname'], beta: element['beta2'], sourceKey:  element['source2'] }}).sort()
+            );
+
+        }  
+    }, [colocalization]);
+
+    useEffect(() => {
+        if (colocalization){
+            setColocFiltBySource(colocalization.filter(element => selectedSources.indexOf(element.source2_displayname) > -1));
+            selectedSources.length == initialSources.length ? setAllChecked(true) : setAllChecked(false);
+            selectedSources.length == initialSources.length ? setSelectorText("All Selected") : setSelectorText(selectedSources.length + " Selected");
+        }  
+    }, [selectedSources]);
+
+    const inputCheckboxAllSources = (
+        <>
+        <input type="checkbox" id='All' name='All' value='All' checked={allChecked} onChange={(e) => {
+            setAllChecked(e.target.checked);
+            var src = e.target.checked ? [...initialSources] : [];
+            setSelectedSources(src);
+        }}/>
+        <span className="checkbox-label"><label htmlFor='All'>All</label></span>
+        </>
+    );
+
+    if(colocalization && locusZoomData && colocFiltBySource){
         return (<div>
-            <SelectTable data={ colocalization }
+            
+            <hr/>
+            <div>
+            <ColocalizationSourcesSummary data={sourceSummaryData} showSourceTypes={true}/>
+            </div>
+            {
+                selectedSources ? <div className="colocs-selection-dropdown">             
+                <div className="dropdown-group">
+                    <button className="dropdown-button" onClick={() => setShowDropdown(!showDropdown)}>{selectorText}
+                        <div className="dropdown-pointer">
+                            <i className="arrow down"></i>
+                        </div>
+                    </button>
+                    <div className={ showDropdown ? "dropdown-content show" : "dropdown-content"}>
+                        {inputCheckboxAllSources}
+                        {
+                            initialSources.map((key, i) => 
+                                <div className="checkbox-item-div">
+                                    <input type="checkbox" id={key} name={key} value={key} checked={selectedSources.indexOf(key) > -1}
+                                        onChange={(e) => {
+                                            var src = e.target.checked ? 
+                                                [...selectedSources, e.target.value] : 
+                                                selectedSources.filter(a => a !== e.target.value);
+                                            setSelectedSources(src);
+                                    }}/> 
+                                    <span className="checkbox-label"><label htmlFor={key}>{key}</label></span>
+                                </div>
+                            )
+                        }
+                    </div>
+                </div>
+                </div> : null
+            }
+
+            <SelectTable data={ colocFiltBySource }
                          keyField="colocalization_id"
                          columns={ columns(listMetadata) }
                          defaultSorted={[{  id: "clpa", desc: true }]}
@@ -134,7 +219,7 @@ const ColocalizationList = (props : Props) => {
                 <div className="col-xs-12">
                     <CSVLink
                         headers={headers(listMetadata)}
-                        data={ colocalization.map(flatten) }
+                        data={ colocFiltBySource.map(flatten) }
                         separator={'\t'}
                         enclosingCharacter={''}
                         filename={`colocalization.tsv`}

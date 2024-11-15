@@ -42,6 +42,7 @@ def selinum_driver():
             with driver as driver:
                 yield driver
 
+@pytest.mark.integration                
 def test_about_click(selinum_driver):
     selinum_driver.maximize_window()
     selinum_driver.get(this.ENDPOINT)
@@ -50,6 +51,7 @@ def test_about_click(selinum_driver):
     time.sleep(this.DELAY)
     selinum_driver.find_element(By.ID, "656245e9-53ba-4cb6-ac83-878a90ac4be5")
 
+@pytest.mark.integration
 def test_main_search(selinum_driver):
     selinum_driver.get(this.ENDPOINT)
     search=selinum_driver.find_element(By.ID, "react-select-2-input")

@@ -26,6 +26,7 @@ import gzip
 import functools
 import typing
 from dataclasses import dataclass
+from google.cloud.exceptions import NotFound
 
 import pandas as pd
 from smart_open import open as smart_open
@@ -71,7 +72,7 @@ def read_path(path: str) -> typing.Optional[bytes]:
     try:
         with smart_open(path, "rb") as file:
             result = file.read()
-    except FileNotFoundError:
+    except (FileNotFoundError, NotFound):
         result = None
     return result
 

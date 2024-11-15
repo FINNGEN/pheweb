@@ -2,14 +2,15 @@
 import {
   pValueCellFormatter,
   pValueSentinel,
-  createHeader,
   addHeader,
   nearestGeneFormatter,
   createCSVLinkHeaders,
   filterDownload, optionalCellScientificFormatter,
   optionalCellNumberFormatter, optionalCellDecimalFormatter,
+  risteysLinkFormatter,
+  risteysURLFormatter,
+  risteysLinkCell,
 } from './commonTableColumn';
-import {render, screen} from '@testing-library/react'
 import React from "react"
 
 test("optionalCellScientificFormatter handles empty string", () => {
@@ -141,3 +142,60 @@ test("nearest gene formatter : undefined", () => {
     <a key={"MAP3K14"} href="/gene/MAP3K14">MAP3K14</a> ,];
   expect(actual).toStrictEqual(expected);
 })
+
+test("check risteys link formatter : risteysLinkFormatter", () => {
+    const actual = risteysLinkFormatter("T2D");
+  const expected = <a href="T2D" style={{
+    "backgroundColor": "#2779bd",
+    "borderRadius": ".25rem",
+    "boxShadow": "0 0 5px rgba(0,0,0,.5)",
+    "color": "#fff",
+    "fontSize": "1.25rem",
+    "fontWeight": 700,
+    "padding": ".25rem .5rem"
+  }}>RISTEYS</a>;
+  expect(actual).toStrictEqual(expected);
+});
+
+test("risteys link cell : risteysLinkCell", () => {
+  const parameters = [
+    { "value" : "T2D"},
+    { "value" : "T2D", "row" : { "hasRisteys" : true } },
+    { "value" : "T2D", "row" : { "hasRisteys" : false } },
+    { "value" : "T2D", "row" : { "risteysPhenocode" : "AB1TUBERCU_MILIARY" } },
+    { "row" : { "risteysPhenocode" : "AB1TUBERCU_MILIARY" } },
+    { "value" : "T2D", "row" : { "risteysURLPrefix" : "http://localhost/" } },
+    { "value" : "T2D", "row" : { "risteysURL" : "http://localhost/T2D" } },
+
+
+  ]
+  const actual = parameters.map(risteysURLFormatter);
+  const expected = [
+    "https://risteys.finregistry.fi/phenocode/T2D",
+    "https://risteys.finregistry.fi/phenocode/T2D",
+    null,
+    "https://risteys.finregistry.fi/phenocode/AB1TUBERCU_MILIARY",
+    "https://risteys.finregistry.fi/phenocode/AB1TUBERCU_MILIARY",
+    "http://localhost/T2D",
+    "http://localhost/T2D",
+  ];
+  expect(actual).toStrictEqual(expected);
+});
+
+test("risteys link cell : risteysLinkCell", () => {
+  const parameters = [
+    { "value" : "T2D"},
+  ]
+  const actual = parameters.map(risteysLinkCell);
+  const expected = [
+    <a href="https://risteys.finregistry.fi/phenocode/T2D" style={{
+      "backgroundColor": "#2779bd",
+      "borderRadius": ".25rem",
+      "boxShadow": "0 0 5px rgba(0,0,0,.5)",
+      "color": "#fff",
+      "fontSize": "1.25rem",
+      "fontWeight": 700,
+      "padding": ".25rem .5rem"
+    }}>RISTEYS</a>] ;
+  expect(actual).toStrictEqual(expected);
+});

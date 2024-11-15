@@ -1,20 +1,23 @@
-
-from ..utils import PheWebError
-from ..file_utils import get_filepath, get_tmp_path
-#from .. import conf
+#!/bin/env python3
 import csv
-import re, json, shutil
-from pathlib import Path
-import urllib.request
-import sqlite3
-from . import download_genes
-from typing import List, Dict, Iterable, Iterator, Tuple
+import json
 import os
+import re
+import shutil
+import sqlite3
+import sys
+import urllib.request
+from pathlib import Path
+from typing import Dict, Iterable, Iterator, List, Tuple
+
+from pheweb.file_utils import get_filepath, get_tmp_path
+from pheweb.load import download_genes
+from pheweb.utils import PheWebError
+
 
 def get_gene_tuples_with_ensg() -> Iterator[Tuple[str,int,int,str,str]]:
     with open(get_filepath('genes')) as f:
         for row in csv.reader(f, delimiter='\t'):
-            #assert row[0] in chrom_order, row[0]
             yield (row[0], int(row[1]), int(row[2]), row[3], row[4])
 
 def get_genenamesorg_ensg_aliases_map(ensgs_to_consider: Iterable[str]) -> Dict[str, List[str]]:
@@ -29,20 +32,16 @@ def get_genenamesorg_ensg_aliases_map(ensgs_to_consider: Iterable[str]) -> Dict[
             aliases = [row['symbol']] + row.get('prev_symbol',[]) + row.get('alias_symbol',[])
             aliases = [alias for alias in aliases if alias != '']
             aliases = [alias for alias in aliases if re.match(r'^[-\._a-zA-Z0-9]+$', alias)]
-            # for alias in aliases: assert re.match(r'^[-\._a-zA-Z0-9]+$', alias), (alias, [ord(c) for c in alias], row)
             ensg_to_aliases[row['ensembl_gene_id']] = aliases
         except Exception:
             raise PheWebError('Cannot handle genenames row: {}'.format(row))
     return ensg_to_aliases
 
-def get_gene_aliases() -> Dict[str, str]:
+def get_alias_canonicals() -> Dict[str,List[str]]:
     # NOTE: "canonical" refers to the canonical symbol for a gene
     genes = [{'canonical': canonical, 'ensg':ensg} for _,_,_,canonical,ensg in get_gene_tuples_with_ensg()]
     assert len({g['ensg'] for g in genes}) == len(genes)
     assert len({g['canonical'] for g in genes}) == len(genes)
-    #for g in genes:
-    #    assert re.match(r'^ENSG[R0-9]+(?:\.[0-9]+(?:_[0-9]+)?(?:_PAR_[XY])?)?$', g['ensg']), g
-        #assert re.match(r'^[-\._a-zA-Z0-9]+$', g['canonical']), (g['canonical'], [ord(c) for c in g['canonical']], g)
     print('num canonical gene names: {}'.format(len(genes)))
 
     canonicals_upper = {g['canonical'].upper() for g in genes}
@@ -59,7 +58,38 @@ def get_gene_aliases() -> Dict[str, str]:
     for canonical, aliases in canonical_to_aliases.items():
         for alias in aliases:
             alias_to_canonicals.setdefault(alias, []).append(canonical)
-    return {alias: ','.join(canonicals) for alias,canonicals in alias_to_canonicals.items()}
+    return alias_to_canonicals
+
+def get_gene_aliases() -> Iterator[Tuple[str,str]]:
+    for alias,canonicals in get_alias_canonicals().items():
+        yield (alias, ','.join(canonicals))
+
+def get_key_name_lookup() -> Iterator[Tuple[str,str]]:
+    """
+    Yields:
+        Tuple[str, str]: A tuple where:
+            - The first element is the 'key', a normalized uppercase term used for searching.
+            - The second element is the 'name', an acceptable gene name associated with the key.
+            This includes yielding:
+                - The alias in uppercase as a key with itself as the name.
+                - Each canonical name in uppercase as a key with the alias as the name.
+                - The alias in uppercase as a key with each canonical name as the name.
+
+    Examples:
+        Assuming `get_alias_canonicals()` returns {'tp53': ['p53', 'TPM53']},
+        the generator will yield:
+            ('TP53', 'tp53')
+            ('P53', 'tp53')
+            ('TP53', 'p53')
+            ('TPM53', 'tp53')
+            ('TP53', 'TPM53')
+    """
+    for alias,canonicals in get_alias_canonicals().items():
+        yield (alias, alias)
+        for c in canonicals:
+            yield (c, alias)
+            yield (alias, alias)
+            yield (alias, c)
 
 def download_gene_aliases() -> None:
     aliases_filepath = Path(get_filepath('gene-aliases-sqlite3', must_exist=False)())
@@ -81,15 +111,18 @@ def download_gene_aliases() -> None:
 
     with db:
         db.execute('CREATE TABLE gene_aliases (alias TEXT PRIMARY KEY, canonicals_comma TEXT)')
-        db.executemany('INSERT INTO gene_aliases VALUES (?,?)', sorted(get_gene_aliases().items()))
-    aliases_tmp_filepath.replace(aliases_filepath)
-
+        db.executemany('INSERT INTO gene_aliases VALUES (?,?)', sorted(get_gene_aliases()))
+        db.execute('CREATE TEMPORARY TABLE key_name_temporary (key TEXT, name TEXT)')
+        db.executemany('INSERT INTO key_name_temporary VALUES (?,?)', sorted(get_key_name_lookup()))
+        db.execute('CREATE TABLE key_name as SELECT DISTINCT * FROM key_name_temporary')
+        db.execute('CREATE INDEX key_name_key_idx ON key_name (key)')
+        aliases_tmp_filepath.replace(aliases_filepath)
 
 def run(argv:List[str]) -> None:
     if '-h' in argv or '--help' in argv:
         print('Make a database of all gene names and their aliases for easy searching.')
         exit(1)
-    
+
     # This needs genes for filtering
     gene_filepath = Path(get_filepath('genes', must_exist=False))
     if not gene_filepath.exists():
@@ -98,32 +131,14 @@ def run(argv:List[str]) -> None:
     else:
         print("getting an existing bed file: {}".format(gene_filepath))
         genes = [{'canonical': canonical, 'ensg': ensg.split('.')[0]} for _,_,_,canonical,ensg in get_gene_tuples_with_ensg()]
-        assert len({g['ensg'] for g in genes}) == len(genes), 'Detected duplicates in gene symbols in the provided genes file {}'.format(gene_filepath)
+        assert len({g['ensg'] for g in genes}) == len(genes), f'Detected duplicates in gene symbols in the provided genes file {format(gene_filepath)}'
         assert len({g['canonical'] for g in genes}) == len(genes), 'Detected duplicates in ensembl gene ids in the provided genes file {}'.format(gene_filepath)
-    
+
     dest_filepath = Path(get_filepath('gene-aliases-sqlite3', must_exist=False)())
-    print('sqlite filename: {}'.format(dest_filepath))
+    print(f"sqlite filename: {dest_filepath}")
     if dest_filepath.exists(): return
-
-    # Check cache_dir
-    # cache_dir = conf.get_cache_dir()
-    # if cache_dir:
-    #     cache_filepath = Path(cache_dir) / dest_filepath.name
-    #     if cache_filepath.exists():
-    #         print('Copying {} to {}'.format(cache_filepath, dest_filepath))
-    #         shutil.copy(cache_filepath, dest_filepath)
-    #         return
-
-    # if not conf.is_allowed_to_download():
-    #     raise PheWebError("PheWeb is set to disallow downloading files, but couldn't pull {!r} from cache_dir {!r}".format(
-    #         dest_filepath, conf.get_cache_dir()))
-
     download_gene_aliases()
-
-    # if cache_dir:
-    #     print('Cacheing {} at {}'.format(dest_filepath, cache_filepath))
-    #     # It's okay if this doesn't work
-    #     try: shutil.copy(dest_filepath, cache_filepath)
-    #     except Exception: pass
-
     print('Done')
+
+if __name__ == "__main__":
+    run(sys.argv[1:])

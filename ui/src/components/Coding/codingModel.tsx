@@ -19,6 +19,9 @@ export const defaultConfig : { [key: string]: any } = {
   }
 }
 
+export const defaultDataset : string = "gnomad_r4";
+
 export interface CodingConfiguration {
   config? : { [key: string]: any };
+  dataset? : string;
 }

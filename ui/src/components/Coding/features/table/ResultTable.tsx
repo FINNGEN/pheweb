@@ -31,12 +31,12 @@ import {
 
 import { ConfigurationWindow } from "../../../Configuration/configurationModel";
 import { resolveURL }          from "../../../Configuration/configurationModel";
-import { defaultConfig } from "../../codingModel";
+import { defaultConfig, defaultDataset } from '../../codingModel';
 
 declare let window: ConfigurationWindow;
 
 const typedConfig: { [key: string]: any } = window?.config?.userInterface?.coding?.config || defaultConfig;
-
+const dataset :string = window?.config?.userInterface?.coding?.dataset || defaultDataset;
 const pval_repr = (mlogp: number) => {
   const p = Math.pow(10, -mlogp);
   let repr = p.toExponential(2);
@@ -252,8 +252,8 @@ export const ResultTable = () => {
             <a
               style={{ paddingRight: "5px" }}
               target="_blank"
-	      rel="noopener noreferrer"
-              href={`https://gnomad.broadinstitute.org/variant/${e.cell.row.original.variant}?dataset=gnomad_r3`}
+	            rel="noopener noreferrer"
+              href={`https://gnomad.broadinstitute.org/variant/${e.cell.row.original.variant}?=${dataset}`}
             >
               gn
             </a>

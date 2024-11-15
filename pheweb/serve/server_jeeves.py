@@ -15,6 +15,42 @@ import math
 from typing import List, Dict,Tuple, Union
 from .server_utils import get_pheno_region
 
+def annotate_manhattan(*,
+                       threadpool,
+                       manhattan_filepath : str,
+                       annotation_dao,
+                       gnomad_dao,
+                       anno_cpra,
+                       ):
+        with open(manhattan_filepath, encoding="utf-8") as f:
+            variants = json.load(f)
+
+        vars = [ Variant( d['chrom'].replace("chr","").replace("X","23").replace("Y","24").replace("MT","25"), d['pos'], d['ref'], d['alt'] ) for d in variants['unbinned_variants'] if 'peak' in d ]
+
+        f_annotations = threadpool.submit( annotation_dao.get_variant_annotations,
+                                           vars,
+                                           anno_cpra)
+        f_gnomad = threadpool.submit( gnomad_dao.get_variant_annotations,
+                                           vars)
+
+        annotations = f_annotations.result()
+        gnomad = f_gnomad.result()
+        d = { v:v  for v in annotations }
+        # TODO... refactor gnomaddao to behave similary as annotation dao i.e. returning stuff as Variant annotations.
+        gd = { v["variant"]:v["var_data"] for v in gnomad}
+
+        for variant in variants['unbinned_variants']:
+            ## TODO remove chr dickery when new annots ready
+
+            chrom =  variant['chrom'].replace("chr","").replace('X','23').replace('Y','24').replace("MT","25")
+            v = Variant( chrom, variant['pos'], variant['ref'], variant['alt'])
+            if v in d:
+                variant['annotation'] = d[v].get_annotations()["annot"]
+            if v in gd:
+                variant['gnomad'] = gd[v]
+
+        return variants
+        
 class ServerJeeves(object):
     '''
         Class that handles data aggregation and munging for server.py
@@ -43,13 +79,14 @@ class ServerJeeves(object):
         self.autocompleter_dao = self.dbs_fact.get_autocompleter_dao()
         self.pqtl_colocalization = self.dbs_fact.get_pqtl_colocalization_dao()
         self.health_dao = self.dbs_fact.get_health_dao()
-
-    def gene_functional_variants(self, gene, pThreshold=None):
+        self.manhattan_dao = self.dbs_fact.get_manhattan_dao()
+        
+    def gene_functional_variants(self, gene, pThreshold=None, use_aliases=None):
         if pThreshold is None:
             pThreshold = self.conf.report_conf["func_var_assoc_threshold"]
 
         startt = time.time()
-        func_var_annot = self.annotation_dao.get_gene_functional_variant_annotations(gene)
+        func_var_annot = self.annotation_dao.get_gene_functional_variant_annotations(gene, use_aliases=use_aliases)
         print(" gene functional variants took {}".format( time.time()-startt) )
         remove_indx =[]
         chrom,start,end = self.get_gene_region_mapping()[gene]
@@ -173,6 +210,8 @@ class ServerJeeves(object):
 
     def get_gene_data(self, gene):
         try:
+            print(gene)
+            print(self.dbs_fact.get_geneinfo_dao)
             gene_data = self.dbs_fact.get_geneinfo_dao().get_gene_info(gene)
         except Exception as exc:
             print("Could not fetch data for gene {!r}. Error: {}".format(gene,traceback.extract_tb(exc.__traceback__).format() ))
@@ -188,35 +227,18 @@ class ServerJeeves(object):
             raise
 
     def get_pheno_manhattan(self, phenocode) -> str:
-        with open(common_filepaths['manhattan'](phenocode)) as f:
-            variants = json.load(f)
-
-        vars = [ Variant( d['chrom'].replace("chr","").replace("X","23").replace("Y","24").replace("MT","25"), d['pos'], d['ref'], d['alt'] ) for d in variants['unbinned_variants'] if 'peak' in d ]
-
-        f_annotations = self.threadpool.submit( self.annotation_dao.get_variant_annotations, vars, self.conf.anno_cpra)
-        f_gnomad = self.threadpool.submit( self.gnomad_dao.get_variant_annotations, vars)
-
-        annotations = f_annotations.result()
-        gnomad = f_gnomad.result()
-        d = { v:v  for v in annotations }
-        # TODO... refactor gnomaddao to behave similary as annotation dao i.e. returning stuff as Variant annotations.
-        gd = { v["variant"]:v["var_data"] for v in gnomad}
-
-        ukbbvars = self.ukbb_dao.get_matching_results(phenocode, vars)
-
-        for variant in variants['unbinned_variants']:
-            ## TODO remove chr dickery when new annots ready
-
-            chrom =  variant['chrom'].replace("chr","").replace('X','23').replace('Y','24').replace("MT","25")
-            v = Variant( chrom, variant['pos'], variant['ref'], variant['alt'])
-            if v in d:
-                variant['annotation'] = d[v].get_annotations()["annot"]
-            if v in gd:
-                variant['gnomad'] = gd[v]
-
-            if v in ukbbvars:
-                variant['ukbb'] = ukbbvars[v]
-        return variants
+        manhattan_filepath = common_filepaths['manhattan'](phenocode)    
+        if self.manhattan_dao is None:
+                manhattan = annotate_manhattan(threadpool=self.threadpool,
+                                               manhattan_filepath=manhattan_filepath,
+                                               annotation_dao=self.annotation_dao,
+                                               gnomad_dao=self.gnomad_dao,
+                                               anno_cpra=self.conf.anno_cpra)
+        else:
+                manhattan = self.manhattan_dao.get_resource(manhattan_filepath,
+                                                            phenocode=phenocode,
+                                                            filepath=manhattan_filepath)
+        return manhattan
 
     def get_single_variant_pheno_data(self, variant: Variant, pheno: str):
         """
@@ -337,7 +359,9 @@ class ServerJeeves(object):
                         d['data']['fin_enrichment'].append('No gnomAD data')
                     else:
                         g = gnomad_hash[varid]['gnomad']
-                        if 'AF_fin' in g and 'AC_nfe_nwe' in g and 'AC_nfe_onf' in g and 'AC_nfe_seu' in g:
+                        if 'enrichment_nfe' in g:
+                            d['data']['fin_enrichment'].append(g['enrichment_nfe'])
+                        elif 'AF_fin' in g and 'AC_nfe_nwe' in g and 'AC_nfe_onf' in g and 'AC_nfe_seu' in g:
                             if g['AF_fin'] == '.' or float(g['AF_fin']) == 0:
                                 d['data']['fin_enrichment'].append('No FIN in gnomAD')
                             elif float(g['AC_nfe_nwe']) + float(g['AC_nfe_onf']) + float(g['AC_nfe_seu']) == 0:
@@ -355,7 +379,7 @@ class ServerJeeves(object):
                     d['data']['fin_enrichment'].append('Unknown')
         return datalist
 
-    def get_conditional_regions_for_pheno(self, phenocode, chr, start, end, p_threshold=None):
+    def get_conditional_regions_for_pheno(self, phenocode, chr, start, end, p_threshold=None, add_anno=True):
         if p_threshold is None:
             p_threshold = self.conf.locuszoom_conf['p_threshold']
         regions = self.finemapping_dao.get_regions_for_pheno('conditional', phenocode, chr, start, end)
@@ -396,7 +420,7 @@ class ServerJeeves(object):
         print(f'Region data taken for  {chr} {start} {end}')
         print("reading conditional files took {} seconds".format(time.time()-t ) )
         t = time.time()
-        if len(ret) > 0:
+        if len(ret) > 0 and add_anno:
             #self.add_annotations(chr, min_start, max_end, ret)
             ret = self.add_annotations(chr, start, end, ret)
             print("adding annotations to {} conditional results took {} seconds".format(len(ret), time.time()-t ) )
@@ -405,7 +429,7 @@ class ServerJeeves(object):
     def get_finemapped_region_boundaries_for_pheno(self, fm_type, phenocode, chrom, start, end):
         return self.finemapping_dao.get_regions_for_pheno(fm_type, phenocode, chrom, start, end) if self.finemapping_dao is not None else None
 
-    def get_finemapped_regions_for_pheno(self, phenocode, chr, start, end, prob_threshold=-1):
+    def get_finemapped_regions_for_pheno(self, phenocode, chr, start, end, prob_threshold=-1, add_anno=True):
         regions = self.finemapping_dao.get_regions_for_pheno('finemapping', phenocode, chr, start, end)
         ret = []
         min_start = 1e30
@@ -452,7 +476,9 @@ class ServerJeeves(object):
             else:
                 print('UNSUPPORTED REGION TYPE: ' + region['type'])
         #self.add_annotations(chr, min_start, max_end, ret)
-        self.add_annotations(chr, start, end, ret)
+        if add_anno:
+            self.add_annotations(chr, start, end, ret)
+                
         return ret
 
     def get_max_finemapped_region(self, phenocode, chrom, start, end):
@@ -481,10 +507,9 @@ class ServerJeeves(object):
     def get_best_phenos_by_gene(self, gene):
         chrom,start,end = self.get_gene_region_mapping()[gene]
         results = self.result_dao.get_top_per_pheno_variant_results_range(chrom, start, end)
-        if 'pval' in results.assoc:
-            phenolist = [r.assoc.phenocode for r in results if r.assoc.pval < 1e-08]
-        else:
-            phenolist = [r.assoc.phenocode for r in results if r.assoc.mlogp > 16.8]
+        phenolist_pval = [r.assoc.phenocode for r in results if hasattr(r.assoc, 'pval') and r.assoc.pval < 1e-08]
+        phenolist_mlogp = [r.assoc.phenocode for r in results if hasattr(r.assoc, 'mlogp') and r.assoc.mlogp > 16.8]
+        phenolist = phenolist_pval + phenolist_mlogp
         return phenolist
 
     def get_autoreport(self, phenocode) -> List[Dict[str,Union[str,int,float,bool]]] :

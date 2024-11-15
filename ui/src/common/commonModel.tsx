@@ -62,6 +62,10 @@ export interface Colocalization {
   readonly x: number;
 
   readonly source2_displayname? : string
+  readonly beta1? : number
+  readonly beta2? : number
+  readonly pval1? : number
+  readonly pval2? : number
 }
 
 export interface Variant {
@@ -217,4 +221,10 @@ export interface GcLambda {
 
 export const addLambda = (phenotype: Phenotype) => {
   return { ...phenotype, lambda: phenotype.gc_lambda["0.5"] };
+}
+
+export interface colocTypesSummaryData {
+  source: string;
+  beta: number;
+  sourceKey: string;
 }

@@ -14,11 +14,12 @@ import pandas as pd
 import numpy as np
 import pymysql
 import imp
-from typing import List, Tuple, Dict, Union
+from typing import List, Tuple, Dict, Union, Optional
 from ...file_utils import MatrixReader, common_filepaths
 from ...utils import get_phenolist, get_gene_tuples, pvalue_to_mlogp, get_use_phenocode_pheno_map
 from ..components.health.health_check import default_dao as health_default_dao, HealthSimpleDAO, HealthNotificationDAO, HealthTrivialDAO
-
+from pheweb.serve.components.autocomplete.sqlite_dao import GeneAliasesSqliteDAO
+from pheweb.serve.data_access.gene_info import NCBIGeneInfoDao
 from collections import namedtuple
 import requests
 import importlib
@@ -39,6 +40,8 @@ from .drug_db import DrugDB, DrugDao
 from ..components.autocomplete.tries_dao import AutocompleterTriesDAO
 from ..components.autocomplete.sqlite_dao import AutocompleterSqliteDAO
 from ..components.autocomplete.mysql_dao import AutocompleterMYSQLDAO
+from pheweb.serve.data_access.file import FilePathResultDao, ManhattanFileResultDao, ManhattanCompressedResultDao
+
 
 from .pqtl_colocalization import PqtlColocalisationDao
 
@@ -208,16 +211,6 @@ class PhenoResults(JSONifiable):
         return self.__dict__
 
 
-class GeneInfoDB(object):
-    @abc.abstractmethod
-    def get_gene_info(self, symbol):
-        """Retrieve gene basic info given gene symbol.
-        Args: symbol gene symbol
-        Returns: dictionary with elements 'description': short desc, 'summary':extended summary, 'maploc':chrmaplos   'start': startpb 'stop': stopbp
-        """
-        return
-
-
 class ExternalResultDB(object):
     @abc.abstractmethod
     def get_matching_results(
@@ -282,7 +275,7 @@ class AnnotationDB(object):
         """
 
     @abc.abstractmethod
-    def get_gene_functional_variant_annotations(self, gene):
+    def get_gene_functional_variant_annotations(self, gene : str,  use_aliases : Optional[bool]):
         """Retrieve annotations of functional variants for a given gene.
         Args: gene gene symbol
         Returns: A list of dictionaries. Dictionary has 2 elements:
@@ -463,47 +456,6 @@ class MichinganGWASUKBBCatalogDao(KnownHitsDB):
         return rep["data"]
 
 
-class NCBIGeneInfoDao(GeneInfoDB):
-    def __init__(self):
-        pass
-
-    def get_gene_info(self, symbol):
-        r = requests.get(
-            "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=gene&term="
-            + symbol
-            + "[gene])%20AND%20(Homo%20sapiens[orgn])%20AND%20alive[prop]%20NOT%20newentry[gene]&sort=weight&retmode=json"
-        )
-
-        ret = r.json()["esearchresult"]
-        if "ERROR" in ret:
-            raise Exception(
-                "Error querying NCBI. Error:" + ret["esearchresult"]["ERROR"]
-            )
-        if ret["count"] == 0:
-            raise Exception("Gene: " + symbol + " not found in NCBI db")
-        id = ret["idlist"][0]
-        r = requests.get(
-            "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=gene&id="
-            + id
-            + "&retmode=json"
-        )
-        rep = r.json()
-        if "result" not in rep:
-            raise Exception("Could not access NCBI gene summary. Response:" + str(rep))
-        data = rep["result"][id]
-        ## chr stop seems to be missing from top level annotation
-        loc = list(
-            filter(lambda x: x["annotationrelease"] == "109", data["locationhist"])
-        )[0]
-        return {
-            "description": data["description"],
-            "summary": data["summary"],
-            "start": data["chrstart"],
-            "stop": loc["chrstop"],
-            "maploc": data["maplocation"],
-        }
-
-
 class ElasticAnnotationDao(AnnotationDB):
     def __init__(self, host, port, variant_index):
 
@@ -549,7 +501,7 @@ class ElasticAnnotationDao(AnnotationDB):
             for anno in annotation["hits"]["hits"]
         ]
 
-    def get_gene_functional_variant_annotations(self, gene):
+    def get_gene_functional_variant_annotations(self, gene : str, use_aliases : Optional[bool]):
         annotation = self.elastic.search(
             index=self.index,
             body={
@@ -1445,9 +1397,22 @@ class TabixAnnotationDao(AnnotationDB):
         "string": lambda x: x,
     }
 
-    def __init__(self, matrix_path, gene_column="gene"):
-        self.gene_column = gene_column
+    def __init__(self, matrix_path,
+                 gene_column="gene",
+                 gene_aliases_path : Optional[str] = None,
+                 default_use_aliases : bool = True):
+
         self.matrix_path = matrix_path
+        
+        self.gene_column = gene_column
+
+        if gene_aliases_path is None:
+            self._gene_alias_dao=None
+        else:
+            self._gene_alias_dao=GeneAliasesSqliteDAO(filepath=gene_aliases_path)
+        
+        self._default_use_aliases=default_use_aliases
+        
         self.gene_region_mapping = {
             genename: (chrom, pos1, pos2)
             for chrom, pos1, pos2, genename in get_gene_tuples()
@@ -1592,7 +1557,7 @@ class TabixAnnotationDao(AnnotationDB):
 
         return annotations
 
-    def get_gene_functional_variant_annotations(self, gene):
+    def get_gene_functional_variant_annotations(self, gene : str, use_aliases : Optional[bool]):
         if gene not in self.gene_region_mapping:
             return []
         chrom, start, end = self.gene_region_mapping[gene]
@@ -1608,12 +1573,24 @@ class TabixAnnotationDao(AnnotationDB):
         except Exception as e:
             print("Error occurred {}".format(e))
             return annotations
+
+        # use default if not supplied
+        if use_aliases is None:
+            use_aliases = self._default_use_aliases
+            
+        if self._gene_alias_dao is not None and use_aliases:
+            gene_aliases=self._gene_alias_dao.get_gene_aliases(gene)
+        else:
+            gene_aliases=set()
+        
+        gene_aliases.add(gene.upper())
+        
         for row in tabix_iter:
             split = row.split("\t")
             chrom, pos, ref, alt = split[0].split(":")
             if (
                 split[self.header_i["most_severe"]] in self.functional_variants
-                and split[self.header_i[self.gene_column]].upper() == gene.upper()
+                and split[self.header_i[self.gene_column]].upper() in gene_aliases
             ):
                 v = Variant(chrom, pos, ref, alt)
                 var_dat = {
@@ -1641,7 +1618,7 @@ class TabixAnnotationDao(AnnotationDB):
 
 
 class LofMySQLDao(LofDB):
-    def __init__(self, authentication_file):
+    def __init__(self, authentication_file, table_name="lof"):
         self.authentication_file = authentication_file
         auth_module = imp.load_source("mysql_auth", self.authentication_file)
         self.user = getattr(auth_module, "mysql")["user"]
@@ -1649,6 +1626,7 @@ class LofMySQLDao(LofDB):
         self.host = getattr(auth_module, "mysql")["host"]
         self.db = getattr(auth_module, "mysql")["db"]
         self.release = getattr(auth_module, "mysql")["release"]
+        self.table_name=table_name
 
     def get_connection(self):
         return pymysql.connect(
@@ -1659,7 +1637,7 @@ class LofMySQLDao(LofDB):
         conn = self.get_connection()
         try:
             with conn.cursor(pymysql.cursors.DictCursor) as cursori:
-                sql = "SELECT * FROM lof WHERE rel=%s AND p_value < %s"
+                sql = f"SELECT * FROM {self.table_name} WHERE rel=%s AND p_value < %s"
                 cursori.execute(sql, [self.release, p_threshold])
                 result = [{"gene_data": data} for data in cursori.fetchall()]
         finally:
@@ -1670,7 +1648,7 @@ class LofMySQLDao(LofDB):
         conn = self.get_connection()
         try:
             with conn.cursor(pymysql.cursors.DictCursor) as cursori:
-                sql = "SELECT * FROM lof WHERE rel=%s AND gene=%s"
+                sql = f"SELECT * FROM {self.table_name} WHERE rel=%s AND gene=%s"
                 cursori.execute(sql, [self.release, gene])
                 result = [{"gene_data": data} for data in cursori.fetchall()]
         finally:
@@ -2026,6 +2004,9 @@ class DataFactory(object):
             ## if external results not configured initialize dao always returning empty results
             self.dao_impl["externalresult"] = ExternalFileResultDao(None)
 
+    def get_manhattan_dao(self):
+        return self.dao_impl["manhattan"] if "manhattan" in self.dao_impl else None
+    
     def get_health_dao(self):
         return self.dao_impl["health"]
 

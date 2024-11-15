@@ -1,0 +1,127 @@
+.colocs-summary {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.colocs-summary-row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.justify {
+    justify-content: space-between;
+}
+
+.colocs-summary-pos b {
+    color: #E54B4B;
+}
+
+.colocs-summary-neg b {
+    color: #156064;
+}
+
+.colocs-summary-text {
+    min-width: fit-content;
+    margin-left: 5px;
+    margin-right: 10px;
+}
+
+
+.colocs-summary-type{
+    display: flex;
+    flex-direction: row;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    margin-right: 25px;
+}
+
+.colocs-selection-dropdown {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.dropdown-button {
+    background-color: white;
+    color: black;
+    font-size: 16px;
+    cursor: pointer;
+    width: 350px;
+    height: 25px;
+    align-items: center;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    padding-right: 0px;
+}
+
+.dropdown-pointer {
+    width: 25px;
+    height: 25px;
+    margin-bottom: 5px;
+}
+
+.dropdown-group {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 10px;
+}
+  
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f1f1f1;
+    width: 350px;
+    overflow: auto;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+    padding: 3px;
+    border-bottom-right-radius: 5px 5px;
+    border-bottom-left-radius: 5px 5px;
+    background-color: white;
+}
+  
+.dropdown-content a {
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+}
+  
+.dropdown-group a:hover {background-color: #ddd;}
+  
+.show {display: block;}
+
+.arrow {
+    border: solid black;
+    border-width: 0 3px 3px 0;
+    display: inline-block;
+    padding: 3px;
+}
+  
+.down {
+    transform: rotate(45deg);
+    -webkit-transform: rotate(45deg);
+}
+
+.checkbox-item-div {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 2px;
+    margin: 0px;
+    height: 33px;
+}
+
+.checkbox-item-div:hover {
+  background-color: #F5F5F5;
+}
+
+.checkbox-label label {
+  margin-bottom: 0px;
+  margin-top: 0px;
+  margin-left: 5px;
+  padding: 0px;
+}
+
+

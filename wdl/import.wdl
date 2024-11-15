@@ -45,24 +45,22 @@ task preprocess {
   String normalized_filename = sub(sub(basename(summary_file), ".gz$", ""), ".bgz$", "")
   String out_filename = "${normalized_filename}.gz"
 
-  String dir = '/cromwell_root/'
 
   command <<<
 	   set -euxo pipefail
-     	   cd ${dir}
 
-	   cat "${summary_file}" | \
+       cat "${summary_file}" | \
            cat | (if [[ "${summary_file}" == *.gz || "${summary_file}" == *.bgz ]]; then zcat ; else cat ; fi) | \
            ${default="cat" preprocessor } | \
            pheweb format-summary-file ${chrom_flag} ${pos_flag} ${ref_flag} ${alt_flag} ${pval_flag} ${mlogp_flag} ${beta_flag} ${se_beta_flag} | \
            sort -t$'\t' -k1,1n -k2,2n -k3,3 -k4,4 | \
-           bgzip > "${dir}${out_filename}"
+           bgzip > "${out_filename}"
 
-           du -h "${dir}${out_filename}"
+           du -h "${out_filename}"
   >>>
 
   output {
-     	    File out_file = "${dir}${out_filename}"
+     	    File out_file = "${out_filename}"
   }
 
   runtime {
@@ -132,14 +130,12 @@ task annotation {
 
      File variant_list
 
-     String dir = '/cromwell_root/'
      Array[String] output_url
 
      Int gene_version
 
     command <<<
 	set -euxo pipefail
-	cd ${dir}
 
     mkdir -p pheweb/generated-by-pheweb/parsed
 	mkdir -p pheweb/generated-by-pheweb/tmp
@@ -158,31 +154,32 @@ task annotation {
 	cat ${variant_list} | (if [[ "${variant_list}" == *.gz || "${variant_list}" == *.bgz ]]; then zcat ; else cat ; fi) > pheweb/generated-by-pheweb/sites/sites-unannotated.tsv
 
  	cd pheweb
-        [[ -z "${bed_file}" ]] && pheweb download-genes 
+        [[ -z "${bed_file}" ]] && pheweb download-genes
         df -h && pheweb add-rsids
         [[ -z "${bed_file}" ]] && pheweb add-genes || pheweb add-genes --genes-filepath /root/.pheweb/cache/genes-b38-v${gene_version}.bed
         df -h && pheweb make-cpras-rsids-sqlite3
         df -h && pheweb make-gene-aliases-sqlite3
-
+        cd ..
         find ./
-
-        gcloud auth list
 
         for url in ${sep="\t" output_url}; do
 
-        /pheweb/scripts/copy_files.sh ${dir}/pheweb/generated-by-pheweb/sites/sites.tsv                $url/generated-by-pheweb/sites/sites.tsv
-        /pheweb/scripts/copy_files.sh ${dir}/pheweb/generated-by-pheweb/resources/gene_aliases.sqlite3 $url/generated-by-pheweb/resources/gene_aliases.sqlite3
-        /pheweb/scripts/copy_files.sh ${dir}/pheweb/generated-by-pheweb/sites/cpras-rsids.sqlite3      $url/generated-by-pheweb/sites/cpras-rsids.sqlite3
+        /pheweb/scripts/copy_files.sh pheweb/generated-by-pheweb/sites/sites.tsv                $url/generated-by-pheweb/sites/sites.tsv
+        /pheweb/scripts/copy_files.sh pheweb/generated-by-pheweb/resources/gene_aliases.sqlite3 $url/generated-by-pheweb/resources/gene_aliases.sqlite3
+        /pheweb/scripts/copy_files.sh pheweb/generated-by-pheweb/sites/cpras-rsids.sqlite3      $url/generated-by-pheweb/sites/cpras-rsids.sqlite3
         /pheweb/scripts/copy_files.sh /root/.pheweb/cache/genes-b38-v${gene_version}.bed $url/cache/genes-b38-v${gene_version}.bed
 
         done
-
+        #copy bed file so that it's used as an output,
+        #since cromwell often leaves inputs out even though they have been requested in the metadata.
+        cp /root/.pheweb/cache/genes-b38-v${gene_version}.bed pheweb/genes-b38-v${gene_version}.bed
     >>>
 
     output {
-	File sites_list = "${dir}pheweb/generated-by-pheweb/sites/sites.tsv"
-	File gene_aliases_sqlite3 = "${dir}pheweb/generated-by-pheweb/resources/gene_aliases.sqlite3"
-	File cpras_rsids_sqlite3 = "${dir}pheweb/generated-by-pheweb/sites/cpras-rsids.sqlite3"
+	File sites_list = "pheweb/generated-by-pheweb/sites/sites.tsv"
+	File gene_aliases_sqlite3 = "pheweb/generated-by-pheweb/resources/gene_aliases.sqlite3"
+	File cpras_rsids_sqlite3 = "pheweb/generated-by-pheweb/sites/cpras-rsids.sqlite3"
+	File bed_file_output = "pheweb/genes-b38-v${gene_version}.bed"
    }
 
    runtime {
@@ -207,7 +204,7 @@ task webdav_directories {
 
     for url in ${sep="\t" output_url}; do
 
-    if [ "$url" = http* ]; then
+    if [[ "$url" = http* ]]; then
       # we ignore failures as directories may alread by created
       curl -X MKCOL "$url/generated-by-pheweb/" || true
       curl -X MKCOL "$url/generated-by-pheweb/sites/" || true
@@ -237,18 +234,28 @@ task pheno {
 	File variant_list
 	File pheno_file
     	String file_affix
+        File bed_file
+	Int gene_version
+
+        File? gnomad_filepath
+        File? annotation_filepath
+	Array[File]? annotation_indexes
 
         String base_name = sub(basename(pheno_file), file_affix, "")
         String pheno_name = sub(base_name, ".gz$", "")
-        String dir = '/cromwell_root/'
 
+        Boolean annotate_manhattan = defined(gnomad_filepath) && defined(annotation_filepath) && defined(annotation_indexes)
+	Boolean compress_manhattan = false
+
+	# translate manhattan flags
+	String compress_suffix=if compress_manhattan then ".gz" else ""
+	String compress_flag=if compress_manhattan then "true" else "false"
         Array[String] output_url
 
-
-	String gz_file = "${dir}pheweb/generated-by-pheweb/pheno_gz/${pheno_name}.gz"
- 	String tbi_file = "${dir}pheweb/generated-by-pheweb/pheno_gz/${pheno_name}.gz.tbi"
-	String manhattan_file = "${dir}pheweb/generated-by-pheweb/manhattan/${pheno_name}.json"
-    	String qq_jsons = "${dir}pheweb/generated-by-pheweb/qq/${pheno_name}.json"
+	String gz_file = "pheweb/generated-by-pheweb/pheno_gz/${pheno_name}.gz"
+ 	String tbi_file = "pheweb/generated-by-pheweb/pheno_gz/${pheno_name}.gz.tbi"
+	String manhattan_file = "pheweb/generated-by-pheweb/manhattan/${pheno_name}.json${compress_suffix}"
+    	String qq_jsons = "pheweb/generated-by-pheweb/qq/${pheno_name}.json"
 
         command <<<
 
@@ -257,8 +264,11 @@ task pheno {
         mkdir -p pheweb/generated-by-pheweb/parsed
 	mkdir -p pheweb/generated-by-pheweb/sites
 	mkdir -p pheweb/generated-by-pheweb/pheno_gz
+	mkdir -p /root/.pheweb/cache
 
 	mv ${variant_list} pheweb/generated-by-pheweb/sites/
+
+	[[ -z "${bed_file}" ]] || cp ${bed_file} /root/.pheweb/cache/genes-b38-v${gene_version}.bed
 
 	# pipeline to file without compression suffix if there is one
 	cat ${pheno_file} | \
@@ -271,18 +281,19 @@ task pheno {
         pheweb phenolist extract-phenocode-from-filepath --simple && \
         pheweb augment-phenos && \
         pheweb manhattan && \
-        pheweb qq && \
+        ([[ -z "${gnomad_filepath}" ]] || \
+	 [[ -z "${annotation_filepath}" ]] || \
+	 pheweb annotate-manhattan --gnomad_filepath=${gnomad_filepath} --annotation_filepath=${annotation_filepath} --compress=${compress_flag}) && \
+	pheweb qq && \
         pheweb bgzip-phenos &&
         find ./
-	# find just to make sure the whole sequence is completed
-	# and you know what you have.
 
         for url in ${sep="\t" output_url}; do
 
-        /pheweb/scripts/copy_files.sh ${dir}pheweb/generated-by-pheweb/pheno_gz/${pheno_name}.gz      $url/generated-by-pheweb/pheno_gz/${pheno_name}.gz
-	/pheweb/scripts/copy_files.sh ${dir}pheweb/generated-by-pheweb/pheno_gz/${pheno_name}.gz.tbi  $url/generated-by-pheweb/pheno_gz/${pheno_name}.gz.tbi
-	/pheweb/scripts/copy_files.sh ${dir}pheweb/generated-by-pheweb/manhattan/${pheno_name}.json   $url/generated-by-pheweb/manhattan/${pheno_name}.json
-	/pheweb/scripts/copy_files.sh ${dir}pheweb/generated-by-pheweb/qq/${pheno_name}.json          $url/generated-by-pheweb/qq/${pheno_name}.json
+        /pheweb/scripts/copy_files.sh generated-by-pheweb/pheno_gz/${pheno_name}.gz                        $url/generated-by-pheweb/pheno_gz/${pheno_name}.gz
+	/pheweb/scripts/copy_files.sh generated-by-pheweb/pheno_gz/${pheno_name}.gz.tbi                    $url/generated-by-pheweb/pheno_gz/${pheno_name}.gz.tbi
+	/pheweb/scripts/copy_files.sh generated-by-pheweb/manhattan/${pheno_name}.json${compress_suffix}   $url/generated-by-pheweb/manhattan/${pheno_name}.json${compress_suffix}
+	/pheweb/scripts/copy_files.sh generated-by-pheweb/qq/${pheno_name}.json                            $url/generated-by-pheweb/qq/${pheno_name}.json
 
 	done
 	>>>
@@ -320,7 +331,6 @@ task matrix {
 
     Array[String] output_url
 
-    String dir = '/cromwell_root/'
 
     command <<<
         set -euxo pipefail
@@ -417,18 +427,19 @@ with open('generated-by-pheweb/best-phenos-by-gene.json', 'w') as f:
     json.dump(gene2phenos, f)
 EOF
       # TODO : verify number of columns
-      find "${dir}"
+      # move back to main workspace dir for commands without dir to work
+      cd ..
+      find ./
 
       for url in ${sep="\t" output_url}; do
 
       #skipping pheno-list.json as it is written in the the fix json step
-      #/pheweb/scripts/copy_files.sh "${dir}pheweb/pheno-list.json"                                "$url/pheno-list.json")
-      /pheweb/scripts/copy_files.sh ${dir}pheweb/generated-by-pheweb/matrix.tsv.gz              $url/generated-by-pheweb/matrix.tsv.gz
-      /pheweb/scripts/copy_files.sh ${dir}pheweb/generated-by-pheweb/matrix.tsv.gz.tbi          $url/generated-by-pheweb/matrix.tsv.gz.tbi
-      /pheweb/scripts/copy_files.sh ${dir}pheweb/generated-by-pheweb/top_hits.json              $url/generated-by-pheweb/top_hits.json
-      /pheweb/scripts/copy_files.sh ${dir}pheweb/generated-by-pheweb/top_hits.tsv               $url/generated-by-pheweb/top_hits.tsv
-      /pheweb/scripts/copy_files.sh ${dir}pheweb/generated-by-pheweb/top_hits_1k.json           $url/generated-by-pheweb/top_hits_1k.json
-      /pheweb/scripts/copy_files.sh ${dir}pheweb/generated-by-pheweb/best-phenos-by-gene.json   $url/generated-by-pheweb/best-phenos-by-gene.json
+      /pheweb/scripts/copy_files.sh generated-by-pheweb/matrix.tsv.gz              $url/generated-by-pheweb/matrix.tsv.gz
+      /pheweb/scripts/copy_files.sh generated-by-pheweb/matrix.tsv.gz.tbi          $url/generated-by-pheweb/matrix.tsv.gz.tbi
+      /pheweb/scripts/copy_files.sh generated-by-pheweb/top_hits.json              $url/generated-by-pheweb/top_hits.json
+      /pheweb/scripts/copy_files.sh generated-by-pheweb/top_hits.tsv               $url/generated-by-pheweb/top_hits.tsv
+      /pheweb/scripts/copy_files.sh generated-by-pheweb/top_hits_1k.json           $url/generated-by-pheweb/top_hits_1k.json
+      /pheweb/scripts/copy_files.sh generated-by-pheweb/best-phenos-by-gene.json   $url/generated-by-pheweb/best-phenos-by-gene.json
 
       done
     >>>
@@ -474,7 +485,6 @@ task fix_json {
     Array[File] man_jsons
 
     String docker
-    String root_dir = '/cromwell_root/'
 
     # need to loop over phenos in pheno_json
 
@@ -482,21 +492,18 @@ task fix_json {
    command <<<
 set -euxo pipefail
 python3 <<CODE
-DATA_DIR = '${root_dir}'
+DATA_DIR = './'
 PHENO_JSON = '${pheno_json}'
 CUSTOM_JSON = '${custom_json}'
 print(DATA_DIR,PHENO_JSON)
-
+import brotli
+import gzip
+import glob
 import json,os
 with open(PHENO_JSON) as f:phenolist = json.load(f)
 with open(CUSTOM_JSON) as f: custom_jsons = {elem['phenocode']:elem for elem in json.load(f)}
 fields = "${sep="," fields}".split(",")
 print(fields)
-
-def find(name, path,subpath):
-    for root, dirs, files in os.walk(path):
-        if name in files and subpath in root:
-            return os.path.join(root, name)
 
 final_json = []
 for p_dict in phenolist:
@@ -504,12 +511,16 @@ for p_dict in phenolist:
     pheno = p_dict['phenocode']
     print(pheno,custom_jsons[pheno])
     # FIND QQ PLOT
-    p_qq = find(pheno +".json",DATA_DIR,'qq')
+    p_qq, = glob.glob(f"**/qq/{pheno}.json", recursive=True)
     with open(p_qq) as f: qq = json.load(f)
     # FIND MANAHTTAN PLOT
-    p_m = find(pheno +".json",DATA_DIR,'manhattan')
-    with open(p_m) as f: manha = json.load(f)
-
+    p_m, = glob.glob(f"**/manhattan/{pheno}.json*", recursive=True)
+    if p_m.endswith(".br"):
+       with open(p_m, "rb") as f: manha = json.loads(brotli.decompress(f.read()))
+    elif p_m.endswith(".gz"):
+       with open(p_m, "rb") as f: manha = json.loads(gzip.decompress(f.read()))
+    else:
+       with open(p_m) as f: manha = json.load(f)
     # UPDATE P_DICT
     p_dict['gc_lambda'] = qq['overall']['gc_lambda']
     p_dict['num_gw_significant'] = len([v for v in manha['unbinned_variants'] if 'peak' in v and v['peak'] == True and float(v['pval']) < 5e-8])
@@ -522,22 +533,22 @@ with open('./new_pheno.json', 'a') as outfile: json.dump(final_json, outfile, in
 
 CODE
 
-     cat "${root_dir}new_pheno.json"
+     cat "new_pheno.json"
 
      for url in ${sep="\t" output_url}; do
-          /pheweb/scripts/copy_files.sh ${root_dir}new_pheno.json $url/pheno-list.json
+          /pheweb/scripts/copy_files.sh new_pheno.json $url/pheno-list.json
      done
 >>>
 
     output {
-        File json ='/cromwell_root/new_pheno.json'
+        File json ='new_pheno.json'
     }
 
    runtime {
         docker: "${docker}"
         cpu: 1
-        memory: "2 GB"
-        disks: "local-disk 5 HDD"
+        memory: "4 GB"
+        disks: "local-disk 40 HDD"
         zones: "europe-west1-b"
         preemptible: 0
     }
@@ -549,11 +560,12 @@ task exec_cmd {
   # https://cromwell.readthedocs.io/en/stable/optimizations/VolatileTasks/
   # https://github.com/broadinstitute/cromwell/issues/1695
   Array[String] cmd
+  File? input_file
   String docker
-
 
   command <<<
     set -euxo pipefail
+    echo ${input_file}
     date
     ${sep="&&" cmd}
   >>>
@@ -573,18 +585,21 @@ task exec_cmd {
 }
 
 task filter_sumstat {
-
+    String file_affix
     File sumstat
     String docker
     String pheno_col
     Float pval_thres
-    String columns
+    Array[String] columns
+
+    String base_name = sub(basename(sumstat), file_affix, "")
+    String pheno_name = sub(base_name, ".gz$", "")
 
     String fname_prefix = sub(basename(sumstat), ".gz", "")
     Int disk_size = ceil(size(sumstat, "GB") * 3) + 5
 
     command <<<
-    
+
     set -euxo pipefail
 
     # input:  a (gzipped) tab-delimited sumstat uri
@@ -592,18 +607,18 @@ task filter_sumstat {
     #
     # filters the sumstat to p-values below the given threshold (threshold can be 1 for no filtering)
     # sort order in the output will be chromosome, position, alleles and pheno
-    # 
+    #
     # possible chr prefix will be removed, possible 23 will be changed to X
 
     catcmd() {
         zcat -f ${sumstat}
     }
-    pheno=`basename ${sumstat} | sed 's/.gz$//'`    
+    pheno=`basename ${sumstat} | sed 's/.gz$//'`
     catcmd() {
-        zcat -f ${sumstat} | awk -v pheno=$pheno -v col=${pheno_col} 'BEGIN {FS=OFS="\t"} NR==1 {print col,$0} NR>1 {print pheno,$0}'
+        zcat -f ${sumstat} | awk -v pheno=${pheno_name} -v col=${pheno_col} 'BEGIN {FS=OFS="\t"} NR==1 {print col,$0} NR>1 {print pheno,$0}'
     }
 
-    catcmd | awk -v columns="${columns}"  '
+    catcmd | awk -v columns='${sep=" " columns}' '
     BEGIN {FS=OFS="\t"}
     NR==1 {
         for(i=1;i<=NF;i++) {
@@ -633,7 +648,7 @@ task filter_sumstat {
     uniq | \
     bgzip > ${fname_prefix}.filtered.tsv.gz
 
-    >>>    
+    >>>
 
     output {
         File out = "${fname_prefix}.filtered.tsv.gz"
@@ -677,7 +692,7 @@ task get_phenolist {
         pheweb phenolist glob generated-by-pheweb/pheno_gz/* && \
         pheweb phenolist extract-phenocode-from-filepath --simple
 
-    >>>    
+    >>>
 
     output {
         File phenolist = "pheweb/pheno-list.json"
@@ -703,31 +718,29 @@ task matrix_longformat {
     Array[String] output_url
     Int batch_size
     String docker
-    String out_columns
+    Array[String] out_columns
     Int disk
     Int cpu
     Int mem
 
-    String dir = '/cromwell_root/'
     String filename = "long.tsv.gz"
 
     command <<<
-
-    in_file=$(echo "${sep=',' sumstats}" | cut -f 1 -d',');
-    in_dir=$(echo $in_file | sed 's/^gs:\/\///' | cut -f 3 -d'/');
-
     set -euxo pipefail
     n_cpu=`grep -c ^processor /proc/cpuinfo`
 
     echo `date` decompress
 
-    find "/cromwell_root/$in_dir" -name "*.tsv.gz" | xargs -P $n_cpu -I{} gzip -d --force {}
-    find "/cromwell_root/$in_dir" -name "*.tsv" | tr '\n' '\0' > merge_these
-    
+    #decompress files
+    cat ${write_lines(sumstats)}|xargs -P $n_cpu -I{} gzip -d --force {}
+    #write decompressed file locations into file. Since they can be in arbitrary folders, cheat a little bit and lop off the gz suffix.
+    cat ${write_lines(sumstats)}|sed 's_\.gz$__'| tr '\n' '\0' > merge_these
+    # sort and join the decompressed files
+    # seems like there is no need to modify this or after this.
     echo `date` merge
     time \
     cat \
-    <(echo "${out_columns}" | tr ' ' '\t') \
+    <(echo "${sep=' ' out_columns}" | tr ' ' '\t') \
     <(sort \
     -m \
     -T . \
@@ -743,7 +756,7 @@ task matrix_longformat {
 
     echo `date` copy_files
 
-    find "${dir}"
+    find "./"
     for url in ${sep="\t" output_url}; do
         /pheweb/scripts/copy_files.sh "${filename}"              $url/generated-by-pheweb/"${filename}"
         /pheweb/scripts/copy_files.sh "${filename}.tbi"          $url/generated-by-pheweb/"${filename}.tbi"
@@ -751,7 +764,7 @@ task matrix_longformat {
 
     echo `date` end
 
-    >>>    
+    >>>
 
     runtime {
         docker: "${docker}"
@@ -763,18 +776,24 @@ task matrix_longformat {
         preemptible: 0
     }
 
+    output{
+        File matrix_long = "${filename}"
+        File matrix_long_tbi = "${filename}.tbi"
+    }
+
 }
 
 workflow import_pheweb {
          # this variable is to make sure the json file matches the import version
 	 String docker
 	 String summary_files
-     Boolean generate_longformat_matrix
+         Boolean generate_longformat_matrix
+	 Int gene_version
 
-	 String? file_affix
-         String? sites_file
-         Array[String]? post_import = []
-         Array[String]? output_url = []
+	 String file_affix = ""
+         File? sites_file
+         Array[String] post_import = []
+         Array[String] output_url = []
 
          File custom_json
          Array[String] fields
@@ -815,25 +834,28 @@ workflow import_pheweb {
 
 	 call annotation { input :
 	    output_url = output_url,
-            variant_list = if defined(sites_file) then sites_file else sites.variant_list ,
-	    mem = mem ,
+            variant_list = select_first([sites_file, sites.variant_list]) ,
+            mem = mem ,
 	    bed_file = bed_file ,
+	    gene_version = gene_version ,
 	    rsids_file = rsids_file ,
             docker = docker
          }
 
 	 scatter (pheno_file in preprocess.out_file) {
 	 	 call pheno { input :
-	 	      	      variant_list = annotation.sites_list ,
+		              gene_version = gene_version ,
+	 	      	      bed_file = bed_file,
+                   	      variant_list = annotation.sites_list ,
 	       	      	      pheno_file = pheno_file ,
-	       	       	      file_affix = if defined(file_affix) then file_affix else "",
+	       	       	      file_affix = file_affix,
                               docker = docker,
 	                      output_url = output_url
 	 	 }
 	}
 
     if (!generate_longformat_matrix) {
-        call matrix { 
+        call matrix {
             input: sites=annotation.sites_list ,
                    pheno_gz=pheno.pheno_gz,
                    manhattan=pheno.pheno_manhattan,
@@ -856,7 +878,8 @@ workflow import_pheweb {
 
         scatter (file in preprocess.out_file) {
             call filter_sumstat{
-                input: sumstat = file,
+                input: file_affix = file_affix,
+		       sumstat = file,
                        pval_thres = pval_thres,
                        docker = docker
             }
@@ -869,7 +892,7 @@ workflow import_pheweb {
                     docker = docker
         }
     }
-    
+
     File phenolist = select_first([get_phenolist.phenolist, matrix.phenolist])
 
 	call fix_json{
@@ -883,10 +906,9 @@ workflow import_pheweb {
           fields = fields
         }
 
-        if(defined(post_import)){
-          call exec_cmd { input :
+	call exec_cmd { input :
 	  docker = docker ,
-	  cmd = post_import }
+	  cmd = post_import ,
+	  input_file = fix_json.json
 	}
-
 }

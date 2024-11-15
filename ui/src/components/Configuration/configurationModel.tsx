@@ -30,6 +30,8 @@ export interface ApplicationConfiguration {
   readonly ld_panel_version: string;
 
   readonly trackingId? :string;
+
+  readonly risteysURLPrefix? :string;
 }
 
 export interface ConfigurationUserInterface {
@@ -51,6 +53,7 @@ export interface ConfigurationMetaData {
 }
 
 export interface ConfigurationWindow extends Window {
+  release_prev?: number;
   config?: {
     userInterface?: ConfigurationUserInterface;
     metaData?: ConfigurationMetaData;

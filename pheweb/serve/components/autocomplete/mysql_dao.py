@@ -85,7 +85,7 @@ class AutocompleterMYSQLDAO(AutocompleterDAO, MysqlDAO):
                     ORDER BY cpra
                     LIMIT %s
                     """
-                    parameters = [f'{key}%',  str(self._limit)]
+                    parameters = [f'{key}%',  int(self._limit)]
                     cursor.execute(sql, parameters)
                     cpra_rsid_pairs = cursor.fetchall()
                     if cpra_rsid_pairs:
@@ -134,7 +134,7 @@ class AutocompleterMYSQLDAO(AutocompleterDAO, MysqlDAO):
                     ORDER BY length(rsid),rsid DESC 
                     LIMIT  %s
                     """
-                    parameters = [f'{key}%', str(self._limit)]
+                    parameters = [f'{key}%', int(self._limit)]
                     cursor.execute(sql, parameters)
                     rows = cursor.fetchall()
                     for row in rows:

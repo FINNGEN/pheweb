@@ -1,6 +1,8 @@
 import React, { Fragment, useContext, useEffect, useState } from "react";
 import { cond_fm_regions_types, CondFMRegions, layout_types, Params } from "../RegionModel";
 import { RegionContext, RegionState } from "../RegionContext";
+import LeadVariants from './LeadVariants'
+
 
 const Component = (cond_fm_regions : cond_fm_regions_types, dataSources , plot) => {
     const finemapping_methods : layout_types[] =
@@ -13,6 +15,14 @@ const Component = (cond_fm_regions : cond_fm_regions_types, dataSources , plot) 
     const cond_signals : CondFMRegions | undefined = (cond_fm_regions || []).find(region => region.type === 'conditional')
     const n_cond_signals = cond_signals?.n_signals || 0
     const [conditionalIndex, setConditionalIndex] = useState<number | undefined>(n_cond_signals > 0?0:undefined);
+    const finemap : CondFMRegions | undefined = (cond_fm_regions || []).find(region => region.type === 'finemap' || region.type === 'susie');
+    const finemappedCondRegion: string = `${finemap.chr}:${finemap.start}-${finemap.end}` || null;
+
+    const [showLeadvars, setShowLeadvars] = useState< {
+        susie: boolean;
+        finemap: boolean;
+        conditional: boolean;
+    }>({susie: false, finemap: false, conditional: false});
 
     useEffect(() => {
         const params = dataSources?.sources?.finemapping?.params as Params ;
@@ -42,16 +52,37 @@ const Component = (cond_fm_regions : cond_fm_regions_types, dataSources , plot) 
             panel.data_layers.associationpvalues.data = dataSources.sources.conditional.parseArraysToObjects(params.allData[conditionalIndex].data, params.fields, params.outnames, params.trans);
             panel.data_layers.associationpvalues.render();
         }
+        
     },[setConditionalIndex, conditionalIndex, dataSources, plot]);
 
     const showConditional = (i : number) => () => dataSources && plot && setConditionalIndex(i) ;
 
-    const showFinemapping = (s : layout_types) => () => { dataSources && plot &&  setSelectedMethod(s); }
-
-    const signalLabel = (region : CondFMRegions) => region.type === 'finemap' ?
-      <Fragment><span>{region.n_signals} {region.type} signals (prob. {region.n_signals_prob.toFixed(3)} ) </span><br/></Fragment> :
-      <Fragment><span>{region.n_signals} {region.type} signals</span><br/></Fragment>
-
+    const showFinemapping = (s : layout_types) => () => { 
+        dataSources && plot &&  setSelectedMethod(s); 
+    }
+          
+    const signalLabel = (region : CondFMRegions) => {
+        return (
+            <Fragment>
+            <div className="flex-row-container">
+            <div className="arrow-container">
+                <div className={`arrow ${showLeadvars[region.type] ? "up" : "down"}`} onClick={() => setShowLeadvars(prev => ({...prev, [region.type]: !showLeadvars[region.type]})) }></div>
+            </div>
+            {
+                region.type !== 'finemap' ?
+                <Fragment>
+                    <span>{region.n_signals} {region.type} signals </span><br/>
+                </Fragment> 
+                : <Fragment>
+                    <span>{region.n_signals} {region.type} signals (prob. {region.n_signals_prob.toFixed(3)})</span>
+                </Fragment>
+            }
+            </div> 
+            <LeadVariants type={region.type} show={showLeadvars[region.type]}/> 
+            </Fragment>
+            )
+        }
+          
     const conditionalLabel = (i : number) => <button onClick={showConditional(i)}
                                                      key={i}
                                                      data-cond-i={i}
@@ -61,7 +92,10 @@ const Component = (cond_fm_regions : cond_fm_regions_types, dataSources , plot) 
     </button>
 
     let summaryHTML =
+
     <Fragment>
+          
+          <span>Finemapping/conditional region: <b>{finemappedCondRegion}</b></span>
           { cond_fm_regions.map((region,i) => <div key={i}>{  signalLabel(region) }</div>)}
 
           {n_cond_signals > 0 ?
@@ -89,17 +123,20 @@ const Component = (cond_fm_regions : cond_fm_regions_types, dataSources , plot) 
 
           { finemapping_methods.map((r,i) =>
             <button type="button" key={i} onClick={showFinemapping( r )}
-                    className={"btn " + (r === selectedMethod ? 'btn-default' : 'btn-primary' )}
-                    disabled={ r === selectedMethod }>
-                <span>{ r }</span>
-            </button>)
+            className={"btn " + (r === selectedMethod ? 'btn-default' : 'btn-primary' )}
+            disabled={ r === selectedMethod }>
+        <span>{ r }</span>
+    </button>
+            )
           }
 
       </Fragment>
     return summaryHTML
 }
 
+
 export const RegionSelectFinemapping = () => {
+
     const { region : {cond_fm_regions} = {} ,
             locusZoomContext : { dataSources , plot } = {} } = useContext<Partial<RegionState>>(RegionContext);
 
