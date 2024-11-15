@@ -38,7 +38,7 @@ from .group_based_auth  import verify_membership
 
 from .server_auth import before_request, is_public, do_check_auth
 
-from pheweb_colocalization.view import colocalization
+from pheweb.serve.components.colocalization.view import colocalization
 from .components.chip.service import chip
 from .components.coding.service import coding
 from flask_cors import CORS

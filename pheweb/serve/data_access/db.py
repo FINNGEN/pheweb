@@ -31,7 +31,7 @@ import os
 import subprocess
 import sys
 import glob
-from pheweb_colocalization.model_db import ColocalizationDAO
+from pheweb.serve.components.colocalization.model_db import ColocalizationDAO
 from .variant_phenotype import  VariantPhenotypeDao
 from ..components.chip.fs_storage import FileChipDAO
 from ..components.coding.fs_storage import FileCodingDAO
@@ -377,7 +377,7 @@ class ResultDB(object):
         Returns all results and annotations for given variant. Returns tuple of Variant (including updated annotations if any) and phenotype results.
         Returns None if variant does not exist.
         """
-    
+
     def append_filt_phenos(
         self, varaint_phenores: Tuple[Variant, List[PhenoResult]]
     ) -> Tuple[Variant, List[PhenoResult]]:
@@ -653,7 +653,7 @@ class TabixGnomadDao(GnomadDB):
             for row in tabix_iter:
                 split = row.split("\t")
                 ref = split[header.index('ref')]
-                alt = split[header.index('alt')]            
+                alt = split[header.index('alt')]
                 if ref == variant.ref and alt == variant.alt:
                     for i, s in enumerate(split):
                         if (
@@ -738,9 +738,9 @@ class TabixResultDao(ResultDB):
             p = s[1] if len(s) > 1 else None
 
         self.longformat = False
-    
+
     def get_variant_results_range(self, chrom, start, end):
-        
+
         chrom = "23" if chrom == "X" else chrom
         try:
             tabix_iter = pysam.TabixFile(self.matrix_path, parser=None).fetch(
@@ -977,7 +977,7 @@ class TabixResultDao(ResultDB):
 
         phenolist = varaint_phenores[1]
         var_phenocodes = [r.phenocode for r in phenolist]
-        
+
         for phenotype in self.pheno_map:
             if phenotype not in var_phenocodes:
                 pr = PhenoResult(
@@ -1005,11 +1005,11 @@ class TabixResultDao(ResultDB):
                     else "NA",
                 )
                 phenolist.append(pr)
-        
+
         return (varaint_phenores[0], phenolist)
 
 class TabixResultFiltDao(TabixResultDao):
-    def __init__(self, phenos, matrix_path, columns):        
+    def __init__(self, phenos, matrix_path, columns):
         self.matrix_path = matrix_path
         self.columns = columns
         self.header = gzip.open(self.matrix_path,'rt').readline().split("\t")
@@ -1479,7 +1479,7 @@ class TabixAnnotationDao(AnnotationDB):
         return None
 
     def get_variant_annotations(self, variants: List[Variant], cpra):
-        
+
         annotations = []
         t = time.time()
         tabixf =pysam.TabixFile(self.matrix_path, parser=None)
@@ -1842,10 +1842,10 @@ def _safe_bool(boolstr:str) -> bool:
     if boolstr.upper()== "FALSE":
         return  False
     elif boolstr.upper()== "TRUE":
-        return True 
+        return True
     else:
         raise Exception("Expected boolean string FALSE,TRUE in any casing.")
-    
+
 
 class AutoreportingDao(AutorepVariantDB):
     def __init__(self, authentication_file, group_report_path):
@@ -1874,7 +1874,7 @@ class AutoreportingDao(AutorepVariantDB):
         finally:
             conn.close()
 
-    
+
 
     def get_group_report(self,phenotype) -> List[Dict[str,Union[str,int,float,bool]]]:
         """Returns the records in a group report as a list of dictionaries, one for each group.
@@ -1961,7 +1961,7 @@ class AutoreportingDao(AutorepVariantDB):
                     for key in record:
                         if record[key] == "":
                             record[key] = "NA"
-                    
+
                     data.append(record)
             return data
         return []
@@ -1993,7 +1993,7 @@ class DataFactory(object):
                         db[db_type][db_source].pop("const_arguments", None)
                     print(db_type, db_source)
                     self.dao_impl[db_type] = daoclass(**db[db_type][db_source])
-                    
+
         if "health" not in self.dao_impl:
             self.dao_impl["health"] = health_default_dao()
         self.dao_impl["geneinfo"] = NCBIGeneInfoDao()
@@ -2024,7 +2024,7 @@ class DataFactory(object):
 
     def get_result_dao(self):
         return self.dao_impl["result"]
-    
+
     def get_geneinfo_dao(self):
         return self.dao_impl["geneinfo"]
 
@@ -2069,4 +2069,3 @@ class DataFactory(object):
 
     def get_pqtl_colocalization_dao(self):
         return self.dao_impl["pqtl_colocalization"] if "pqtl_colocalization" in self.dao_impl else None
-
