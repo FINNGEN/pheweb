@@ -22,7 +22,7 @@ def get_gene_tuples_with_ensg() -> Iterator[Tuple[str,int,int,str,str]]:
 
 def get_genenamesorg_ensg_aliases_map(ensgs_to_consider: Iterable[str]) -> Dict[str, List[str]]:
     ensgs_to_consider = set(ensgs_to_consider)
-    r = urllib.request.urlopen('http://ftp.ebi.ac.uk/pub/databases/genenames/new/json/non_alt_loci_set.json')
+    r = urllib.request.urlopen('http://ftp.ebi.ac.uk/pub/databases/genenames/out_of_date_hgnc/json/non_alt_loci_set.json')
     data = r.read().decode('utf-8')
     ensg_to_aliases = {}
     for row in json.loads(data)['response']['docs']:
