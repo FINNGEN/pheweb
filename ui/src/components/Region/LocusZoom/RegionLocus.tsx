@@ -117,7 +117,7 @@ export function add_dashboard_button(
   name: string,
   func: (layout: ComponentsEntity) => { bind: (a: any) => any }
 ) {
-  Dashboard.Components.add(name, function (layout: ComponentsEntity) {
+  !Dashboard.Components.list().includes(name) && Dashboard.Components.add(name, function (layout: ComponentsEntity) {
     Dashboard.Component.apply(this, arguments as any);
     this.update = function () {
       if (this.button) return this;
@@ -308,7 +308,7 @@ export const init_locus_zoom = (region: Region): LocusZoomContext => {
     },
   ]);
 
-  Dashboard.Components.add<ComponentsEntity>(
+  !Dashboard.Components.list().includes("region") && Dashboard.Components.add<ComponentsEntity>(
     "region",
     function (layout: ComponentsEntity) {
       Dashboard.Component.apply(this, arguments as any);
