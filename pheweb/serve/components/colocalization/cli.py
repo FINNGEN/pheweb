@@ -22,11 +22,14 @@ class DAOContext(object):
     parameters = attr.ib(default={})
     timer = attr.ib(default=True)
     echo = attr.ib(default=True)
+    hasPPH4ab = attr.ib(default=True)
+    
     def __enter__(self):
         self.start_timer = time.perf_counter()
 
         self.dao = ColocalizationDAO(db_url = self.db_url,
                                      parameters = self.parameters,
+                                     hasPPH4ab = self.hasPPH4ab,
                                      echo = self.echo)
         return self.dao
 
@@ -40,16 +43,18 @@ class DAOContext(object):
 
 @data_cli.command("init", short_help="create schema")
 @click.argument("path", required=True, type=str)
+@click.option('--has-pph4ab/--no-pph4ab', default=False, help="Enable or disable hasPPH4ab (default: enabled).")
 @with_appcontext
-def init_command(path) -> None:
-    with DAOContext(path) as dao:
+def init_command(path, has_pph4ab: bool) -> None:
+    with DAOContext(path, hasPPH4ab = has_pph4ab) as dao:
         dao.create_schema()
 
 @data_cli.command("schema", short_help="output schema")
 @click.argument("path", required=True, type=str)
+@click.option('--has-pph4ab/--no-pph4ab', default=False, help="Enable or disable hasPPH4ab (default: enabled).")
 @with_appcontext
-def schema_command(path) -> None:
-    with DAOContext(path, timer = False) as dao:
+def schema_command(path, has_pph4ab: bool) -> None:
+    with DAOContext(path, timer = False, hasPPH4ab = has_pph4ab) as dao:
         dao.dump()
 
 @data_cli.command("delete", short_help="delete data and drop tables")
@@ -74,7 +79,8 @@ def harness() -> None:
 @click.argument("path", required=True, type=str)
 @click.argument("data", required=True, type=str)
 @click.option('--header/--no-header', default=True)
+@click.option('--has-pph4ab/--no-pph4ab', default=False, help="Enable or disable hasPPH4ab (default: enabled).")
 @with_appcontext
-def cli_load(release: int, path: str, data: str, header: bool) -> None:
-    with DAOContext(path, echo=False) as dao:
+def cli_load(release: int, path: str, data: str, header: bool, has_pph4ab: bool) -> None:
+    with DAOContext(path, echo=False, hasPPH4ab = has_pph4ab) as dao:
         print("loaded {0} entries from : '{1}' ".format(dao.load_data(release, data, header = header),path))

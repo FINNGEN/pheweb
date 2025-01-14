@@ -6,7 +6,6 @@ from attr.validators import instance_of
 from sqlalchemy import Table, MetaData, create_engine, Column, Integer, String, Float, Text, ForeignKey
 from pheweb.serve.components.colocalization.finngen_common_data_model.data import JSONifiable, Kwargs
 from pheweb.serve.components.colocalization.finngen_common_data_model.genomics import Variant, Locus
-from pheweb.serve.components.colocalization.finngen_common_data_model.colocalization import CausalVariant, Colocalization
 import re
 
 @attr.s
@@ -85,8 +84,7 @@ class SearchResults(JSONifiable):
     colocalization: list of colocalization matches
     """
     count = attr.ib(validator=instance_of(int))
-    colocalizations = attr.ib(validator=attr.validators.deep_iterable(member_validator=instance_of(Colocalization),
-                                                                      iterable_validator=instance_of(typing.List)))
+    colocalizations  = attr.ib()
 
     def json_rep(self):
         return {"count": self.count,
@@ -136,7 +134,7 @@ class ColocalizationDB:
     def get_locuszoom(self,
                         phenotype: str,
                         locus: Locus,
-                        flags: typing.Dict[str, typing.Any]={}) -> typing.List[CausalVariant]:
+                        flags: typing.Dict[str, typing.Any]={}):
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -167,7 +165,7 @@ class ColocalizationDB:
     @abc.abstractmethod
     def get_colocalization(self,
                            colocalization_id : int,
-                           flags : typing.Dict[str, typing.Any] = {}) -> typing.Optional[Colocalization]:
+                           flags : typing.Dict[str, typing.Any] = {}):
         """
         Given the identifier for a colocaliztion
         record return colocaliztion record.

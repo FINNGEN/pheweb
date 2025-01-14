@@ -3,9 +3,10 @@ from sqlalchemy import Table, MetaData, create_engine, Column, Integer, String, 
 from sqlalchemy.orm import sessionmaker
 
 from pheweb.serve.components.colocalization.finngen_common_data_model.genomics import Variant, Locus
-from pheweb.serve.components.colocalization.finngen_common_data_model.colocalization import CausalVariant, Colocalization
+from pheweb.serve.components.colocalization.finngen_common_data_model.colocalization import Model
 from pheweb.serve.components.colocalization.model import CausalVariantVector, SearchSummary, SearchResults, PhenotypeList, ColocalizationDB
 from pheweb.serve.components.colocalization.model_mapper import ColocalizationMapping
+from pheweb.serve.components.colocalization.dao_support import DAOSupport
 
 import csv
 import gzip
@@ -18,8 +19,13 @@ import importlib.machinery
 import importlib.util
 from sqlalchemy.sql import func
 
-def refine_colocalization(c : Colocalization):
-    return Colocalization(**c.kwargs_rep())
+import logging
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
+logger.setLevel(logging.DEBUG)
+
+def refine_colocalization(model, c):
+    return model.Colocalization(**c.kwargs_rep())
 
 
 def chunk(iterable, size):
@@ -44,7 +50,6 @@ class ColocalizationDAO(ColocalizationDB):
 
     @staticmethod
     def mysql_config(path : str) -> typing.Optional[str] :
-        print(path)
         if os.path.exists(path):
             loader = importlib.machinery.SourceFileLoader('auth_module',path)
             spec = importlib.util.spec_from_loader(loader.name, loader)
@@ -59,18 +64,23 @@ class ColocalizationDAO(ColocalizationDB):
         else:
             return path
 
-    def __init__(self, db_url: str, echo=False, parameters=dict()):
+    def __init__(self,
+                 db_url: str,
+                 echo : bool =False,
+                 hasPPH4ab : bool = False,
+                 parameters=dict()):
 
         self.db_url=ColocalizationDAO.mysql_config(db_url)
-        print("ColocalizationDAO : {}".format(self.db_url))
+        logger.info(f"hasPPH4ab:{hasPPH4ab}, db_url:{db_url}")
         self.engine = create_engine(self.db_url,
                                     pool_pre_ping=True,
                                     echo=echo,
                                     *parameters)
-        self.mapping = ColocalizationMapping.getInstance()
+        self.model = Model(hasPPH4ab = hasPPH4ab)
+        self.mapping = ColocalizationMapping.getInstance(self.model)
         self.mapping.getMetadata().bind = self.engine
         self.Session = sessionmaker(bind=self.engine)
-        self.support = DAOSupport(Colocalization)
+        self.support = DAOSupport(self.model.Colocalization)
 
 
     def __del__(self):
@@ -81,7 +91,7 @@ class ColocalizationDAO(ColocalizationDB):
         return self.mapping.getMetadata().create_all(self.engine)
 
     def dump(self):
-        print(self.db_url)
+        logger.info(f"db_url:{self.db_url}")
         # see  : https://stackoverflow.com/questions/2128717/sqlalchemy-printing-raw-sql-from-create
         def metadata_dump(sql, *multiparams, **params):
             print(sql.compile(dialect=engine.dialect))
@@ -97,8 +107,9 @@ class ColocalizationDAO(ColocalizationDB):
     def load_data(self, release: int, path: str, header : bool=True) -> typing.Tuple[typing.Optional[int],typing.Optional[int]]:
         count = 0
         session = self.Session()
-        colocalization_id = 1 + (session.query(func.max(Colocalization.colocalization_id)).scalar() or 0)
-        causal_variant_id = 1 + (session.query(func.max(CausalVariant.causal_variant_id)).scalar() or 0)
+        model = Model()
+        colocalization_id = 1 + (session.query(func.max(self.model.Colocalization.colocalization_id)).scalar() or 0)
+        causal_variant_id = 1 + (session.query(func.max(self.model.CausalVariant.causal_variant_id)).scalar() or 0)
         session.close()
         session = self.Session()
         for index in self.mapping.getIndices():
@@ -126,8 +137,8 @@ class ColocalizationDAO(ColocalizationDB):
 
                             yield dto
                         except Exception as e:
-                            print(line)
-                            print(e)
+                            logger.error(line)
+                            logger.error(e)
                             print("file:{}".format(path), file=sys.stderr, flush=True)
                             print(line, file=sys.stderr, flush=True)
                             raise
@@ -146,7 +157,7 @@ class ColocalizationDAO(ColocalizationDB):
                 index.create()
         return count
 
-    def save(self,colocalization : Colocalization) -> None:
+    def save(self,colocalization) -> None:
         session = self.Session()
         session.add(colocalization)
         session.commit()
@@ -164,19 +175,21 @@ class ColocalizationDAO(ColocalizationDB):
                     phenotype: str,
                     locus: Locus,
                     flags: typing.Dict[str, typing.Any]={},
-                    projection = [Colocalization]):
-        locus_id = Colocalization.variants.any(and_(CausalVariant.variant_chromosome == locus.chromosome,
-                                                    CausalVariant.variant_position >= locus.start,
-                                                    CausalVariant.variant_position <= locus.stop))
+                    projection = None):
+        if projection is None:
+            projection=[self.model.Colocalization]
+        locus_id = self.model.Colocalization.variants.any(and_(self.model.CausalVariant.variant_chromosome == locus.chromosome,
+                                                               self.model.CausalVariant.variant_position >= locus.start,
+                                                               self.model.CausalVariant.variant_position <= locus.stop))
 
-        colocalization_filter = and_(Colocalization.phenotype1 == phenotype,
-                                     Colocalization.chromosome == locus.chromosome,
-                                     Colocalization.len_cs2 < ColocalizationDAO.CREDIBLE_SET_LENGTH_THRESHOLD)
-        phenotype1 = Colocalization.phenotype1 == phenotype
+        colocalization_filter = and_(self.model.Colocalization.phenotype1 == phenotype,
+                                     self.model.Colocalization.chromosome == locus.chromosome,
+                                     self.model.Colocalization.len_cs2 < ColocalizationDAO.CREDIBLE_SET_LENGTH_THRESHOLD)
+        phenotype1 = self.model.Colocalization.phenotype1 == phenotype
         session = self.Session()
         return [session, session
                          .query(*projection)
-                         .select_from(Colocalization)
+                         .select_from(self.model.Colocalization)
                          .filter(or_(locus_id))
                          .filter(colocalization_filter) ]
 
@@ -197,7 +210,7 @@ class ColocalizationDAO(ColocalizationDB):
         """
         [session,query] = self.locus_query(phenotype, locus, flags)
         matches = query.all()
-        matches = [ refine_colocalization(x) for x in matches]
+        matches = [ refine_colocalization(self.model, x) for x in matches]
         return SearchResults(colocalizations=matches,
                              count=len(matches))
 
@@ -305,14 +318,14 @@ class ColocalizationDAO(ColocalizationDB):
                                                        "locus_id1_reference": variant.reference,
                                                        "locus_id1_alternate": variant.alternate,
                                              },**flags},
-                                             f=refine_colocalization)
+                                             f=lambda x : refine_colocalization(self.model, x) )
         session.expire_all()
         return SearchResults(colocalizations=matches,
                              count=len(matches))
 
     def get_colocalization(self,
                            colocalization_id : int,
-                           flags: typing.Dict[str, typing.Any] = dict()) -> typing.Optional[Colocalization]:
+                           flags: typing.Dict[str, typing.Any] = dict()):# -> typing.Optional[Colocalization]:
         session = self.Session()
         matches = session.query(Colocalization).filter(Colocalization.id == colocalization_id).one_or_none()
         return matches

@@ -3,7 +3,7 @@ from sqlalchemy import Table, MetaData, create_engine, Column, Integer, String, 
 from sqlalchemy.orm import mapper, composite, relationship
 
 from pheweb.serve.components.colocalization.finngen_common_data_model.genomics import Variant, Locus
-from pheweb.serve.components.colocalization.finngen_common_data_model.colocalization import CausalVariant, Colocalization
+#from pheweb.serve.components.colocalization.finngen_common_data_model.colocalization import CausalVariant, Colocalization
 from pheweb.serve.components.colocalization.model import CausalVariantVector, SearchSummary, SearchResults, PhenotypeList, ColocalizationDB
 
 def NullableVariant(chromosome : typing.Optional[str],
@@ -21,19 +21,19 @@ class ColocalizationMapping():
     __instance = None
 
     @staticmethod
-    def getInstance():
+    def getInstance(model):
         """ Static access method. """
         if ColocalizationMapping.__instance == None:
-            ColocalizationMapping()
+            ColocalizationMapping(model)
         return ColocalizationMapping.__instance
 
-    def __init__(self):
+    def __init__(self, model):
         """ Virtually private constructor. """
         if ColocalizationMapping.__instance != None:
             raise Exception("singleton: use getInstance")
         else:
             ColocalizationMapping.__instance = self
-            self.initialize()
+            self.initialize(model)
 
     def getMetadata(self):
         return self.metadata
@@ -52,14 +52,14 @@ class ColocalizationMapping():
                  self.causal_variant_chromosome_position,
                  self.causal_variant_position_chromosome_colocalization_id ]
 
-    def initialize(self):
+    def initialize(self, model):
         metadata = MetaData()
         self.metadata = metadata
-
+        self.model = model
         # Table
         colocalization_table = Table('colocalization',
                                      metadata,
-                                     *Colocalization.columns())
+                                     *model.Colocalization.columns())
 
         self.colocalization_table = colocalization_table
 
@@ -84,7 +84,7 @@ class ColocalizationMapping():
 
         causal_variant_table = Table('causal_variant',
                                      metadata,
-                                     *CausalVariant.columns(),
+                                     *model.CausalVariant.columns(),
                                      Column('colocalization_id', Integer, ForeignKey('colocalization.colocalization_id')))
 
         self.causal_variant_table = causal_variant_table
@@ -98,7 +98,7 @@ class ColocalizationMapping():
                                                                           causal_variant_table.c.variant_chromosome,
                                                                           causal_variant_table.c.colocalization_id)
 
-        causal_variant_mapper = mapper(CausalVariant,
+        causal_variant_mapper = mapper(self.model.CausalVariant,
                                        causal_variant_table,
                                        properties = { 'variant': composite(NullableVariant,
                                                                            causal_variant_table.c.variant_chromosome,
@@ -107,7 +107,7 @@ class ColocalizationMapping():
                                                                            causal_variant_table.c.variant_alt)
                                        })
 
-        cluster_coordinate_mapper = mapper(Colocalization,
+        cluster_coordinate_mapper = mapper(self.model.Colocalization,
                                            colocalization_table,
                                            properties={'locus_id1': composite(Variant,
                                                                               colocalization_table.c.locus_id1_chromosome,
@@ -125,5 +125,5 @@ class ColocalizationMapping():
                                                                           colocalization_table.c.start,
                                                                           colocalization_table.c.stop),
 
-                                                       'variants': relationship(CausalVariant, lazy="joined"),
+                                                       'variants': relationship(self.model.CausalVariant, lazy="joined"),
                                        })
