@@ -12,7 +12,6 @@ const RegionSummary =  (props : Props) => {
             <div className="pheno-info col-xs-12">
                 <p><b>{pheno.num_cases}</b> cases, <b>{pheno.num_controls}</b> controls</p>
                 <p>{pheno.category}</p>
-                { /* <ColocalizationSummary/> */ }
                 { <RegionSelectFinemapping/> }
             </div>
         </div>)
