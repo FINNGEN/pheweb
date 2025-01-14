@@ -56,7 +56,7 @@ export namespace RegionModel {
 	export interface Configuration {
 		readonly vs_configuration?: VisConfiguration;
 		readonly lz_configuration?: LzConfiguration;
-		readonly colocalization? : ColocalizationConfiguration;
+		readonly colocalization? : ColocalizationConfiguration | null; // null will hide the colocalization list
 	}
 }
 export type layout_types =
