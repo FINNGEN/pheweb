@@ -10,7 +10,6 @@ import './leadVariants.css'
 const getMaxIndex = (x: Array<number> ) : number => x.indexOf(Math.max(...x));
 const indexAll = (arr, val) => arr.reduce((acc, el, i) => (el === val ? [...acc, i] : acc), []);
 const purityClass = (low_purity?: boolean) => {
-    console.log();
     if(low_purity === true){ return "low_purity"; }
     if(low_purity === false){ return "high_purity"; }
     return "default";
@@ -49,7 +48,6 @@ const LeadVariants = (props: { type: string, show: boolean} ) => {
                 });
 
             } else {
-	        console.log(element);
                 const groups: Array<string|number> = element.data.cs.filter((val, ind, arr) => arr.indexOf(val) == ind);
                 groups.forEach(g => {
 
@@ -79,7 +77,6 @@ const LeadVariants = (props: { type: string, show: boolean} ) => {
     const content = leadVariants.map((element, i) => {
 
         const rows: Array<string> = Object.keys(element).map(key => {
-            console.log(element);
             if (key != 'region_url' && key != 'varid'){
                 return `<tr key=${key}>
                         <th>${key.replaceAll('_', ' ')}:</th>
