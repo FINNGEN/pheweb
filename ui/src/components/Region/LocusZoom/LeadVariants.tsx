@@ -70,6 +70,7 @@ const LeadVariants = (props: { type: string, show: boolean} ) => {
     const content = leadVariants.map((element, i) => { 
 
         const rows: Array<string> = Object.keys(element).map(key => {
+            console.log(element);
             if (key != 'region_url' && key != 'varid'){
                 return `<tr key=${key}>
                         <th>${key.replaceAll('_', ' ')}:</th>
@@ -101,12 +102,11 @@ const LeadVariants = (props: { type: string, show: boolean} ) => {
             {
                 leadVariants.length > 0 && props.show ?
                 <Fragment>
-                <div className="flex-row-container"> Lead variants: { 
-                    content.slice(1).reduce(function(xs, x, i) {
-                        return (xs.concat([(<span key={i}>,</span>), x]));
-                    }, [content[0]])
-                    }</div>
-                    </Fragment> 
+                  <div className="flex-row-container"> Lead variants: {
+                    content.flatMap((x, i) =>  i === 0 ? [x] : [(<span key={i}>,</span>), x])
+                  }
+		  </div>
+                </Fragment> 
                 : null 
             }
         </Fragment>
