@@ -1817,7 +1817,6 @@ class FineMappingMySQLDao(FineMappingDB):
                 res["conditioned_on"] = []
                 vars = res["variants"].split(",")
                 for i in range(0, len(vars)):
-                    # R3 res['paths'].append(res['path'] + '-'.join(vars[0:i+1]) + '.conditional')
                     res["paths"].append(
                         res["path"] + vars[0] + "_" + str((i + 1)) + ".conditional"
                     )

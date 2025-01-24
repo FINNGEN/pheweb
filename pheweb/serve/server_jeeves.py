@@ -12,6 +12,7 @@ import pandas as pd
 import glob
 import math
 
+from pheweb.serve.data_access.finemapping_susie import parse_susie
 from typing import List, Dict,Tuple, Union
 from .server_utils import get_pheno_region
 
@@ -443,16 +444,7 @@ class ServerJeeves(object):
                 # TODO fix - chr X is 0 in the db, everything should be 23
                 if region['chr'] == 0 or region['chr'] == 23:
                     region['chr'] = 'X'
-                data = pd.read_csv(region['path'], sep='\t')
-                data.rename(columns={'chromosome': 'chr', 'allele1': 'ref', 'allele2': 'alt', 'v': 'id', 'cs_specific_prob': 'prob'}, inplace=True)
-                data = data[(data.region == 'chr' + str(region['chr']) + ':' + str(region['start']) + '-' + str(region['end'])) & (data.prob > prob_threshold)]
-                data['chr'] = data['chr'].str.replace('chr', '').replace('X','23')
-                data['rsid'] = data['id']
-                data['id'] = data['id'].str.replace(':', '_').replace('X','23')
-                data['id'] = data['id'].str.replace('_', ':', n=1)
-                data['id'] = data['id'].apply(lambda x: x[::-1]).str.replace('_', '/', n=1).apply(lambda x: x[::-1])
-                data.prob = data.prob.round(3)
-                data = data[['id', 'rsid', 'chr', 'position', 'ref', 'alt', 'maf', 'prob', 'cs']]
+                data = parse_susie(region)
                 ret.append({'type': region['type'], 'data': data.reset_index().to_dict(orient='list'), 'lastpage': None})
             elif region['type'] == 'finemap':
                 data = {'id': [], 'chr': [], 'position': [], 'ref': [], 'alt': [], 'prob': [], 'cs': []}
