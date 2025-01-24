@@ -105,8 +105,10 @@ export namespace FinemapData {
         rsid?: string[];
         beta?: number[];
         sebeta?: number[];
+        low_purity?: boolean[];
     }
-    
+
+
     export interface Data {
         conditioned_on?: string;
         data: Result;

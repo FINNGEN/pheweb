@@ -184,7 +184,7 @@ const ColocalizationList = (props : Props) => {
                         {inputCheckboxAllSources}
                         {
                             initialSources.map((key, i) => 
-                                <div className="checkbox-item-div">
+                                <div key={i} className="checkbox-item-div">
                                     <input type="checkbox" id={key} name={key} value={key} checked={selectedSources.indexOf(key) > -1}
                                         onChange={(e) => {
                                             var src = e.target.checked ? 

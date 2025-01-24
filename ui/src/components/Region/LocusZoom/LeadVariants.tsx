@@ -5,10 +5,16 @@ import { FinemapData } from "./RegionModel";
 import { RegionContext, RegionState } from "../RegionContext";
 import { getFinemapCondData } from '../RegionAPI';
 import '../Region.css'
-
+import './leadVariants.css'
 
 const getMaxIndex = (x: Array<number> ) : number => x.indexOf(Math.max(...x));
 const indexAll = (arr, val) => arr.reduce((acc, el, i) => (el === val ? [...acc, i] : acc), []);
+const purityClass = (low_purity?: boolean) => {
+    console.log();
+    if(low_purity === true){ return "low_purity"; }
+    if(low_purity === false){ return "high_purity"; }
+    return "default";
+}
 
 
 
@@ -19,7 +25,7 @@ const LeadVariants = (props: { type: string, show: boolean} ) => {
     const [data, setData] = useState<FinemapData.Data[]|undefined>(undefined);
     const [leadVariants, setLeadVariants] = useState<FinemapData.LeadVariant[]|[]>([]);
 
-    useEffect(() => { 
+    useEffect(() => {
         getFinemapCondData(region.region,  props.type !== 'conditional' ? 'finemapping' : 'conditional', pheno, setData);
     }, []);
 
@@ -34,40 +40,43 @@ const LeadVariants = (props: { type: string, show: boolean} ) => {
                 const ind: number = getMaxIndex(element.data.pvalue.map(x => -1*Math.log(x)));
                 const pos: number = element.data.position[ind];
                 const chr: string = element.data.chr[ind];
-                                
+
                 result.push({
                     pvalue: scientificFormatter(element.data.pvalue[ind]),
                     varid: element.data.id[ind].replaceAll('/', ':').replaceAll('_', ':'),
                     region_url:`/region/${pheno}/${chr}:${Math.max(pos - 200 * 1000, 0)}-${pos + 200 * 1000}`,
                     conditioned_on: element.conditioned_on.replaceAll('/', ':').replaceAll('_', ':')
                 });
-                
+
             } else {
+	        console.log(element);
                 const groups: Array<string|number> = element.data.cs.filter((val, ind, arr) => arr.indexOf(val) == ind);
                 groups.forEach(g => {
 
                     const csIndices: Array<number> = indexAll(element.data.cs, g);
                     const probs: Array<number> = csIndices.map(i => element.data.prob[i]);
-                    const ind: number = getMaxIndex(probs); 
+                    const ind: number = getMaxIndex(probs);
                     const chr: string = csIndices.map(i => element.data.chr[i])[ind];
                     const pos: number = Number(csIndices.map(i => element.data.position[i])[ind]);
-                    result.push({
+
+		    let low_purity: boolean | undefined = (element.data?.low_purity)? csIndices.map(i => element.data?.low_purity[i])[ind] : undefined;
+           result.push({ ... {
                         cs_specific_prob: numberFormatter(probs[ind]),
-                        cs: g, 
+                        cs: g,
                         cs_size: csIndices.length,
                         varid:  csIndices.map(i => element.data.id[i])[ind].replaceAll('/', ':').replaceAll('_', ':'),
                         region_url: `/region/${pheno}/${chr}:${Math.max(pos - 200 * 1000, 0)}-${pos + 200 * 1000}`
-                    });
-                    
+                    } , ... (low_purity === undefined? {} : { low_purity : low_purity } ) });
+
                 });
             }
         })
 
         setLeadVariants(result);
-        
+
     }, [data]);
 
-    const content = leadVariants.map((element, i) => { 
+    const content = leadVariants.map((element, i) => {
 
         const rows: Array<string> = Object.keys(element).map(key => {
             console.log(element);
@@ -78,18 +87,17 @@ const LeadVariants = (props: { type: string, show: boolean} ) => {
                         </tr>`
             }
         });
-
         return (
             <div style={{marginLeft: "7px"}} key={`${element.type}-${i}-div`}>
-                <ReactTooltip 
-                    className="tooltip-lead-vars" 
-                    id='tooltip-lead-vars' 
-                    html={true} 
-                    arrowColor="#F4F4F4" 
+                <ReactTooltip
+                    className="tooltip-lead-vars"
+                    id='tooltip-lead-vars'
+                    html={true}
+                    arrowColor="#F4F4F4"
                     effect='solid'
                 />
-                <a href={element.region_url} key={`${element.type}-${i}-a`}>
-                    <span data-tip={`<table>${rows.join("")}</table>`} 
+                <a href={element.region_url} key={`${element.type}-${i}-a`} className={ purityClass(element?.low_purity) }>
+                    <span data-tip={`<table>${rows.join("")}</table>`}
                           data-for="tooltip-lead-vars">{element.varid}
                     </span>
                 </a>
@@ -102,12 +110,12 @@ const LeadVariants = (props: { type: string, show: boolean} ) => {
             {
                 leadVariants.length > 0 && props.show ?
                 <Fragment>
-                  <div className="flex-row-container"> Lead variants: {
+                <div className="flex-row-container"> Lead variants: {
                     content.flatMap((x, i) =>  i === 0 ? [x] : [(<span key={i}>,</span>), x])
-                  }
-		  </div>
-                </Fragment> 
-                : null 
+                }
+                </div>
+                    </Fragment>
+                : null
             }
         </Fragment>
     )
