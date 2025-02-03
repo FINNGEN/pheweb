@@ -2,7 +2,7 @@ import React, { createContext, useEffect, useState } from "react";
 import { CasualVariant, Colocalization, Locus } from "../../../common/commonModel";
 import { LocusZoomData, SearchSummary } from "./ColocalizationModel";
 import { getLocusZoomData, getSearchResults, getSummary } from "./ColocalizationAPI";
-import { createParameter,Region, RegionParams, CondFMRegions } from "../RegionModel";
+import {createParameter, Region, RegionParams, CondFMRegions, RegionSummary} from "../RegionModel";
 import { getRegion } from "../RegionAPI";
 
 interface Props {
@@ -42,7 +42,7 @@ const ColocalizationContextProvider = ({ params , children} :  Props) => {
 
     useEffect(() => {
         const parameter : RegionParams<Locus>| undefined = createParameter(params);
-        const finemapRegion : CondFMRegions | undefined = (region?.cond_fm_regions || []).find(element => element.type === 'finemap' || element.type === 'susie');
+        const finemapRegion : RegionSummary | undefined = (region?.region_summary || []).find(element => element.type === 'finemap' || element.type === 'susie');
         finemapRegion && getSearchResults(
             {locus: { ...finemapRegion, chromosome: finemapRegion.chr, stop: finemapRegion.end}, 
             phenotype: params?.phenotype}, setColocalization);

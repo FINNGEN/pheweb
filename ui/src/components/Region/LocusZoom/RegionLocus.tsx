@@ -187,13 +187,13 @@ const default_configuration = {
 export const init_locus_zoom = (region: Region): LocusZoomContext => {
   // Define LocusZoom Data Sources object
   const localBase: string = resolveURL(
-    `/api/region/${region.pheno.phenocode}/lz-`
+    `/api/region/${region.phenotype.phenocode}/lz-`
   );
   const localCondBase: string = resolveURL(
-    `/api/conditional_region/${region.pheno.phenocode}/lz-`
+    `/api/conditional_region/${region.phenotype.phenocode}/lz-`
   );
   const localFMBase: string = resolveURL(
-    `/api/finemapped_region/${region.pheno.phenocode}/lz-`
+    `/api/finemapped_region/${region.phenotype.phenocode}/lz-`
   );
   const remoteBase: string = "https://portaldev.sph.umich.edu/api/v1/";
   const dataSources: DataSources = new DataSources();
@@ -381,7 +381,7 @@ export const init_locus_zoom = (region: Region): LocusZoomContext => {
   plot.addPanel(genes_layout(region));
   plot.addPanel(colocalization_layout(region));
 
-  region.cond_fm_regions?.forEach((r) => {
+  region.region_summary?.forEach((r) => {
     if (r.type === "susie" || r.type === "finemap") {
       if (!plot.panels["finemapping"]) {
         plot.addPanel(finemapping_layout(region));
