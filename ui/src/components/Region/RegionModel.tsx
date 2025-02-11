@@ -80,10 +80,72 @@ export interface CondFMRegions {
 	variants: string;
 }
 
-export type cond_fm_regions_types = CondFMRegions[] | undefined | null;
+export type regions_summaries = RegionSummary[] | undefined | null;
+
+export interface SusieRegion {
+	alt:        string;
+	chr:        number;
+	cs:         number;
+	id:         string;
+	low_purity: number;
+	maf:        number | null;
+	position:   number;
+	prob:       number;
+	ref:        string;
+	rsid:       string;
+}
+
+export interface FinemapRegion {
+	alt:      string;
+	chr:      number;
+	cs:       number;
+	id:       string;
+	position: number;
+	prob:     number;
+	ref:      string;
+}
+export interface ConditionedRegion {
+	alt:      string;
+	beta:     number;
+	chr:      number;
+	end:      number;
+	id:       string;
+	maf:      number;
+	position: number;
+	pvalue:   number;
+	ref:      string;
+	sebeta:   number;
+	varid:    string;
+}
+
+export type FinemappingRegion = SusieRegion | FinemapRegion | ConditionedRegion;
+
+export type RegionSummaryType = 'susie' | 'finemap' | 'conditional'
+
+export interface RegionSummaryFunctor<R extends FinemappingRegion, T extends RegionSummaryType> {
+	chr: number;
+	end: number;
+	lead_variants: R[];
+	n_signals: number;
+	n_signals_prob: number;
+	start: number;
+	type: T;
+}
+
+export type RegionSummarySusie = RegionSummaryFunctor<SusieRegion,'susie'>;
+export type RegionSummaryFinemap = RegionSummaryFunctor<FinemapRegion,'finemap'>;
+export type RegionSummaryConditional = RegionSummaryFunctor<ConditionedRegion,'conditional'>;
+
+export type RegionSummary = RegionSummarySusie | RegionSummaryFinemap | RegionSummaryConditional;
+
+export  interface RegionDescription {
+	chromosome: number;
+	start:      number;
+	stop:       number;
+}
 
 export interface Region {
-	readonly pheno: Phenotype;
-	readonly cond_fm_regions: cond_fm_regions_types;
-	readonly region: string;
+	phenotype:      Phenotype;
+	region:         RegionDescription;
+	region_summary: RegionSummary[];
 }

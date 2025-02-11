@@ -59,7 +59,7 @@ const ColocalizationSourcesSummary = ( props: {data: Data[], showSourceTypes: bo
     
                     if (sourceSummaryDataFilt.length > 0) {
                         return ( 
-                        <div className="colocs-summary-type">
+                        <div key={i} className="colocs-summary-type">
                             <b>{item['type']}:</b><div className="colocs-summary-row">{renderContent(displaySourcesType, sourceSummaryDataFilt)}</div>
                         </div>)
                     }

@@ -1,0 +1,28 @@
+{
+  "7:26852046:T:C": {
+    "trait": "AUTOIMMUNE",
+    "region": "chr7:25352046-28352046",
+    "cs": 1,
+    "cs_log10bf": 3.13214669202,
+    "cs_avg_r2": 0.902486026802,
+    "cs_min_r2": 0.633832530496,
+    "low_purity": false,
+    "cs_size": 212,
+    "good_cs": true,
+    "cs_id": "chr7:25352046-28352046_1",
+    "v": "7:26852046:T:C",
+    "rsid": "chr7_26852046_T_C",
+    "p": 4.40099e-08,
+    "beta": -0.033168,
+    "sd": 0.0030885122983974104,
+    "prob": 0.009566252484010001,
+    "cs_specific_prob": 0.00928403201766503,
+    "most_severe": "intron_variant",
+    "gene_most_severe": "SKAP2",
+    "id": "7:26852046:T:C",
+    "chr": "7",
+    "position": "26852046",
+    "ref": "T",
+    "alt": "C"
+  }
+}
