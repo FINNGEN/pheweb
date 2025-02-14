@@ -1,0 +1,17 @@
+a:link.default { color: #0000FF; }
+a:visited.default { color: #8000FF; }
+a:hover.default { color: #00FFFF; }
+a:active.default { color: #0080FF; }
+
+
+
+a:link.low_purity { color: #FF0000; }
+a:visited.low_purity { color: #FF00FF; }
+a:hover.low_purity { color: #FF8000; }
+a:active.low_purity { color: #FF0080; }
+
+a:link.high_purity { color: #0000FF; }
+a:visited.high_purity { color: #8000FF; }
+a:hover.high_purity { color: #00FFFF; }
+a:active.high_purity { color: #0080FF; }
+

@@ -1,10 +1,20 @@
 import React, {useEffect} from "react";
 import * as Handlebars from "handlebars/dist/cjs/handlebars";
 
+export function toSorted<T>(array : T[],compareFn?: (a: T, b: T) => number) : T[] { array.sort(compareFn); return array; }
+export const capitalizeFirstLetter = (input: string | null): string => input?.length ? input[0].toUpperCase() + input.slice(1) : "";
 
+export const range = (start: number, end: number): number[] =>
+    Array.from({ length: end - start + 1 }, (_, i) => start + i);
 
+export function partition<T>(array: T[], predicate: (item: T) => boolean): [T[], T[]] {
+    return array.reduce<[T[], T[]]>(
+        ([pass, fail], item) => (predicate(item) ? [[...pass, item], fail] : [pass, [...fail, item]]),
+        [[], []]
+    );
+}
 /**
- * Compose fuction
+ * Compose function
  *
  * see : https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-4.html
  *
