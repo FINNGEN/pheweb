@@ -1,6 +1,6 @@
 import React, { useContext } from "react";
 import { RegionContext, RegionState } from "./RegionContext";
-import RegionFinemapSummary from "./RegionFinemapSummary";
+import RegionFinemapSummary from "./Finemapping/RegionFinemapSummary";
 
 interface  Props {}
 

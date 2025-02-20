@@ -45,47 +45,49 @@ export namespace RegionModel {
 		readonly showClinvar: boolean; // clinvar needs to be turned off when developing locally
 	}
 
+	export interface VariantPopup {
+		finemap_popup? : string
+		susie_popup? : string
+		conditional_popup? : string
+	}
 	export interface Configuration {
 		readonly vs_configuration?: VisConfiguration;
 		readonly lz_configuration?: LzConfiguration;
 		readonly colocalization? : ColocalizationConfiguration | null; // null will hide the colocalization list
+		readonly variant_popup? : VariantPopup | null;
 	}
 }
 
 export namespace Summary {
 
-	export interface SusieCredibleSet {
+	export interface CPRA {
+		chr:        number;
+		position : number;
+		ref: string;
+		alt:        string;
+	}
+
+	export interface SusieCredibleSet extends  CPRA{
 		id: string
 		low_purity: 0 | 1;
-		position : number
-		prob : number
-		ref: string
-		alt:        string;
-		chr:        number;
+		maf?: number;
+		prob : number;
 		cs:         number;
 		rsid:       string;
 	}
 
-	export interface FinemapCredibleSet {
-		alt:      string;
-		chr:      number;
+	export interface FinemapCredibleSet extends  CPRA {
 		cs:       number;
 		prob:     number;
-		ref:      string;
         id:       string;
-		position : number;
 	}
 
-	export interface ConditionedCredibleSet {
-		alt:      string;
+	export interface ConditionedCredibleSet extends  CPRA  {
 		beta:     number;
-		chr:      string;
 		end:      number;
 		id:       string;
 		maf:      number;
-		position: number;
 		pvalue:   number;
-		ref:      string;
 		sebeta:   number;
 		varid:    string;
 	}
@@ -118,6 +120,13 @@ export namespace Summary {
 	export type CredibleSetSummarySusie = CredibleSetSummary<'susie'>;
 	export type CredibleSetSummaryFinemap = CredibleSetSummary<'finemap'>;
 	export type CredibleSetSummaryConditional = CredibleSetSummary<'conditional'>;
+
+
+	export const isCredibleSetSummaryConditional = (cs: CredibleSetSummary<RegionSummaryType>): cs is CredibleSetSummaryConditional =>
+		cs.type === 'conditional';
+	export const isCredibleSetSummarySusie = (cs: CredibleSetSummary<RegionSummaryType>): cs is CredibleSetSummarySusie =>
+		cs.type === 'susie';
+
 
 	export type RegionSummary = {
 		       location : Locus;

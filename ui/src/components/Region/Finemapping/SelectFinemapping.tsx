@@ -17,7 +17,7 @@ const SelectFinemapping = ({ show , regionSummary }: Props) => {
 
         const types = new Set(regionSummaryTypes(regionSummary).filter(t => t === 'susie' || t === 'finemap'));
         const methods = Array.from(types);
-        methods.sort();
+        methods.sort().reverse();
         const finemappingMethod = <SelectFinemappingMethod methods={methods} locus={regionSummary.location} />
         return <>
             <div className="flex-row-container">
