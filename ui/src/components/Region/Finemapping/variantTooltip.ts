@@ -22,12 +22,11 @@ const default_susie_popup = `
 const susie_popup = variant_popup?.susie_popup || default_susie_popup;
 
 const default_conditional_popup = `
-            conditioned on : {{#conditioned_on}}{{.}}{{^last}}, {{/last}}{{/conditioned_on}}
+            conditioned on : {{#conditioned_on}}{{.}}{{^last}}, {{/last}}{{/conditioned_on}}<br/>
+            beta : {{#beta}}{{decimalFormatter .}}{{/beta}}<br/>
+            sebeta: {{#sebeta}}{{decimalFormatter .}}{{/sebeta}}<br/>
             pvalue : {{#pvalue}}{{scientificFormatter .}}{{/pvalue}}<br/>
-            beta : {{beta}}<br/>
-            sebeta: {{sebeta}}<br/>
-            pvalue : {{pvalue}}<br/>
-            maf : {{maf}}<br/>
+            maf : {{#maf}}{{decimalFormatter .}}{{/maf}}<br/>
         `
 const conditional_popup = variant_popup?.conditional_popup || default_conditional_popup;
 
