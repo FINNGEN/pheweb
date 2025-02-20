@@ -13,6 +13,8 @@ import glob
 import math
 from pheweb.serve.data_access.finemapping import region_summary
 from pheweb.serve.data_access.finemapping_susie import parse_susie
+from pheweb.serve.data_access.finemapping_conditional import parse_conditional
+from pheweb.serve.data_access.finemapping_finemap import parse_finemap_dict_list
 from typing import List, Dict,Tuple, Union
 from .server_utils import get_pheno_region
 
@@ -397,24 +399,9 @@ class ServerJeeves(object):
             data = []
             for i,path in enumerate(region['paths']):
                 try:
-                    with open(path) as f:
-                        d = {'id': [], 'varid': [], 'chr': [], 'position': [], 'end': [], 'ref': [], 'alt': [], 'maf': [], 'pvalue': [], 'beta': [], 'sebeta': []}
-                        h = {h:i for i,h in enumerate(f.readline().strip().split(' '))}
-                        for line in f:
-                            fields = line.strip().split(' ')
-                            if float(fields[h['p.value_cond']]) < p_threshold:
-                                d['id'].append(fields[h['SNPID']].replace('chr', '').replace('X','23').replace('_', ':', 1)[::-1].replace('_', '/', 1)[::-1])
-                                d['varid'].append(fields[h['rsid']].replace('chr', '').replace('_', ':').replace('X','23'))
-                                d['chr'].append(fields[h['CHR']].replace('chr', ''))
-                                d['position'].append(int(fields[h['POS']]))
-                                d['end'].append(int(fields[h['POS']]))
-                                d['ref'].append(fields[h['Allele1']])
-                                d['alt'].append(fields[h['Allele2']])
-                                d['maf'].append(float(fields[h['AF_Allele2']]))
-                                d['pvalue'].append(float(fields[h['p.value_cond']]))
-                                d['beta'].append(round(float(fields[h['BETA_cond']]), 3))
-                                d['sebeta'].append(round(float(fields[h['SE_cond']]), 3))
-                        ret.append({'type': 'conditional', 'data': d, 'conditioned_on': region['conditioned_on'][i].replace('X','23'), 'lastpage': None})
+                    df = parse_conditional(path, p_threshold)
+                    d = df.to_dict(orient='list')
+                    ret.append({'type': 'conditional', 'data': d, 'conditioned_on': region['conditioned_on'][i].replace('X','23'), 'lastpage': None})
                 except FileNotFoundError:
                     print(f'file "{path}" not found')
         print(f'Region data taken for  {chr} {start} {end}')
@@ -432,15 +419,6 @@ class ServerJeeves(object):
     def get_finemapped_region_variant_summary(self, phenocode, chromosome, start, end, prob_threshold=-1):
         regions = self.finemapping_dao.get_regions_for_pheno('all', phenocode, chromosome, start, end)
         index = {}
-        def replace_nan(obj):
-            if isinstance(obj, float) and math.isnan(obj):
-                return None
-            elif isinstance(obj, dict):
-                return {k: replace_nan(v) for k, v in obj.items()}
-            elif isinstance(obj, list):
-                return [replace_nan(v) for v in obj]
-            return obj
-        
         for r in map(region_summary, regions):
             region_key = f"{r['chr']}:{r['start']}:{r['end']}"
             if region_key not in index:
@@ -452,7 +430,6 @@ class ServerJeeves(object):
             index[region_key]["credible_sets"].append(r)
         result = list(index.values())
         result = sorted(result, key=lambda r: (r['location']['chromosome'], r['location']['start'], r['location']['stop']), reverse=True)
-        result = replace_nan(result)
         return result
     
     def get_finemapped_regions_for_pheno(self, phenocode, chr, start, end, prob_threshold=-1, add_anno=True):
@@ -475,29 +452,13 @@ class ServerJeeves(object):
                             'data': data.reset_index().to_dict(orient='list'),
                             'lastpage': None})
             elif region['type'] == 'finemap':
-                data = {'id': [], 'chr': [], 'position': [], 'ref': [], 'alt': [], 'prob': [], 'cs': []}
-                with open(region['path']) as f:
-                    for line in f:
-                        line = line.strip()
-                        if line.startswith('#') or line.startswith('index'):
-                            continue
-                        fields = line.split(' ')
-                        for i in range(0,int((len(fields)-1)/2)):
-                            if fields[i*2+1] != 'NA':
-                                cpra = fields[i*2+1].split('_')
-                                data['id'].append(cpra[0].replace('chr', '').replace('X','23') + ':' + cpra[1] + '_' + cpra[2] + '/' + cpra[3])
-                                data['chr'].append(cpra[0].replace('chr', '').replace('X','23'))
-                                data['position'].append(cpra[1])
-                                data['ref'].append(cpra[2])
-                                data['alt'].append(cpra[3])
-                                data['prob'].append(round(float(fields[i*2+2]), 3))
-                                data['cs'].append(i+1)
+                data = parse_finemap_dict_list(region['path'])
                 ret.append({'region': f"{region['chr']}:{region['start']}-{region['end']}",
                             'type': region['type'],
                             'data': data,
                             'lastpage': None})
             else:
-                print('UNSUPPORTED REGION TYPE: ' + region['type'])
+                print(f"UNSUPPORTED REGION TYPE: {region['type']}")
         if add_anno:
             self.add_annotations(chr, start, end, ret)
                 

@@ -1,5 +1,6 @@
 from pathlib import Path
 import pandas as pd
+import numpy as np
 
 def parse_susie_summary(path : str,
                         region : str,
@@ -64,6 +65,6 @@ def parse_susie(region,
     data = pd.DataFrame(result_map.values(),columns=expected_columns)
     data.prob = data.prob.round(3)
     data['position'] = data['position'].astype(int)
-    data = data.where(pd.notna(data), None)
+    data = data.replace({np.nan: None})
     return data
 

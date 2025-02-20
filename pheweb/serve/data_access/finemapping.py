@@ -17,7 +17,7 @@ def df_min(df, column : str):
 
 def df_list(df):
     data = df.applymap(lambda x: int(x) if isinstance(x, (int, np.integer)) else (None if pd.isna(x) else x))
-    result = data.to_dict(orient='records')
+    result = data.replace({np.nan: None}).to_dict(orient='records')
     result = list(result)
     return result
 
@@ -31,7 +31,7 @@ def finemap_lead_variant(region, path):
 def conditional_lead_variant(region, path):
     df = parse_conditional(path)
     result = df_min(df, 'pvalue')
-    return [result]
+    return  [result]
 
 
 def susie_lead_variant(region):

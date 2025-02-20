@@ -1,10 +1,13 @@
 import pandas as pd
 
-def parse_finemap(path : str):
-    data = {
-        'id': [], 'chr': [], 'position': [], 'ref': [], 'alt': [],
-        'prob': [], 'cs': []
-    }
+def parse_finemap_dict_list(path : str):
+    data = { 'id': [],
+             'chr': [],
+             'position': [],
+             'ref': [],
+             'alt': [],
+             'prob': [],
+             'cs': [] }
     with open(path) as f:
         for line in f:
             line = line.strip()
@@ -24,5 +27,9 @@ def parse_finemap(path : str):
                     data['alt'].append(cpra[3])
                     data['prob'].append(round(float(fields[i * 2 + 2]), 3))
                     data['cs'].append(int(i + 1))
-    df = pd.DataFrame(data)
-    return df
+    return data
+                       
+
+def parse_finemap(path : str):
+    data = parse_finemap_dict_list(path)
+    return pd.DataFrame(data)
