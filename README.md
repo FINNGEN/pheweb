@@ -198,6 +198,15 @@ gsutil ls ${PIPELINE_OUTPUT_ROOT}/conditional_analysis/cromwell-results/pheweb/*
 gsutil ls ${PIPELINE_OUTPUT_ROOT}/conditional_analysis/cromwell-results/pheweb/munge/* > /dev/null 2> /dev/null && echo finemapping okay || echo finemapping failed
 ```
 
+Copy files 
+Local the files should be in finemap/snp/*.snp.filter.tsv and finemap/snp/*.SUSIE.cred.summary.tsv
+
+```
+# For R12 this is done as follows
+gsutil cp ${PIPELINE_OUTPUT_ROOT}/finemap/summary/*.SUSIE.cred.summary.tsv  ${PIPELINE_OUTPUT_ROOT}/finemap/*.snp.filter.tsv ${PHEWEB_ROOT}/finemap/snp/
+```
+
+
 ## Finemapping
 
 
@@ -233,6 +242,8 @@ e.g.
 "base_paths": { "finemap": "${PHEWEB_ROOT}/cred" }
 `
 
+
+
 ## Conditional
 
 
@@ -249,8 +260,8 @@ Copy `conditional_analysis/cromwell-results/pheweb/munge` to `${PHEWEB_ROOT}/con
 In the finemapping portion of pheweb configuration point the `conditional` property in the `base_paths` object to `${PHEWEB_ROOT}/conditional`
 
 ## PIP
-
-Local the pip files should be in finemap/pip/*.snp.filter.tsv
++
+Local the pip files should be in finemap/snp/*.snp.filter.tsv
 `
 export PIP_PATH=
 export PIP_SQL=${BUCKET_ROOT}/sql/pip.sql.txt
