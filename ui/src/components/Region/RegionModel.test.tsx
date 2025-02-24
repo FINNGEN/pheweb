@@ -1,7 +1,7 @@
 /* eslint-env jest */
 import Enzyme from "enzyme";
 import Adapter from "enzyme-adapter-react-16";
-import { createParameter, RegionParams } from "./RegionModel";
+import { createParameter, RegionParams } from "./regionModel";
 import { Locus } from "../../common/commonModel";
 
 Enzyme.configure({ adapter: new Adapter() });

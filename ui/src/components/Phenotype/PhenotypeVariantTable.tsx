@@ -30,7 +30,6 @@ const PhenotypeVariantTable = () => {
   const { phenotype , phenotypeCode , phenotypeVariantData } = useContext<Partial<PhenotypeState>>(PhenotypeContext);
   const tableData : PhenotypeVariantData | null = phenotypeVariantData || null;
   const tableColumns = phenotype.is_binary == false?quantitativeTableColumns : binaryTableColumns;
-  console.log(tableData);
   const filename : string = `${phenotypeCode}.tsv`
   const props : DownloadTableProps<PhenotypeVariantData, PhenotypeVariantRow>  = {
     filename,

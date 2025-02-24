@@ -1,7 +1,8 @@
 import React, { useContext, useEffect } from "react";
 import { RegionContext, RegionState } from "./RegionContext";
 import { ColocalizationContext, ColocalizationState } from "./Colocalization/ColocalizationContext";
-import { init_locus_zoom } from "./LocusZoom/RegionLocus";
+import { init_locus_zoom } from "./LocusZoom/regionLocusZoomHook";
+import {locusToStr} from "../../common/commonModel";
 
 interface Props {}
 
@@ -26,7 +27,7 @@ const RegionLocusZoom =  (props : Props) => {
     if(region) {
         return (<div className="row">
             <div className="col-xs-12">
-                <div id="lz-1" className="lz-locuszoom-container lz-container-responsive" data-region={ region.region }></div>
+                <div id="lz-1" className="lz-locuszoom-container lz-container-responsive" data-region={ locusToStr(region.region) }></div>
             </div>
         </div>);
 
