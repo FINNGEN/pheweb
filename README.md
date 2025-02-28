@@ -26,7 +26,7 @@ BEGIN{FS=OFS="\t"}
             split(row[e],b,"=");
             elems[b[1]]=b[2] }; 
             split(elems["gene_id"], gid ,".")
-            print $1,$4,$5,elems["gene_name"],gid[1]; 
+            print $1,$4,$5,$7,elems["gene_name"],gid[1]; 
         }
 ' | awk '!seen[$4]++' > genes-b38-v39.bed
 ```
