@@ -293,6 +293,22 @@ const naSmallSorter = (a, b) => {
 };
 
 
+const isFiniteNumber = (a) => typeof a === "number" && isFinite(a)
+
+const nanNumberSmallSorter = (a, b) => {
+    if (!isFiniteNumber(a)) {
+    if (!isFiniteNumber(b)) {
+      return 0;
+    }
+    return -1;
+  }
+  if (!isFiniteNumber(b)) {
+    return 1;
+  }
+  return a - b;
+};
+
+
 const isString = (x : any) => (typeof x === 'string' || x instanceof String)
 
 const numberStringSorter = (a, b) => {
@@ -523,6 +539,23 @@ const phenotypeColumns = {
       accessor: "beta",
       filterMethod: (filter, row) => Math.abs(row[filter.id]) > filter.value,
       Cell: optionalCellScientificFormatter,
+      minWidth: 5 * emsize ,
+      width: 5 * emsize
+    },
+    distance: {
+      Header: () => (<span title="distance to TSS" style={{ textDecoration: "underline" }}>distance to TSS</span>),
+      accessor: "relative_position",
+      filterMethod: numberFilter,
+      Cell: (props) =>  isFiniteNumber(props.value) ? props.value : "",
+      sortMethod: nanNumberSmallSorter,
+      minWidth: 5 * emsize ,
+      width: 5 * emsize
+    },
+    cisttrans: {
+      Header: () => (<span title="cis/trans" style={{ textDecoration: "underline" }}>cis/trans</span>),
+      accessor: "distance",
+      filterMethod: nanNumberSmallSorter,
+      Cell: (props) =>  isFiniteNumber(props.value) ? (props.value > 1000 ? "trans" : "csi") : (""),
       minWidth: 5 * emsize ,
       width: 5 * emsize
     },
@@ -1507,14 +1540,14 @@ const phenotypeColumns = {
 }
 
 const pqtColumns = {
-  phenotype: {
+  pqtlPhenotype: {
     Header: () => (<span style={{ textDecoration: "underline" }}>phenotype</span>),
     accessor: "phenotype",
     filterMethod: (filter, row) => row[filter.id] == filter.value,
     Cell: textCellFormatter,
     minWidth: columnWith(120)
   },
-  pheno: {
+  pqtlPheno: {
     Header: () => (<span style={{ textDecoration: "underline" }}>phenotype</span>),
     accessor: "phenotype1_region",
     filterMethod: (filter, row) => row[filter.id] == filter.value.pheno,
@@ -1523,7 +1556,7 @@ const pqtColumns = {
     ),
     minWidth: 150
   },
-  phenotypeDescription: {
+  pqtlPhenotypeDescription: {
     Header: () => (<span style={{ textDecoration: "underline" }}>description</span>),
     accessor: "description",
     filterMethod: (filter, row) => row[filter.id] == filter.value,
@@ -1531,7 +1564,7 @@ const pqtColumns = {
     minWidth: columnWith(120)
   },
 
-  n_colocs : {
+  pqtlNColocs : {
     Header: () => (<span style={{ textDecoration: "underline" }}>n colocalizations</span>),
     accessor: "n_colocs",
     Cell: (e) => {
@@ -1677,7 +1710,7 @@ const pqtColumns = {
 }
 
 const colocColumns = {
-  pheno: {
+  colocPheno: {
     Header: () => (<span style={{ textDecoration: "underline" }}>phenotype</span>),
     accessor: "phenotype1_region",
     filterMethod: (filter, row) => row[filter.id] == filter.value.pheno,
@@ -1686,95 +1719,95 @@ const colocColumns = {
     ),
     minWidth: 150
   },
-  description: {
+  colocDescription: {
     Header: () => (<span style={{ textDecoration: "underline" }}>description</span>),
     accessor: "phenotype1_description",
     filterMethod: (filter, row) => row[filter.id] == filter.value,
     Cell: textCellFormatter,
     minWidth: 250
   },
-  source: {
+  colocSource: {
     Header: () => (<span style={{ textDecoration: "underline" }}>source</span>),
     accessor: "source2_displayname",
     Cell: textCellFormatter,
     minWidth: 300
   },
-  phenotype2: {
+  colocPhenotype2: {
     Header: () => (<span style={{ textDecoration: "underline" }}>trait</span>),
     accessor: "phenotype2",
     Cell: textCellFormatter,
     minWidth: 100
   },
-  phenotype2Description: {
+  colocPhenotype2Description: {
     Header: () => (<span style={{ textDecoration: "underline" }}>description</span>),
     accessor: "phenotype2_description",
     Cell: textCellFormatter,
     minWidth: 100
   },
-  clpp: {
+  colocClpp: {
     Header: () => (<span style={{ textDecoration: "underline" }}>clpp</span>),
     accessor: "clpp",
     filterMethod: (filter, row) => row[filter.id] == filter.value,
     Cell: decimalCellFormatter,
     minWidth: 80
   },
-  clpa: {
+  colocClpa: {
     Header: () => (<span style={{ textDecoration: "underline" }}>clpa</span>),
     accessor: "clpa",
     filterMethod: (filter, row) => row[filter.id] == filter.value,
     Cell: decimalCellFormatter,
     minWidth: 80
   },
-  lenInter: {
+  colocLenInter: {
     Header: () => (<span style={{ textDecoration: "underline" }}>len intersect</span>),
     accessor: "len_inter",
     filterMethod: (filter, row) => row[filter.id] == filter.value,
     Cell: numberCellFormatter,
     minWidth: 80
   },
-  lenCS1: {
+  colocLenCS1: {
     Header: () => (<span style={{ textDecoration: "underline" }}>len cs1</span>),
     accessor: "len_cs1",
     filterMethod: (filter, row) => row[filter.id] == filter.value,
     Cell: numberCellFormatter,
     minWidth: 80
   },
-  lenCS2: {
+  colocLenCS2: {
     Header: () => (<span style={{ textDecoration: "underline" }}>len cs2</span>),
     accessor: "len_cs2",
     filterMethod: (filter, row) => row[filter.id] == filter.value,
     Cell: numberCellFormatter,
     minWidth: 100
   },
-  beta1: {
+  colocBeta1: {
     Header: () => (<span style={{ textDecoration: "underline" }}>beta cs1</span>),
     accessor: "beta1",
     filterMethod: (filter, row) => row[filter.id] >= filter.value,
     Cell: decimalCellFormatter,
     minWidth: columnWith(80)
   },
-  beta2: {
+  colocBeta2: {
     Header: () => (<span style={{ textDecoration: "underline" }}>beta cs2</span>),
     accessor: "beta2",
     filterMethod: (filter, row) => row[filter.id] >= filter.value,
     Cell: decimalCellFormatter,
     minWidth: columnWith(80)
   },
-  pval1: {
+  colocPval1: {
     Header: () => (<span style={{ textDecoration: "underline" }}>p-value cs1</span>),
     accessor: "pval1",
     filterMethod: (filter, row) => row[filter.id] <= filter.value,
     Cell: pValueCellFormatter,
     minWidth: columnWith(80)
   },
-  pval2: {
+  colocPval2: {
     Header: () => (<span style={{ textDecoration: "underline" }}>p-value cs2</span>),
     accessor: "pval2",
     filterMethod: (filter, row) => row[filter.id] <= filter.value,
     Cell: pValueCellFormatter,
     minWidth: columnWith(80)
   },
-  leadingVariantCS1: {
+  colocLeadingVariantCS1: {
     Header: () => (<span style={{ textDecoration: "underline" }}>lead variant cs1</span>),
     accessor: "locus_id1_chromosome",
     Cell: (props) => <div>{
@@ -1785,7 +1818,7 @@ const colocColumns = {
     }</div>,
     minWidth: columnWith(120)
   },
-  leadingVariantCS2: {
+  colocLeadingVariantCS2: {
     Header: () => (<span style={{ textDecoration: "underline" }}>lead variant cs2</span>),
     accessor: "locus_id2_chromosome",
     Cell: (props) => <div>{
@@ -1799,35 +1832,35 @@ const colocColumns = {
 }
 
 export const colocSubTable = [
-  colocColumns.pheno,
-  colocColumns.description,
-  colocColumns.clpp,
-  colocColumns.clpa,
-  colocColumns.lenInter,
-  colocColumns.lenCS1,
-  colocColumns.lenCS2,
-  colocColumns.leadingVariantCS1,
-  colocColumns.leadingVariantCS2,
-  colocColumns.beta1,
-  colocColumns.beta2,
-  colocColumns.pval1,
-  colocColumns.pval2
+  colocColumns.colocPheno,
+  colocColumns.colocDescription,
+  colocColumns.colocClpp,
+  colocColumns.colocClpa,
+  colocColumns.colocLenInter,
+  colocColumns.colocLenCS1,
+  colocColumns.colocLenCS2,
+  colocColumns.colocLeadingVariantCS1,
+  colocColumns.colocLeadingVariantCS2,
+  colocColumns.colocBeta1,
+  colocColumns.colocBeta2,
+  colocColumns.colocPval1,
+  colocColumns.colocPval2
 ]
 
 export const phenoColocSubTable = [
-  colocColumns.source,
-  colocColumns.phenotype2,
-  colocColumns.clpp,
-  colocColumns.clpa,
-  colocColumns.lenInter,
-  colocColumns.lenCS1,
-  colocColumns.lenCS2,
-  { ...colocColumns.leadingVariantCS1, minWidth : 200},
-  { ...colocColumns.leadingVariantCS2, minWidth : 200},
-  colocColumns.beta1,
-  colocColumns.beta2,
-  colocColumns.pval1,
-  colocColumns.pval2
+  colocColumns.colocSource,
+  colocColumns.colocPhenotype2,
+  colocColumns.colocClpp,
+  colocColumns.colocClpa,
+  colocColumns.colocLenInter,
+  colocColumns.colocLenCS1,
+  colocColumns.colocLenCS2,
+  { ...colocColumns.colocLeadingVariantCS1, minWidth : 200},
+  { ...colocColumns.colocLeadingVariantCS2, minWidth : 200},
+  colocColumns.colocBeta1,
+  colocColumns.colocBeta2,
+  colocColumns.colocPval1,
+  colocColumns.colocPval2
 ]
 
 
@@ -1850,9 +1883,9 @@ export const genePqtlTableColumns = [
 
 
 export const geneColocTableColumns = [
-  { ...pqtColumns.phenotype, minWidth : 150},
-  { ...pqtColumns.phenotypeDescription, minWidth : 200},
-  pqtColumns.n_colocs
+  { ...pqtColumns.pqtlPhenotype, minWidth : 150},
+  { ...pqtColumns.pqtlPhenotypeDescription, minWidth : 200},
+  pqtColumns.pqtlNColocs
 ]
 
 export const geneLossOfFunctionTableColumns = [
@@ -2075,10 +2108,10 @@ export const addHeader = (value, _createHeader = createHeader) => {
 
 const createColumn = <Type extends {}>(descriptor: ColumnConfiguration<Type>): Column<Type> => {
   let column: Column<Type>;
-
+  const columns = { ...colocColumns , ...pqtColumns , ... phenotypeColumns }
   if ("type" in descriptor) {
     column = {
-      ...phenotypeColumns[descriptor.type],
+      ...columns[descriptor.type],
       ...("attributes" in descriptor && addHeader(descriptor.attributes))
     };
   } else {
