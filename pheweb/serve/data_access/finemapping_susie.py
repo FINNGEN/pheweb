@@ -9,7 +9,6 @@ def parse_susie_summary(path : str,
      data = data[(data.region == region) & (data.prob > prob_threshold)]
      data['id'] = data['v'] = data['v'].replace('X','23')
      data[['chr', 'position', 'ref', 'alt']] = data['v'].str.split(':', expand=True)
-     #result_map = {row['v']: row for row in data.to_dict('records')}
      data['index'] = data['v']
      result_map = data.set_index('index').to_dict('index')
      return result_map
@@ -31,8 +30,7 @@ def parse_susie_filter(path : str,
      data['chr'] = data['chr'].str.replace('chr', '').replace('X','23')
      data['id'] = data['id'].replace('X','23')
      data['rsid'] = data.apply(format_rsid , axis=1)
-     #result_map = {row['id']: row for row in data.to_dict('records')}
-     data['index'] = data['v']
+     data['index'] = data['id']
      result_map = data.set_index('index').to_dict('index')
      return result_map
 
