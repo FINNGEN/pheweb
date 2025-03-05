@@ -555,7 +555,8 @@ const phenotypeColumns = {
       Header: () => (<span title="cis/trans" style={{ textDecoration: "underline" }}>cis/trans</span>),
       accessor: "distance",
       filterMethod: nanNumberSmallSorter,
-      Cell: (props) =>  isFiniteNumber(props.value) ? (props.value > 1000 ? "trans" : "csi") : (""),
+      // see : https://link.springer.com/article/10.1186/s12859-022-04706-x
+      Cell: (props) =>  isFiniteNumber(props.value) ? (props.value > 944000 ? "trans" : "csi") : (""),
       minWidth: 5 * emsize ,
       width: 5 * emsize
     },
