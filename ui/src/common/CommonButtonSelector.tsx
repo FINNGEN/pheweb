@@ -33,7 +33,7 @@ const CommonButtonSelector = <T extends string | number>({
                 <button
                     key={option}
                     className={`px-4 py-2 rounded border ${
-                        selected === option ? "bg-blue-500 text-white" : "bg-gray-200"
+                        selected === option ? "bg-gray-200" : "bg-blue-500 text-white"
                     }`}
                     onClick={() => handleClick(option)}
                 >
