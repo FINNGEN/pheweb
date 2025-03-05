@@ -37,7 +37,8 @@ const notFoundPageMessage = `
     <p>The page <i>'{{query}}'</i> could not be found.</p>
 
 `
-
+const maxTableWidth = 1600;
+const columnWith = (size) => Math.min(size, size / maxTableWidth * window.innerWidth);
 // configuration
 const userInterface = {
   notFound: {
@@ -100,8 +101,53 @@ const userInterface = {
     }
   },
   gene: { lossOfFunction: null , lz_config : { ld_panel_version : "sisu42" },
-          pqtlColocalizations: {},
-          geneColocalizations: {},
+          pqtlColocalizations: {
+	      tableColumns : [
+  { title : "trait" , label: "trait",accessor : "trait" , formatter : "text",  minWidth: columnWith(120) },
+  { title : "source" , label: "source", accessor : "source_displayname" , formatter : "text",  minWidth: columnWith(200) },
+  { title : "region" , label : "region" , accessor : "region" , formatter : "text",  minWidth: columnWith(200) },
+  { title : "CS" , label : "CS" , accessor : "cs" , formatter : "number",  minWidth: columnWith(80) },
+  { title : "variant" , label: "variant",accessor: "v",sortMethod: "variantSorter",minWidth: columnWith(200) },
+
+  { type : "distance" },
+  { type : "cisttrans"},
+
+  { title : "CS prob" , label : "cs specific prob" , accessor : "cs_specific_prob" , formatter : "optionalDecimal",  minWidth: columnWith(100) },
+  { title : "CS bayes factor (log10)" , title : "CS bayes factor (log10)" , accessor : "cs_log10bf" , formatter : "optionalDecimal",  minWidth: columnWith(100) },
+  { title : "CS min r2" , accessor : "cs_min_r2" , formatter : "optionalDecimal",  minWidth: columnWith(100) },
+  { title : "beta" , accessor : "beta" , formatter : "optionalDecimal",  minWidth: columnWith(100) },
+  { title : "p-value" , accessor : "p" , formatter : "pValue",  minWidth: columnWith(100) },
+  { title : "CS PIP" , accessor : "prob" , formatter : "optionalDecimal",  minWidth: columnWith(100) },
+  { type : 'codingMostServe' },
+  { title : "gene" , label : "gene most severe" ,   accessor : "gene_most_severe" , formatter : "text",  minWidth: columnWith(100) }
+
+	      ] },
+          geneColocalizations: { subTableColumns : [
+
+                { type : "colocSource" },
+                { type : "colocPhenotype2" },
+                { type : "colocClpp" },
+                { type : "colocClpa" },
+                { type : "colocLenInter" },
+                { type : "colocLenCS1" },
+                { type : "colocLenCS2" },
+                { type : "colocLeadingVariantCS1" , attributes : { minWidth : 200 } },
+
+                { type : "distance" , attributes : { accessor: "locus_id1_relative_position" , title : "distance lead cs1 TSS" } },
+                { type : "cisttrans" , attributes : { accessor: "locus_id1_distance" , title : "cs1 csi/trans" } },
+
+                { type : "colocLeadingVariantCS1" , attributes : { minWidth : 200 } },
+
+                { type : "distance" , attributes : { accessor: "locus_id2_relative_position" , title : "distance lead cs2 TSS" } },
+                { type : "cisttrans" , attributes : { accessor: "locus_id2_distance" , title : "cs2 csi/trans" } },
+
+                { type : "colocBeta1" },
+                { type : "colocBeta2" },
+                { type : "colocPval1" },
+                { type : "colocPval2" }
+
+
+	  ] },
           tableOfContentsTitles: {
             "associationResults": "Disease associations within gene region",
             "geneFunctionalVariants": "Coding variant associations",
