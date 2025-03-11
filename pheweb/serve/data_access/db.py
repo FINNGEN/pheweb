@@ -269,7 +269,7 @@ class AnnotationDB(object):
         return
 
     @abc.abstractmethod
-    def get_single_variant_annotations(self, variant: Variant, cpra) -> Variant:
+    def get_single_variant_annotations(self, variant: Variant, cpra) -> Optional[Variant]:
         """
         Retrieve variant annotations for a single variant. Returns a variant with annotations in id 'annot'  and including all old annotations
         """
@@ -372,7 +372,7 @@ class ResultDB(object):
 
     def get_single_variant_results(
         self, variant: Variant
-    ) -> Tuple[Variant, List[PhenoResult]]:
+    ) -> Optional[Tuple[Variant, List[PhenoResult]]]:
         """
         Returns all results and annotations for given variant. Returns tuple of Variant (including updated annotations if any) and phenotype results.
         Returns None if variant does not exist.
@@ -834,7 +834,7 @@ class TabixResultDao(ResultDB):
 
     def get_single_variant_results(
         self, variant: Variant
-    ) -> Tuple[Variant, PhenoResult]:
+    ) -> Optional[Tuple[Variant, List[PhenoResult]]]:
 
         res = self.get_variants_results([variant])
         for r in res:
@@ -1471,7 +1471,7 @@ class TabixAnnotationDao(AnnotationDB):
                 "No annotation datatype configuration found. Data will be stored as is."
             )
 
-    def get_single_variant_annotations(self, variant: Variant, cpra) -> Variant:
+    def get_single_variant_annotations(self, variant: Variant, cpra) -> Optional[Variant]:
         res = self.get_variant_annotations([variant], cpra)
         for r in res:
             if r == variant:
