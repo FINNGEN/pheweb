@@ -306,17 +306,15 @@ class ServerJeeves(object):
         ## chaining variants like these retain all the existing annotations.
         r = self.result_dao.get_single_variant_results(variant)
 
-        # if matrix is of longformat append rest of the phenotypes for which summary stats were filtered
-        if self.result_dao.longformat:
-            r = self.result_dao.append_filt_phenos(r)
-
-        v_annot = self.annotation_dao.get_single_variant_annotations(r[0], self.conf.anno_cpra)
-
-        # add rsids from varaint annotation if wasn't available in the merged sumstat matrix
-        if self.result_dao.longformat and v_annot.rsids is None:
-            v_annot.add_annotation("rsids", v_annot.annotation['annot']['rsid'])
 
         if r is not None:
+            # if matrix is of longformat append rest of the phenotypes for which summary stats were filtered
+            if self.result_dao.longformat:
+                r = self.result_dao.append_filt_phenos(r)
+
+            v_annot = self.annotation_dao.get_single_variant_annotations(r[0], self.conf.anno_cpra)
+
+
             if v_annot is None:
                 ## no annotations found even results were found. Should not happen except if the results and annotation files are not in sync
                 print("Warning! Variant results for " + str(r[0]) + " found but no basic annotation!")
@@ -324,6 +322,10 @@ class ServerJeeves(object):
                 var.add_annotation("annot", {})
             else:
                 var = v_annot
+            # add rsids from variant annotation if wasn't available in the merged sumstat matrix
+            if self.result_dao.longformat and var.rsids is None:
+                var.add_annotation("rsids", var.annotation['annot']['rsid'])
+
             gnomad = self.gnomad_dao.get_variant_annotations([var])
             if len(gnomad) == 1:
                 var.add_annotation('gnomad', gnomad[0]['var_data'])
