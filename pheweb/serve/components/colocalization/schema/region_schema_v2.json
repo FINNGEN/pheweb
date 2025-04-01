@@ -1,0 +1,319 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "count": {
+      "type": "number"
+    },
+    "colocalizations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "colocalization_id": {
+            "type": "number"
+          },
+          "dataset1": {
+            "type": "string"
+          },
+          "dataset2": {
+            "type": "string"
+          },
+          "trait1": {
+            "type": "string"
+          },
+          "trait2": {
+            "type": "string"
+          },
+          "region_chromosome": {
+            "type": "number"
+          },
+          "region_start": {
+            "type": "number"
+          },
+          "region_end": {
+            "type": "number"
+          },
+          "region1": {
+            "type": "string"
+          },
+          "region1_chromosome": {
+            "type": "number"
+          },
+          "region1_start": {
+            "type": "number"
+          },
+          "region1_end": {
+            "type": "number"
+          },
+          "region2": {
+            "type": "string"
+          },
+          "region2_chromosome": {
+            "type": "number"
+          },
+          "region2_start": {
+            "type": "number"
+          },
+          "region2_end": {
+            "type": "number"
+          },
+          "cs1": {
+            "type": "number"
+          },
+          "cs2": {
+            "type": "number"
+          },
+          "nsnps": {
+            "type": "number"
+          },
+          "hit1": {
+            "type": "string"
+          },
+          "hit2": {
+            "type": "string"
+          },
+          "PPH0abf": {
+            "type": "number"
+          },
+          "PPH1abf": {
+            "type": "number"
+          },
+          "PPH2abf": {
+            "type": "number"
+          },
+          "PPH3abf": {
+            "type": "number"
+          },
+          "PPH4abf": {
+            "type": "number"
+          },
+          "low_purity1": {
+            "type": "number"
+          },
+          "low_purity2": {
+            "type": "number"
+          },
+          "nsnps1": {
+            "type": "number"
+          },
+          "nsnps2": {
+            "type": "number"
+          },
+          "cs1_log10bf": {
+            "type": "number"
+          },
+          "cs1_log10bf_is_infinite": {
+            "type": "number"
+          },
+          "cs2_log10bf": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "cs2_log10bf_is_infinite": {
+            "type": "number"
+          },
+          "clpp": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "clpa": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "cs1_size": {
+            "type": "number"
+          },
+          "cs2_size": {
+            "type": "number"
+          },
+          "cs_overlap": {
+            "type": "number"
+          },
+          "topInOverlap": {
+            "type": "string"
+          },
+          "probmass_1": {
+            "type": "number"
+          },
+          "probmass_2": {
+            "type": "number"
+          },
+          "hit1_info": {
+            "type": "string"
+          },
+          "hit2_info": {
+            "type": "string"
+          },
+          "colocRes": {
+            "type": "string"
+          },
+          "phenotype": {
+            "type": "string"
+          },
+          "variants": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "cs1": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "low_purity1": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "p1": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "beta1": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "se1": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "cs_specific_prob1": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "cs2": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "low_purity2": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "p2": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "beta2": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "se2": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "cs_specific_prob2": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "rsid": {
+                  "type": "string"
+                },
+                "position": {
+                  "type": "number"
+                },
+                "membership_cs": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "cs1",
+                "low_purity1",
+                "p1",
+                "beta1",
+                "se1",
+                "cs_specific_prob1",
+                "cs2",
+                "low_purity2",
+                "p2",
+                "beta2",
+                "se2",
+                "cs_specific_prob2",
+                "rsid",
+                "position",
+                "membership_cs"
+              ]
+            }
+          }
+        },
+        "required": [
+          "colocalization_id",
+          "dataset1",
+          "dataset2",
+          "trait1",
+          "trait2",
+          "region_chromosome",
+          "region_start",
+          "region_end",
+          "region1",
+          "region1_chromosome",
+          "region1_start",
+          "region1_end",
+          "region2",
+          "region2_chromosome",
+          "region2_start",
+          "region2_end",
+          "cs1",
+          "cs2",
+          "nsnps",
+          "hit1",
+          "hit2",
+          "PPH0abf",
+          "PPH1abf",
+          "PPH2abf",
+          "PPH3abf",
+          "PPH4abf",
+          "low_purity1",
+          "low_purity2",
+          "nsnps1",
+          "nsnps2",
+          "cs1_log10bf",
+          "cs1_log10bf_is_infinite",
+          "cs2_log10bf",
+          "cs2_log10bf_is_infinite",
+          "clpp",
+          "clpa",
+          "cs1_size",
+          "cs2_size",
+          "cs_overlap",
+          "topInOverlap",
+          "probmass_1",
+          "probmass_2",
+          "hit1_info",
+          "hit2_info",
+          "colocRes",
+          "phenotype",
+          "variants"
+        ]
+      }
+    }
+  }
+}

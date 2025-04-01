@@ -11,6 +11,7 @@ logger.setLevel(logging.DEBUG)
 def load_mysql_authentication(obj : object, authentication_file : str) -> object:
     loader = importlib.machinery.SourceFileLoader('mysql_auth', authentication_file)
     auth_module = loader.load_module()
+    print(auth_module)
     obj.user = getattr(auth_module, 'mysql')['user']
     obj.password = getattr(auth_module, 'mysql')['password']
     obj.host = getattr(auth_module, 'mysql')['host']

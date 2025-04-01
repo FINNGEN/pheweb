@@ -57,6 +57,82 @@ class CausalVariantVector(JSONifiable, Kwargs):
 
 
 @attr.s
+class VariantVector(JSONifiable, Kwargs):
+    beta1 = attr.ib(validator=attr.validators.deep_iterable(member_validator=attr.validators.optional(instance_of(float)),
+                                                            iterable_validator=instance_of(typing.List)))
+
+    beta2 = attr.ib(validator=attr.validators.deep_iterable(member_validator=attr.validators.optional(instance_of(float)),
+                                                            iterable_validator=instance_of(typing.List)))
+    
+    cs1 = attr.ib(validator=attr.validators.deep_iterable(member_validator=attr.validators.optional(instance_of(int)),
+                                                          iterable_validator=instance_of(typing.List)))
+    
+    cs2 = attr.ib(validator=attr.validators.deep_iterable(member_validator=attr.validators.optional(instance_of(int)),
+                                                          iterable_validator=instance_of(typing.List)))
+
+    cs_specific_prob1 = attr.ib(validator=attr.validators.deep_iterable(member_validator=attr.validators.optional(instance_of(float)),
+                                                                        iterable_validator=instance_of(typing.List)))
+    
+    cs_specific_prob2 = attr.ib(validator=attr.validators.deep_iterable(member_validator=attr.validators.optional(instance_of(float)),
+                                                                        iterable_validator=instance_of(typing.List)))
+    
+    low_purity1 = attr.ib(validator=attr.validators.deep_iterable(member_validator=attr.validators.optional(instance_of(bool)),
+                                                                  iterable_validator=instance_of(typing.List)))
+
+    low_purity2 = attr.ib(validator=attr.validators.deep_iterable(member_validator=attr.validators.optional(instance_of(bool)),
+                                                                  iterable_validator=instance_of(typing.List)))
+
+    p1 = attr.ib(validator=attr.validators.deep_iterable(member_validator=attr.validators.optional(instance_of(float)),
+                                                         iterable_validator=instance_of(typing.List)))
+
+    p2 = attr.ib(validator=attr.validators.deep_iterable(member_validator=attr.validators.optional(instance_of(float)),
+                                                         iterable_validator=instance_of(typing.List)))
+
+    se1 = attr.ib(validator=attr.validators.deep_iterable(member_validator=attr.validators.optional(instance_of(float)),
+                                                          iterable_validator=instance_of(typing.List)))
+    
+    se2 = attr.ib(validator=attr.validators.deep_iterable(member_validator=attr.validators.optional(instance_of(float)),
+                                                          iterable_validator=instance_of(typing.List)))
+    rsid = attr.ib(validator=attr.validators.deep_iterable(member_validator=attr.validators.optional(instance_of(str)),
+                                                           iterable_validator=instance_of(typing.List)))
+    
+    position = attr.ib(validator=attr.validators.deep_iterable(member_validator=attr.validators.optional(instance_of(int)),
+                                                               iterable_validator=instance_of(typing.List)))
+
+    trait1 = attr.ib(validator=attr.validators.deep_iterable(member_validator=attr.validators.optional(instance_of(str)),
+                                                             iterable_validator=instance_of(typing.List)))
+
+    trait2 = attr.ib(validator=attr.validators.deep_iterable(member_validator=attr.validators.optional(instance_of(str)),
+                                                             iterable_validator=instance_of(typing.List)))
+
+    def json_rep(self):
+        return self.__dict__
+
+    def __repr__(self) -> typing.Dict[str, typing.Any]:
+        return self.__dict__
+
+    
+@attr.s
+class GenericArray(JSONifiable):
+    values = attr.ib(validator=attr.validators.deep_iterable(member_validator=attr.validators.optional(attr.validators.instance_of(dict)),
+                                                             iterable_validator=attr.validators.instance_of(typing.List)))
+
+
+    def __repr__(self) -> typing.List[typing.Dict[str, typing.Any]]:
+        return self.values
+
+@attr.s
+class GenericValue(JSONifiable):
+    value = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(dict)))
+                    
+    def json_rep(self):
+        return self.value
+
+    def __repr__(self) -> typing.Dict[str, typing.Any]:
+        return self.value
+    
+    
+@attr.s
 class SearchSummary(JSONifiable):
     """
     DTO containing a summary of colocalization records for a search.

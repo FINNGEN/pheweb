@@ -1,0 +1,242 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "count": {
+      "type": "number"
+    },
+    "colocalizations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "_sa_instance_state": {
+            "type": "null"
+          },
+          "rel": {
+            "type": "number"
+          },
+          "source1": {
+            "type": "string"
+          },
+          "source2": {
+            "type": "string"
+          },
+          "phenotype1": {
+            "type": "string"
+          },
+          "phenotype1_description": {
+            "type": "string"
+          },
+          "phenotype2": {
+            "type": "string"
+          },
+          "phenotype2_description": {
+            "type": "string"
+          },
+          "quant1": {
+            "type": "string"
+          },
+          "quant2": {
+            "type": "string"
+          },
+          "tissue1": {
+            "type": "string"
+          },
+          "tissue2": {
+            "type": "string"
+          },
+          "locus_id1": {
+            "type": "string"
+          },
+          "locus_id1_chromosome": {
+            "type": "number"
+          },
+          "locus_id1_position": {
+            "type": "number"
+          },
+          "locus_id1_ref": {
+            "type": "string"
+          },
+          "locus_id1_alt": {
+            "type": "string"
+          },
+          "locus_id2": {
+            "type": "string"
+          },
+          "locus_id2_chromosome": {
+            "type": "number"
+          },
+          "locus_id2_position": {
+            "type": "number"
+          },
+          "locus_id2_ref": {
+            "type": "string"
+          },
+          "locus_id2_alt": {
+            "type": "string"
+          },
+          "locus": {
+            "type": "null"
+          },
+          "chromosome": {
+            "type": "number"
+          },
+          "start": {
+            "type": "number"
+          },
+          "stop": {
+            "type": "number"
+          },
+          "len_cs1": {
+            "type": "number"
+          },
+          "len_cs2": {
+            "type": "number"
+          },
+          "len_inter": {
+            "type": "number"
+          },
+          "source2_displayname": {
+            "type": "string"
+          },
+          "variants": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "rel": {
+                  "type": "number"
+                },
+                "pip1": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "beta1": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "pip2": {
+                  "type": [
+                    "null",
+                    "number"
+                  ]
+                },
+                "beta2": {
+                  "type": [
+                    "null",
+                    "number"
+                  ]
+                },
+                "causal_variant_id": {
+                  "type": "number"
+                },
+                "position": {
+                  "type": "number"
+                },
+                "variant": {
+                  "type": "string"
+                },
+                "count_cs": {
+                  "type": "number"
+                },
+                "membership_cs": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "rel",
+                "pip1",
+                "beta1",
+                "pip2",
+                "beta2",
+                "causal_variant_id",
+                "position",
+                "variant",
+                "count_cs",
+                "membership_cs"
+              ]
+            }
+          },
+          "colocalization_id": {
+            "type": "number"
+          },
+          "clpp": {
+            "type": "number"
+          },
+          "clpa": {
+            "type": "number"
+          },
+          "beta1": {
+            "type": "number"
+          },
+          "beta2": {
+            "type": "number"
+          },
+          "pval1": {
+            "type": "number"
+          },
+          "pval2": {
+            "type": "number"
+          },
+          "cs_size_1": {
+            "type": "number"
+          },
+          "cs_size_2": {
+            "type": "number"
+          },
+          "cs_size": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "_sa_instance_state",
+          "rel",
+          "source1",
+          "source2",
+          "phenotype1",
+          "phenotype1_description",
+          "phenotype2",
+          "phenotype2_description",
+          "quant1",
+          "quant2",
+          "tissue1",
+          "tissue2",
+          "locus_id1",
+          "locus_id1_chromosome",
+          "locus_id1_position",
+          "locus_id1_ref",
+          "locus_id1_alt",
+          "locus_id2",
+          "locus_id2_chromosome",
+          "locus_id2_position",
+          "locus_id2_ref",
+          "locus_id2_alt",
+          "locus",
+          "chromosome",
+          "start",
+          "stop",
+          "len_cs1",
+          "len_cs2",
+          "len_inter",
+          "source2_displayname",
+          "variants",
+          "colocalization_id",
+          "clpp",
+          "clpa",
+          "beta1",
+          "beta2",
+          "pval1",
+          "pval2",
+          "cs_size_1",
+          "cs_size_2",
+          "cs_size"
+        ]
+      }
+    }
+  }
+}

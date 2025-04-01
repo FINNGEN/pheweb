@@ -1,226 +1,70 @@
-import typing
-from sqlalchemy import Table, MetaData, create_engine, Column, Integer, String, Float, Text, ForeignKey, Index
-from sqlalchemy.orm import sessionmaker
-
-from pheweb.serve.components.colocalization.finngen_common_data_model.genomics import Variant, Locus
-from pheweb.serve.components.colocalization.finngen_common_data_model.colocalization import Model
-from pheweb.serve.components.colocalization.model import CausalVariantVector, SearchSummary, SearchResults, PhenotypeList, ColocalizationDB
-from pheweb.serve.components.colocalization.model_mapper import ColocalizationMapping
-from pheweb.serve.components.colocalization.dao_support import DAOSupport
-
-import csv
-import gzip
+import abc
 import attr
-
-from sqlalchemy import func, distinct, or_, and_
-import os
-import sys
-import importlib.machinery
-import importlib.util
-from sqlalchemy.sql import func
-
-import logging
-logger = logging.getLogger(__name__)
-logger.addHandler(logging.NullHandler())
-logger.setLevel(logging.DEBUG)
-
-def refine_colocalization(model, c):
-    return model.Colocalization(**c.kwargs_rep())
+import typing
+from pheweb.serve.data_access.db_region import MYSQLRegionDAO
+from pheweb.serve.components.colocalization.model import CausalVariantVector, SearchSummary, SearchResults, PhenotypeList, ColocalizationDB, GenericArray, GenericValue, VariantVector
+from pheweb.serve.models.genomics import Region 
+import json
+from contextlib import closing
+import pymysql
 
 
-def chunk(iterable, size):
-    buffer = []
-    for v in iterable():
-        buffer.append(v)
-        if(len(buffer) >= size):
-            yield buffer
-            buffer = []
-    if buffer:
-        yield buffer
-# TODO remove
-csv.field_size_limit(sys.maxsize)
+def hydrate_json(v):
+    index = {}
+    if v["variant1"] is not None:
+        for k in json.loads(v["variant1"]):
+            rsid = k["rsid"]
+            value = { key + '1': value for key, value in k.items() if key != "rsid" and key != "position"}
+            value.update({ key + '2': None for key, value in k.items() if key != "rsid" and key != "position"})
+            value["rsid"] = rsid
+            value["position"] = k["position"]
+            index[rsid] = value
+
+    if v["variant2"] is not None:
+        for k in json.loads(v["variant2"]):
+            rsid = k["rsid"]
+            value = index.get(rsid,{ key + '1': None for key, value in k.items() if key != "rsid" and key != "position"})
+            value.update({ key + '2': value for key, value in k.items() if key != "rsid" and key != "position"})
+            value["rsid"] = rsid
+            value["position"] = k["position"]
+            index[k["rsid"]] = value
+            
+            
+    for key,value in index.items():
+        if ("p1" in value and value["p1"] is not None ) and ("p2" in value and value["p2"] is not None ):
+            value["membership_cs"] = "Both"
+        elif "p1" in value and value["p1"] is not None:
+            value["membership_cs"] = "C1"
+        elif "p2" in value and value["p2"] is not None:
+            value["membership_cs"] = "C2"
+        else:
+            value["membership_cs"] = "None"
+
+    del(v["variant1"])
+    del(v["variant2"])
+    v["variants"] = list(index.values())
+    return v
 
 class ColocalizationDAO(ColocalizationDB):
-    # Large credible sets result in
-    # long running queries and huge
-    # result sets ~90M.  Using this
-    # threshold the results sets are
-    # made smaller.
-    CREDIBLE_SET_LENGTH_THRESHOLD = 1000
-
-    @staticmethod
-    def mysql_config(path : str) -> typing.Optional[str] :
-        if os.path.exists(path):
-            loader = importlib.machinery.SourceFileLoader('auth_module',path)
-            spec = importlib.util.spec_from_loader(loader.name, loader)
-            auth_module = importlib.util.module_from_spec(spec)
-            loader.exec_module(auth_module)
-
-            user = getattr(auth_module, 'mysql')['user']
-            password = getattr(auth_module, 'mysql')['password']
-            host = getattr(auth_module, 'mysql')['host']
-            db = getattr(auth_module, 'mysql')['db']
-            return 'mysql://{}:{}@{}/{}'.format(user,password,host,db)
-        else:
-            return path
-
     def __init__(self,
-                 db_url: str,
-                 echo : bool =False,
-                 hasPPH4ab : bool = False,
-                 parameters=dict()):
-
-        self.db_url=ColocalizationDAO.mysql_config(db_url)
-        logger.info(f"hasPPH4ab:{hasPPH4ab}, db_url:{db_url}")
-        self.engine = create_engine(self.db_url,
-                                    pool_pre_ping=True,
-                                    echo=echo,
-                                    *parameters)
-        self.model = Model(hasPPH4ab = hasPPH4ab)
-        self.mapping = ColocalizationMapping.getInstance(self.model)
-        self.mapping.getMetadata().bind = self.engine
-        self.Session = sessionmaker(bind=self.engine)
-        self.support = DAOSupport(self.model.Colocalization)
-
-
-    def __del__(self):
-        if hasattr(self, 'engine') and self.engine:
-            self.engine.dispose()
-
-    def create_schema(self):
-        return self.mapping.getMetadata().create_all(self.engine)
-
-    def dump(self):
-        logger.info(f"db_url:{self.db_url}")
-        # see  : https://stackoverflow.com/questions/2128717/sqlalchemy-printing-raw-sql-from-create
-        def metadata_dump(sql, *multiparams, **params):
-            print(sql.compile(dialect=engine.dialect))
-        engine = create_engine(self.db_url, strategy='mock', executor=metadata_dump)
-        self.mapping.getMetadata().create_all(engine)
-
-    def delete_all(self):
-        for table in self.mapping.getTables():
-            self.engine.execute(table.delete())
-        self.mapping.getMetadata().drop_all(self.engine)
-
-
-    def load_data(self, release: int, path: str, header : bool=True) -> typing.Tuple[typing.Optional[int],typing.Optional[int]]:
-        count = 0
-        session = self.Session()
-        model = Model()
-        colocalization_id = 1 + (session.query(func.max(self.model.Colocalization.colocalization_id)).scalar() or 0)
-        causal_variant_id = 1 + (session.query(func.max(self.model.CausalVariant.causal_variant_id)).scalar() or 0)
-        session.close()
-        session = self.Session()
-        for index in self.mapping.getIndices():
-             index.drop()
-        try:
-            def generate_colocalization(colocalization_id, causal_variant_id):
-                with gzip.open(path, "rt") if path.endswith("gz") else open(path, 'r') as csv_file:
-                    reader = csv.reader(csv_file, delimiter='\t', )
-
-                    if header:
-                        actual_header = next(reader)
-                        expected_header = Colocalization.cvs_column_names()
-                        assert expected_header == actual_header, \
-                            "header expected '{expected_header}' got '{actual_header}'".format(expected_header=expected_header,
-                                                                                               actual_header=actual_header)
-
-                    for line in reader:
-                        try:
-                            dto = Colocalization.from_list(release,line)
-                            dto.colocalization_id = colocalization_id
-                            colocalization_id = colocalization_id + 1
-                            for v in dto.variants:
-                                v.causal_variant_id = causal_variant_id
-                                causal_variant_id = causal_variant_id + 1
-
-                            yield dto
-                        except Exception as e:
-                            logger.error(line)
-                            logger.error(e)
-                            print("file:{}".format(path), file=sys.stderr, flush=True)
-                            print(line, file=sys.stderr, flush=True)
-                            raise
-
-            for dtos in chunk(lambda : generate_colocalization(colocalization_id, causal_variant_id),100):
-                dtos = list(dtos)
-                print('.', flush=True, end='')
-                session.add_all(dtos)
-                count += len(dtos)
-                session.flush()
-                del dtos
-            session.commit()
-        finally:
-            print()
-            for index in self.mapping.getIndices():
-                index.create()
-        return count
-
-    def save(self,colocalization) -> None:
-        session = self.Session()
-        session.add(colocalization)
-        session.commit()
-
+                 authentication_file : str,
+                 parameters: typing.Dict[str, typing.Union[str, typing.List[str]]]):
+        self._dao = MYSQLRegionDAO(authentication_file, parameters)
 
     def get_phenotype(self,
-                      flags: typing.Dict[str, typing.Any]={}) -> typing.List[str]:
-        session = self.Session()
-        q = session.query(distinct(Colocalization.phenotype1))
-        matches = self.support.create_filter(q, flags)
-        return PhenotypeList(phenotypes = [r[0] for r in q.all()])
-        return phenotype1
-
-    def locus_query(self,
-                    phenotype: str,
-                    locus: Locus,
-                    flags: typing.Dict[str, typing.Any]={},
-                    projection = None):
-        if projection is None:
-            projection=[self.model.Colocalization]
-        locus_id = self.model.Colocalization.variants.any(and_(self.model.CausalVariant.variant_chromosome == locus.chromosome,
-                                                               self.model.CausalVariant.variant_position >= locus.start,
-                                                               self.model.CausalVariant.variant_position <= locus.stop))
-
-        colocalization_filter = and_(self.model.Colocalization.phenotype1 == phenotype,
-                                     self.model.Colocalization.chromosome == locus.chromosome,
-                                     self.model.Colocalization.len_cs2 < ColocalizationDAO.CREDIBLE_SET_LENGTH_THRESHOLD)
-        phenotype1 = self.model.Colocalization.phenotype1 == phenotype
-        session = self.Session()
-        return [session, session
-                         .query(*projection)
-                         .select_from(self.model.Colocalization)
-                         .filter(or_(locus_id))
-                         .filter(colocalization_filter) ]
-
+                      flags: typing.Dict[str, typing.Any]) -> PhenotypeList:
+        """
+        Return a list of phenotypes (phenotype1)
+        """
+        return PhenotypeList(phenotypes = [ x["phenotype"] for x in self._dao.get_phenotypes()])
 
     def get_locus(self,
                   phenotype: str,
-                  locus: Locus,
-                  flags: typing.Dict[str, typing.Any]={}) -> SearchResults:
+                  region: Region,
+                  flags: typing.Dict[str, typing.Any]) -> SearchResults:
         """
         Search for colocalization that match
-        the locus and range and return them.
-
-        :param phenotype: phenotype to match in search
-        :param chromosome_range: chromosome range to search
-        :param flags: a collection   of optional flags
-
-        :return: matching colocalizations
-        """
-        [session,query] = self.locus_query(phenotype, locus, flags)
-        matches = query.all()
-        matches = [ refine_colocalization(self.model, x) for x in matches]
-        return SearchResults(colocalizations=matches,
-                             count=len(matches))
-
-    def get_locuszoom(self,
-                        phenotype: str,
-                        locus: Locus,
-                        flags: typing.Dict[str, typing.Any]={}) -> typing.Dict[str, CausalVariantVector]   :
-        """
-        Search for colocalization that match
-        the locus and range and return them.
+        phenotype and range and return them.
 
         :param phenotype: phenotype to match in search
         :param chromosome_range: chromosome range to search
@@ -228,104 +72,117 @@ class ColocalizationDAO(ColocalizationDB):
 
         :return: matching colocalizations
         """
-        [session,query] = self.locus_query(phenotype, locus, flags)
-        session.expire_all()
-        rows = {}
-        for r in query.all():
-            variants = map(lambda r : r.json_rep(), r.variants)
-            variants = map(lambda v: [v["position"],
-                                      v["variant"],
-                                      v["pip1"],
-                                      v["pip2"],
-                                      v["beta1"],
-                                      v["beta2"],
-                                      v["causal_variant_id"],
-                                      v["count_cs"],
-                                      r.phenotype1,
-                                      r.phenotype1_description,
-                                      r.phenotype2,
-                                      r.phenotype2_description
-                                    ], variants)
+        values=self._dao.get_region(phenotype, region)
+        colocalizations=[GenericValue(value = hydrate_json(v)) for v in values]
+        count = len(values)
+        result = SearchResults(colocalizations = colocalizations,
+                               count=count)
+        return result
+
+    def get_locuszoom(self,
+                      phenotype: str,
+                      region: Region,
+                      flags: typing.Dict[str, typing.Any]={}):
+        rows={}
+        values=self._dao.get_region(phenotype, region)
+        values=[hydrate_json(v) for v in values]
+        for r in values:
+            variants = r["variants"]
+            variants = map(lambda v : [
+                float(v["beta1"]) if v["beta1"]   is not None else None,
+                float(v["beta2"]) if v["beta2"]   is not None else None,
+                int(v["cs1"])     if v["cs1"]     is not None else None,
+                int(v["cs2"])     if v["cs2"]     is not None else None,
+                float(v["cs_specific_prob1"]) if v["cs_specific_prob1"] is not None else None,
+                float(v["cs_specific_prob2"]) if v["cs_specific_prob2"] is not None else None,
+                v["low_purity1"],
+                v["low_purity2"],
+                float(v["p1"]) if v["p1"] is not None else None,
+                float(v["p2"]) if v["p2"] is not None else None,
+                float(v["se1"]) if v["se1"] is not None else None,
+                float(v["se2"]) if v["se2"] is not None else None,
+                v["rsid"],
+                int(v["position"]),
+                r["trait1"],
+                r["trait2"],               
+            ], variants)
             variants = list(map(list,zip(*variants)))
             if variants:
-                position = variants[0]
-                variant = variants[1]
-                pip1 = variants[2]
-                pip2 = variants[3]
-                beta1 = variants[4]
-                beta2 = variants[5]
-                causal_variant_id = variants[6]
-                count_cs = variants[7]
-                phenotype1 = variants[8]
-                phenotype1_description = variants[9]
-                phenotype2 = variants[10]
-                phenotype2_description = variants[11]
+                beta1 = variants[0]
+                beta2 = variants[1]
+                cs1 = variants[2]
+                cs2 = variants[3]
+                cs_specific_prob1 = variants[4]
+                cs_specific_prob2 = variants[5]
+                low_purity1 = variants[6]
+                low_purity2 = variants[7]
+                p1 = variants[8]
+                p2 = variants[9]
+                se1 = variants[10]
+                se2 = variants[11]
+                rsid = variants[12]
+                position = variants[13]
+                trait1 = variants[14]
+                trait2 = variants[15]
             else:
-                position = []
-                variant = []
-                pip1 = []
-                pip2 = []
                 beta1 = []
                 beta2 = []
-                causal_variant_id = []
-                count_cs = []
-                phenotype1 = []
-                phenotype1_description = []
-                phenotype2 = []
-                phenotype2_description = []
-
-            rows[r.colocalization_id] = CausalVariantVector(position,
-                                                            variant,
-                                                            pip1,
-                                                            pip2,
-                                                            beta1,
-                                                            beta2,
-                                                            causal_variant_id,
-                                                            count_cs,
-                                                            phenotype1,
-                                                            phenotype1_description,
-                                                            phenotype2,
-                                                            phenotype2_description)
-
-
-
-
+                cs1 = []
+                cs2 = []
+                cs_specific_prob1 = []
+                cs_specific_prob2 = []
+                low_purity1 = []
+                low_purity2 = []
+                p1 = []
+                p2 = []
+                se1 = []
+                se2 = []
+                rsid = []
+                position = []
+                trait1 = []
+                trait2 = []
+            rows[r["colocalization_id"]] = VariantVector(beta1,
+                                                         beta2,
+                                                         cs1,
+                                                         cs2,
+                                                         cs_specific_prob1,
+                                                         cs_specific_prob2,
+                                                         low_purity1,
+                                                         low_purity2,
+                                                         p1,
+                                                         p2,
+                                                         se1,
+                                                         se2,
+                                                         rsid,
+                                                         position,
+                                                         trait1,
+                                                         trait2)
         return rows
 
+        
     def get_locus_summary(self,
                           phenotype: str,
-                          locus: Locus,
+                          region: Region,
                           flags: typing.Dict[str, typing.Any] = {}) -> SearchSummary:
-        aggregates =  [func.count('*'),
-                       func.count(distinct('colocalization.phenotype2')),
-                       func.count(distinct('colocalization.tissue2'))]
-        [session,query] = self.locus_query(phenotype, locus, flags, aggregates)
-        session.expire_all()
-        count, unique_phenotype2, unique_tissue2 = query.all()[0]
-        return SearchSummary(count=count,
-                             unique_phenotype2 = unique_phenotype2,
-                             unique_tissue2 = unique_tissue2)
-
-    def get_variant(self,
-                    phenotype: str,
-                    variant: Variant,
-                    flags: typing.Dict[str, typing.Any] = {}) -> SearchResults:
-        session = self.Session()
-        matches = self.support.query_matches(session,
-                                             flags={**{"phenotype1": phenotype,
-                                                       "locus_id1_chromosome": variant.chromosome,
-                                                       "locus_id1_position": variant.position,
-                                                       "locus_id1_reference": variant.reference,
-                                                       "locus_id1_alternate": variant.alternate,
-                                             },**flags},
-                                             f=lambda x : refine_colocalization(self.model, x) )
-        session.expire_all()
-        return SearchResults(colocalizations=matches,
-                             count=len(matches))
-
+        summary = self._dao.get_region_summary(phenotype, region)[0]
+        return SearchSummary(**summary)
+    
     def get_colocalization(self,
                            colocalization_id : int,
-                           flags: typing.Dict[str, typing.Any] = dict()):# -> typing.Optional[Colocalization]:
-        session = self.Session()
-        matches = session.query(Colocalization).filter(Colocalization.id == colocalization_id).one_or_none()
-        return matches
+                           flags : typing.Dict[str, typing.Any] = {}):
+        """
+        Given the identifier for a colocaliztion
+        record return colocaliztion record.
+
+        :param colocalization_id to search for
+        :return: colocaliztion if one was found
+        """
+        with closing(self._dao.get_connection()) as conn:
+            with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                table = self._dao._parameters['colocalization_table']
+                sql = f"""SELECT *
+                          FROM {table}
+                          where colocalization_id = %s"""
+                cursor.execute(sql, [colocalization_id])
+                result = GenericValue(value = hydrate_json(cursor.fetchone()))
+                return result
