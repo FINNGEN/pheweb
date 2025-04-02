@@ -25,5 +25,3 @@ export const getRegion = (parameter: RegionParams<Locus> | undefined,
                           sink: (s: Summary.Region) => void,
                           getURL = get) =>
     parameter &&  getURL<Summary.Region>(resolveURL(region_url(parameter)),sink)
-
-

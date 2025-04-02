@@ -1,13 +1,21 @@
 import { Column, HeaderProps, Renderer } from "react-table";
 import React from "react";
 import ReactDOMServer from "react-dom/server";
-import { variantFromStr, variantToPheweb, variantToStr } from "./commonModel";
-import { scientificFormatter, shortNumberFormatter, decimalFormatter } from "./commonFormatter";
+import { CasualVariant, Colocalization, variantFromStr, variantToPheweb, variantToStr } from './commonModel';
+import {
+  scientificFormatter,
+  shortNumberFormatter,
+  decimalFormatter,
+  cellText,
+  cellNumber,
+  variantLink,
+} from './commonFormatter';
 import { LabelKeyObject , Headers } from "react-csv/components/CommonPropTypes";
 import matchSorter from 'match-sorter';
-import { string } from 'purify-ts';
 import ReactTooltip from "react-tooltip";
 import { ConfigurationWindow } from '../components/Configuration/configurationModel';
+import { compose } from './commonUtilities';
+import { Row } from "react-table-v6";
 
 declare let window: ConfigurationWindow;
 const defaultRisteysURLPrefix = window?.config?.application?.risteysURLPrefix||'https://risteys.finregistry.fi/phenocode/';
@@ -402,6 +410,7 @@ const filters = {
 
 const maxTableWidth = 1600;
 const columnWith = (size) => Math.min(size, size / maxTableWidth * window.innerWidth);
+
 
 const phenotypeColumns = {
 
@@ -1710,7 +1719,60 @@ const pqtColumns = {
   }
 }
 
+
+export const cell_locus_id1 = (row : Row<Colocalization>) => row.original.locus_id1
+export const cell_locus_id2 = (row : Row<Colocalization>) => row.original.locus_id2
+export const cell_variant = (row : Row<CasualVariant>) => row.original.variant
+export const cell_quant1 = (row : Row<Colocalization>) => row.original.quant1
+
 const colocColumns = {
+  colocalizationCode : { title: "code", accessor: "phenotype2", label: "Code" },
+  colocalizationDescription :  { title: "description", accessor: "phenotype2_description", label: "Description" },
+  colocalizationSource: { title: "source", accessor: "source2_displayname", label: "Source", flexBasis: "max-content" },
+  colocalizationLocus1: {
+    title: "locus id 1",
+    accessor: "locus_id1",
+    label: "Locus ID 1",
+    Cell: compose(cell_locus_id1, variantLink)
+  },
+  colocalizationLocus2: {
+    title: "locus id 2",
+    accessor: "locus_id1",
+    label: "Locus ID 2",
+    Cell: compose(cell_locus_id2, variantLink)
+  },
+  colocalizationPhenotype2: { title: "code", accessor: "phenotype2", label: "Code" },
+  colocalizationPhenotype2Description: {
+    title: "description",
+    accessor: "phenotype2_description",
+    label: "Description"
+  },
+  colocalizationTissue2: { title: "tissue", accessor: "tissue2", Cell: cellText, label: "Tissue" },
+  colocalizationQuant2: { title: "cell_quant2", accessor: "quant2", Cell: cellText, label: "Quant" },
+  colocalizationCLPP: { title: "clpp", accessor: "clpp", Cell: cellNumber, label: "CLPP", width: 80 },
+  colocalizationCLPA: { title: "clpa", accessor: "clpa", Cell: cellNumber, label: "CLPA", width: 80 },
+  colocalizationCSSize1: { title: "cs_size_1", accessor: "cs_size_1", label: "CS Size 1", width: 80 },
+  colocalizationCSSize2: { title: "cs_size_2", accessor: "cs_size_2", label: "CS Size 2", width: 80 },
+  colocalizationBeta1: { title: "beta1", accessor: "beta1", label: "beta cs1", width: 100, Cell: cellNumber },
+  colocalizationBeta2: { title: "beta2", accessor: "beta2", label: "beta cs2", width: 100, Cell: cellNumber },
+  colocalizationPValue1: { title: "pval1", accessor: "pval1", label: "p-value cs1", width: 100, Cell: cellNumber },
+  colocalizationPValue2: { title: "pval2", accessor: "pval2", label: "p-value cs2", width: 100, Cell: cellNumber },
+  colocalizationPPH4ABF: {
+    title: "pp_h4_abf",
+    accessor: "pp_h4_abf",
+    label: "PP.H4.abf",
+    width: 100,
+    Cell: cellNumber
+  },
+  colocalizationVariant: {
+    title: "Variant",
+    accessor: "varid1",
+    label: "Variant",
+    Cell: compose(cell_variant, variantLink)
+  },
+  colocalizationPip1: { title: "pip1", accessor: "pip1", label: "PIP 1", Cell: cellNumber },
+  colocalizationPip2: { title: "pip2", accessor: "pip1", label: "PIP 2", Cell: cellNumber },
+
   colocPheno: {
     Header: () => (<span style={{ textDecoration: "underline" }}>phenotype</span>),
     accessor: "phenotype1_region",
@@ -1863,6 +1925,48 @@ export const phenoColocSubTable = [
   colocColumns.colocPval1,
   colocColumns.colocPval2
 ]
+
+export const colocalizationTable = [
+  { title: "source" , accessor: "source2_displayname" , label:"Source", flexBasis: "max-content" },
+  { title: "locus id 1", accessor: "locus_id1" , label:"Locus ID 1",
+    Cell: compose(cell_locus_id1,variantLink) },
+  { title: "locus id 2", accessor: "locus_id1" , label:"Locus ID 2",
+    Cell: compose(cell_locus_id2,variantLink) },
+  { title: "code", accessor: "phenotype2", label: "Code" },
+  { title: "description", accessor: "phenotype2_description", label: "Description" },
+  { title: "tissue", accessor: "tissue2",
+    Cell: cellText,
+    label: "Tissue" },
+  { title: "cell_quant2", accessor: "quant2",
+    Cell: cellText,
+    label: "Quant" },
+  { title: "clpp", accessor: "clpp",
+    Cell: cellNumber,
+    label: "CLPP",
+    width: 80 },
+  { title: "clpa", accessor: "clpa" ,
+    Cell: cellNumber,
+    label: "CLPA",
+    width: 80 },
+  { title: "cs_size_1", accessor: "cs_size_1", label: "CS Size 1", width: 80 },
+  { title: "cs_size_2", accessor: "cs_size_2", label: "CS Size 2", width: 80 },
+  { title: "beta1", accessor: "beta1", label: "beta cs1", width: 100,  Cell: cellNumber},
+  { title: "beta2", accessor: "beta2", label: "beta cs2", width: 100,  Cell: cellNumber},
+  { title: "pval1", accessor: "pval1", label: "p-value cs1", width: 100,  Cell: cellNumber},
+  { title: "pval2", accessor: "pval2", label: "p-value cs2", width: 100,  Cell: cellNumber},
+  { title: "pp_h4_abf", accessor: "pp_h4_abf", label: "PP.H4.abf", width: 100,  Cell: cellNumber}
+
+]
+
+export const colocalizationSubtable = [
+  { title: "Variant" , accessor: "varid1" , label: "Variant" , Cell : compose(cell_variant,variantLink) },
+  { title: "pip1" , accessor: "pip1" , label:"PIP 1" , Cell : cellNumber },
+  { title: "beta1" , accessor: "beta1" , label:"Beta 1" , Cell : cellNumber },
+  { title: "pip2" , accessor: "pip2" , label:"PIP 2"  , Cell : cellNumber },
+  { title: "beta2" , accessor: "beta2" , label:"Beta 2"  , Cell : cellNumber }
+]
+
+
 
 
 export const genePqtlTableColumns = [
@@ -2120,6 +2224,8 @@ const createColumn = <Type extends {}>(descriptor: ColumnConfiguration<Type>): C
     const header: Renderer<HeaderProps<Type>> = createHeader(title,label);
     column = {
       Header : header,
+      // @ts-ignore
+      Label : label || header,
       accessor: accessor,
       Cell: formatter in formatters ? formatters[formatter] : textCellFormatter,
       ...(sorter && sorter in sorters && { sortMethod: sorters[sorter] }),

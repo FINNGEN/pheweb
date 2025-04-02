@@ -387,7 +387,7 @@ export const init_locus_zoom = (region : Summary.Region): LocusZoomContext => {
       });
     };
   });
-
+  console.log(region_layout(region))
   const plot: Plot = populate("#lz-1", dataSources, region_layout(region));
 
   addPanel(plot,association_layout(region));

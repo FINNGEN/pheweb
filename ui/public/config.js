@@ -1,4 +1,5 @@
 // text
+
 const aboutBanner = `
      <h1>About this site</h1><br>
      <p>
@@ -40,6 +41,7 @@ const notFoundPageMessage = `
 const maxTableWidth = 1600;
 const columnWith = (size) => Math.min(size, size / maxTableWidth * window.innerWidth);
 // configuration
+/** @type {ConfigurationUserInterface} */
 const userInterface = {
   notFound: {
     entity: { message: notFoundEntityMessage },
@@ -158,6 +160,126 @@ const userInterface = {
   },
   region: {
     colocalization: {
+      tableColumns : [
+        {
+          title: 'source',
+          label: 'source',
+          accessor: 'dataset1',
+          formatter: 'textCellFormatter'
+        },
+        {
+          title: 'locus id 1',
+          label: 'locus id 1',
+          accessor: 'hit1',
+          formatter: 'textCellFormatter'
+        },
+        {
+          title: 'locus id 2',
+          label: 'locus id 2',
+          accessor: 'hit2',
+          formatter: 'textCellFormatter'
+        },
+        {
+          title: 'Code',
+          label: 'Code',
+          accessor: 'trait2',
+          formatter: 'textCellFormatter'
+        },
+        {
+          title: 'clpp',
+          label: 'clpp',
+          accessor: 'clpp',
+          formatter: 'textCellFormatter'
+        },
+        {
+          title: 'clpa',
+          label: 'clpa',
+          accessor: 'clpa',
+          formatter: 'textCellFormatter'
+        },
+        {
+          title: 'cs1 size',
+          label: 'cs1 size',
+          accessor: 'cs1_size',
+          formatter: 'textCellFormatter'
+        },
+        {
+          title: 'cs2 size',
+          label: 'cs2 size',
+          accessor: 'cs2_size',
+          formatter: 'textCellFormatter'
+        },
+
+        {
+          title: 'cs1 log10 bf',
+          label: 'cs1 log10 bf',
+          accessor: 'cs1_log10bf',
+          formatter: 'textCellFormatter'
+        },
+        {
+          title: 'cs2 log10 bf',
+          label: 'cs2 log10 bf',
+          accessor: 'cs1_log10bf',
+          formatter: 'textCellFormatter'
+        }
+      ],
+      subtableColumns : [
+        {
+          title: 'Variant',
+          label: 'Variant',
+          accessor: 'rsid',
+          formatter: 'textCellFormatter'
+        },
+        {
+          title: 'p-value 1',
+          label: 'p-value 1',
+          accessor: 'p1',
+          formatter: 'textCellFormatter'
+        },
+        {
+          title: 'beta 1',
+          label: 'beta 1',
+          accessor: 'beta1',
+          formatter: 'textCellFormatter'
+        },
+        {
+          title: 'se 1',
+          label: 'se 1',
+          accessor: 'se1',
+          formatter: 'textCellFormatter'
+        },
+        {
+          title: 'cs specific prob 1',
+          label: 'cs specific prob 1',
+          accessor: 'cs_specific_prob1',
+          formatter: 'textCellFormatter'
+        },
+
+        {
+          title: 'p-value 2',
+          label: 'p-value 2',
+          accessor: 'p2',
+          formatter: 'textCellFormatter'
+        },
+        {
+          title: 'beta 2',
+          label: 'beta 2',
+          accessor: 'beta2',
+          formatter: 'textCellFormatter'
+        },
+        {
+          title: 'se 2',
+          label: 'se 2',
+          accessor: 'se2',
+          formatter: 'textCellFormatter'
+        },
+        {
+          title: 'cs specific prob 2',
+          label: 'cs specific prob 2',
+          accessor: 'cs_specific_prob1',
+          formatter: 'textCellFormatter'
+        }
+      ],
       colocalizationSourceTypes: [
         {type: "Endpoints/Biomarkers", sources: ["FinnGen", "UKBB"]},
         {type: "pQTL", sources: ["Somascan", "Olink", "UKBB-PPP"]},
@@ -182,12 +304,12 @@ const userInterface = {
 
 }
 
+/** @type {ConfigurationMetaData} */
 const metaData = {}
+
+/** @type {ApplicationConfiguration} */
 const application = {
     ld_service : "http://api.finngen.fi/api/ld",
-    vis_conf : { info_tooltip_threshold:0.8,
-		 loglog_threshold:10,
-		 manhattan_colors:["rgb(53,0,212)","rgb(40, 40, 40)"] },
     genome_build : 37,
     browser: "pheweb-dev" ,
     ld_panel_version : "sisu42",
@@ -207,5 +329,6 @@ const application = {
   }
 }
 
-
+// @ts-check
+/** @type {ConfigurationApplication} */
 const config = { application , metaData , userInterface , }

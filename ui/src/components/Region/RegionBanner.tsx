@@ -5,6 +5,7 @@ interface Props {}
 
 const RegionBanner =  (props : Props) => {
     const { region } = useContext<Partial<RegionState>>(RegionContext);
+    console.log(region);
     if(region) {
         const phenotype = region.phenotype;
 

@@ -37,14 +37,14 @@ const ColocalizationContextProvider = ({ params , children} :  Props) => {
     const [searchSummary, setSearchSummary] = useState<SearchSummary | undefined>(undefined);
     const [casualVariant, selectedCasualVariant] = useState<CasualVariant | undefined>(undefined);
     const [region, setRegion] = useState<Region| undefined>(undefined);
-    
+
     useEffect(() => {
         const parameter : RegionParams<Locus>| undefined = createParameter(params)
         getRegion(parameter,setRegion); }, [params]);
 
     useEffect(() => {
         const parameter : RegionParams<Locus>| undefined = createParameter(params);
-        region && region.region && getSearchResults(
+	region && region.region && getSearchResults(
             {locus: region.region,
             phenotype: params?.phenotype}, setColocalization);
         getLocusZoomData(parameter, setLocusZoomData);

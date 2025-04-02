@@ -49,16 +49,18 @@ export interface ConfigurationUserInterface {
   region?: RegionModel.Configuration;
 }
 export interface ConfigurationMetaData {
-  genome_build: number;
+  genome_build?: number;
 }
+
+export interface ConfigurationApplication {
+  userInterface?: ConfigurationUserInterface;
+  metaData?: ConfigurationMetaData;
+  application?: ApplicationConfiguration;
+};
 
 export interface ConfigurationWindow extends Window {
   release_prev?: number;
-  config?: {
-    userInterface?: ConfigurationUserInterface;
-    metaData?: ConfigurationMetaData;
-    application?: ApplicationConfiguration;
-  };
+  config?: ConfigurationApplication
 }
 
 declare let window: ConfigurationWindow;
