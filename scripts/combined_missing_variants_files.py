@@ -4,7 +4,7 @@ import gzip
 
 # file constant
 folder_path = '/mnt/disks/data/data-directory/variant_qc/panel_variant_qc'
-output_fname = folder_path + "/combined_sorted_output_file.tsv"
+output_fname = folder_path + "/combined_sorted_output_file.tsv.gz"
 # Output tsv Gzipped file path
 output_gzipped_tsv = output_fname + ".gz"
 skipped_file_name = 'chrX.removed.add_LCR.add_XPAR.add_failed_filter_awk.tsv'
@@ -57,18 +57,5 @@ def main():
                         print(f"Sorry! The file {fname} does not consist on proper csv columns.")
                         exit(1)
             print(f"Finished!")
-
-
-    # Open the input TSV file and output .tsv.gz file
-    with open(output_fname, mode='r', newline='') as infile, gzip.open(output_gzipped_tsv, mode='wt', newline='') as outfile:
-        # Create a TSV reader and writer with tab as the delimiter
-        reader = csv.reader(infile, delimiter='\t')
-        writer = csv.writer(outfile, delimiter='\t')
-        
-        # Write each row from the input TSV to the Gzipped output file
-        for row in reader:
-            print('.', end='', flush=True)
-            writer.writerow(row)
-    print("TSV file has been compressed to .tsv.gz.")
 
 main()
