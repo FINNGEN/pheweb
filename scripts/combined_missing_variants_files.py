@@ -54,7 +54,6 @@ def main():
                             line = "\t".join(row)
                             out_file.write(f"{line.strip()}\t{chromosome_value}\t{position_value}\n")
                     else:
-                        print(row)
                         print(f"Sorry! The file {fname} does not consist on proper csv columns.")
                         exit(1)
             print(f"Finished!")
@@ -70,80 +69,6 @@ def main():
         for row in reader:
             print('.', end='', flush=True)
             writer.writerow(row)
-
     print("TSV file has been compressed to .tsv.gz.")
-
-    # # read in the files
-    # for fname in [folder_path + "/chr7.removed.add_LCR.add_failed_filter_awk.tsv"]:
-    #     with open(fname,"rt",encoding="utf-8") as infile:
-    #         print(fname)
-    #         print('Loading data ...')
-    #         reader = csv.reader(infile, delimiter='\t')
-    #         for row in reader:
-    #             if len(row) == 24:
-    #                 final_header = "\t".join(row)+"\tchrom\tpos\n"
-    #                 if row[0] == 'Variant':
-    #                         if final_header not in final_rows:
-    #                             final_rows.append(final_header)
-    #                 else:
-    #                     splited_variant = row[0].split(":")
-    #                     # print(splited_variant)
-    #                     chromosome_value = splited_variant[0]
-    #                     position_value = splited_variant[1]
-    #                     line = "\t".join(row)
-    #                     resulted_row = f"{line.strip()}\t{chromosome_value}\t{position_value}\n"
-    #                     final_rows.append(resulted_row)
-    #             else:
-    #                 print(f"Sorry! The file {fname} does not consist on proper csv columns.")
-    #                 exit(1)
-    #     print(f"Finished!")
-
-
-    # # open the output file
-    # with open(output_fname,"wt",encoding="utf-8") as out_file:
-    #     # output file header
-    #     output_file_reader = csv.reader(out_file)
-    #     output_file_header = None
-    #     if not os.path.getsize(output_fname) == 0:
-    #         output_file_header = next(output_file_reader)
-    #         print(output_file_header)
-    #     # read in the files
-    #     for fname in [folder_path + "/chr7.removed.add_LCR.add_failed_filter_awk.tsv"]:
-    #         with open(fname,"rt",encoding="utf-8") as infile:
-    #             # read header
-    #             reader = csv.reader(infile)
-    #             header = next(reader)
-    #             # header index is a dictionary that indexes into the correct columns in the file, e.g. if column "AC" is in index 3, then header_index["AC"] = 3 -> we can use it in cols[header_index["AC"]] to get the value of AC for that line. 
-    #             header_index = {column_name: index for index, column_name in enumerate(header)}
-    #             # print(header_index)
-    #             # if we haven't written the header for the output file, write header with new columns chrom and pos
-    #             output_header = f"{header[0].strip()}\tchrom\tpos\n"
-    #             print(output_header)
-    #             #TODO if we haven't writtern the output header, write it to the output
-    #             if output_file_header is None:
-    #                 prin
-    #                 out_file.write(output_header)
-    #             #then, for each line, we want to take the line, and from the variant column, separate the chromosome and position values, adding them to the columns
-    #             for line in infile:
-    #                 cols = line.strip().split("\t")
-    #                 #extract the variant column from the columns
-    #                 print(cols)
-    #                 variant_col = cols[header_index["Variant"]]
-    #                 variant_col_split = variant_col.split(":")
-    #                 # extract the chromosome and position from the variant column
-    #                 chromosome_value = variant_col_split[0]
-    #                 position_value = variant_col_split[1]
-    #                 # write 
-    #                 out_file.write(f"{line.strip()}\t{chromosome_value}\t{position_value}\n")
-    
-    # write the array of objects to a csv file
-    # if os.path.exists(output_fname):
-    #     os.remove(output_fname)  # Overwrite the file with an empty DataFrame
-    #     print(f"\nFile '{output_fname}' is already exist, so it is cleared first.")
-    
-    # with open(output_fname,"wt",encoding="utf-8") as out_file:
-    #     writer = csv.writer(out_file)
-    #     writer.writerows(final_rows)
-
 
 main()
