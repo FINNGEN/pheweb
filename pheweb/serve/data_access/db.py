@@ -394,6 +394,13 @@ class CodingDB(object):
         """
         return
 
+class MissingVariantDB(object):
+    @abc.abstractmethod
+    def get_missing_variants(self, variant: Variant):
+        """Retrieve missing variant data
+        Returns: missing variant results
+        """
+        return
 
 class ChipDB(object):
     @abc.abstractmethod
@@ -620,6 +627,25 @@ class ElasticGnomadDao(GnomadDB):
             }
             for anno in annotation["hits"]["hits"]
         ]
+
+class MissingVariantDao(MissingVariantDB):
+    def __init__(self, missing_variant_path):
+        self.missing_variant_path = missing_variant_path
+        self.tabix_file = pysam.TabixFile(self.missing_variant_path, parser=None)
+        self.headers = self.tabix_file.header[0].split("\t")
+
+    def get_missing_variants(self, variant: Variant):
+        header = [h.lower() for h in self.headers]
+        for row in self.tabix_file.fetch(f"chr{variant.chr}", start=variant.pos - 1, end=variant.pos + 1):
+            splited_row = row.split("\t")
+            if len(header) == 26 & len(splited_row) == 26:
+            # if (split[header.index('variant')] == variant):
+            # variant = split[header.index('variant')]
+                json_obj = dict(zip(header, splited_row))
+                return json_obj
+            else:
+                return None
+        return None,
 
 
 class TabixGnomadDao(GnomadDB):
@@ -2018,6 +2044,9 @@ class DataFactory(object):
 
     def get_gnomad_dao(self):
         return self.dao_impl["gnomad"]
+    
+    def get_missing_variants_dao(self):
+        return self.dao_impl["missing_variants"]
 
     def get_lof_dao(self):
         return self.dao_impl["lof"] if "lof" in self.dao_impl else None
