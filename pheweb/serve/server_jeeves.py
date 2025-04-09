@@ -307,6 +307,16 @@ class ServerJeeves(object):
         ## chaining variants like these retain all the existing annotations.
         r = self.result_dao.get_single_variant_results(variant)
 
+        # if matrix is of longformat append rest of the phenotypes for which summary stats were filtered
+        if r is not None and self.result_dao.longformat:
+            r = self.result_dao.append_filt_phenos(r)
+        v_annot = None
+        if r is not None:
+            v_annot = self.annotation_dao.get_single_variant_annotations(r[0], self.conf.anno_cpra)
+
+        # add rsids from varaint annotation if wasn't available in the merged sumstat matrix
+        if v_annot is not None and self.result_dao.longformat and "rsids" in v_annot is None:
+            v_annot.add_annotation("rsids", v_annot.annotation['annot']['rsid'])
 
         if r is not None:
             # if matrix is of longformat append rest of the phenotypes for which summary stats were filtered
