@@ -4,7 +4,7 @@ import { Ensembl, Variant as VariantModel, Sumstats } from "./variantModel"
 import { getEnsembl, getVariant, getVariantPhenotype } from "./variantAPI"
 import { ConfigurationWindow } from "../Configuration/configurationModel"
 import {mustacheDiv, setPageTitle} from "../../common/commonUtilities"
-import { hasError, isLoading } from "../../common/CommonLoading"
+import { commonErrorTable, hasError, isLoading } from "../../common/CommonLoading"
 import VariantTable from "./VariantTable"
 import VariantLocusZoom from "./VariantLocusZoom"
 import { numberFormatter, scientificFormatter } from "../../common/commonFormatter"
@@ -195,7 +195,6 @@ interface sortOptionsObj {
 export type RSIDMapping = { mapping : Ensembl.Mapping ,
   rsid : string };
 
-
 export const createVariantSummary = (variantData : VariantModel.Data) : VariantSummary | undefined => {
 
   const nearestGenes : string [] = variantData?.variant?.annotation?.annot?.nearest_gene?.split(",") || [];
@@ -216,8 +215,8 @@ export const createVariantSummary = (variantData : VariantModel.Data) : VariantS
     else { return undefined; }
   };
 
-  const mafs : number[] = variantData.results.map(extractMAFS);
-  const numPhenotypesWithMaf = mafs.filter(isNumber)
+  const mafs : number[] = variantData.results?.map(extractMAFS);
+  const numPhenotypesWithMaf = mafs?.filter(isNumber)
   const annot = variantData?.variant?.annotation?.annot
 
   let maf : MAF | undefined = undefined
@@ -231,14 +230,14 @@ export const createVariantSummary = (variantData : VariantModel.Data) : VariantS
     Object.keys(annot).filter((key) => key.indexOf('AF_') === 0 ).map(createIndex)
 
     const value = annot && 'AF' in annot ? annot['AF'] : undefined
-    if(mafs.length === numPhenotypesWithMaf.length){
+    if(numPhenotypesWithMaf && mafs && mafs?.length === numPhenotypesWithMaf?.length){
       maf = {
         value : scientificFormatter(value),
         start : scientificFormatter(Math.min(...mafs)) ,
         stop : scientificFormatter(Math.max(...mafs)) ,
         properties ,
         description : 'across all phenotype' }
-    } else {
+    } else if (numPhenotypesWithMaf) {
       //{v : variantData.variant }
       maf = {
         value : scientificFormatter(value),
@@ -309,13 +308,13 @@ export const createVariantSummary = (variantData : VariantModel.Data) : VariantS
   const acHom = variantData?.variant?.annotation?.annot
   const numberAlternativeHomozygotes = acHom && 'AC_Hom' in acHom && !isNaN(+acHom['AC_Hom'])?numberFormatter(+acHom['AC_Hom']/2):undefined
   const rsids : string[] = variantData?.variant?.annotation?.rsids?.split(',') || []
-  const chrom = variantData.variant.chr
-  const pos = variantData.variant.pos
+  const chrom = variantData.variant?.chr
+  const pos = variantData.variant?.pos
   const posStart = pos - 200000
   const posStop = pos + 200000
 
-  const ref = variantData.variant.ref
-  const alt = variantData.variant.alt
+  const ref = variantData.variant?.ref
+  const alt = variantData.variant?.alt
 
   const variantSummary : VariantSummary = {
     nearestGenes ,
@@ -494,30 +493,34 @@ const Variant = (props : Props) => {
   },[variantData, setBioBankURL,bioBankURL]);
 
   // lazy load
-  const content = () => <VariantContextProvider>
+  const content = () =>
+  <VariantContextProvider>
     <React.Fragment>
       <div>
         <div className="variant-info col-xs-12">
-          {mustacheDiv(banner,bannerData(variantData, bioBankURL))}
+          {'results' in variantData &&  mustacheDiv(banner,bannerData(variantData, bioBankURL))}
         </div>
-        <ReactTooltip className={'variant-tooltip'} multiline={true} html={true} />
+        {'results' in variantData &&  <ReactTooltip className={'variant-tooltip'} multiline={true} html={true} />}
       </div>
 
       <div>
-        <VariantLavaaPlot variantData={variantDataPlots}/>
+        {'results' in variantData &&  <VariantLavaaPlot variantData={variantDataPlots}/>}
       </div>
 
       <div>
-        <VariantLocusZoom variantData={variantDataPlots}/>
+      {'results' in variantData &&  <VariantLocusZoom variantData={variantDataPlots}/>}
       </div>
 
       <div>
-        <VariantTable variantData={variantData} getSumstats={getSumstats} activePage={activePage} />
+      {'results' in variantData && <VariantTable variantData={variantData} getSumstats={getSumstats} activePage={activePage} />}
       </div>
     </React.Fragment>
   </VariantContextProvider>
-  return hasError(error,isLoading(variantData == null || bioBankURL == null,content));
-
+  if (variantData && Object.hasOwn(variantData, 'qc_variant_message') && Object.hasOwn(variantData, 'qc_variant_results')) {
+    return commonErrorTable(variantData['qc_variant_message'], isLoading(false, content), variantData['qc_variant_results'])
+  } else {
+    return hasError(error,isLoading(variantData == null || bioBankURL == null, content));
+  }
 }
 
 export default Variant;
