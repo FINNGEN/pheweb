@@ -4,7 +4,7 @@ import { Ensembl, Variant as VariantModel, Sumstats } from "./variantModel"
 import { getEnsembl, getVariant, getVariantPhenotype } from "./variantAPI"
 import { ConfigurationWindow } from "../Configuration/configurationModel"
 import {mustacheDiv, setPageTitle} from "../../common/commonUtilities"
-import { commonErrorTable, hasError, isLoading } from "../../common/CommonLoading"
+import { CommonQCVariantErrorTable, hasError, isLoading } from "../../common/CommonLoading"
 import VariantTable from "./VariantTable"
 import VariantLocusZoom from "./VariantLocusZoom"
 import { numberFormatter, scientificFormatter } from "../../common/commonFormatter"
@@ -516,8 +516,8 @@ const Variant = (props : Props) => {
       </div>
     </React.Fragment>
   </VariantContextProvider>
-  if (variantData && Object.hasOwn(variantData, 'qc_variant_message') && Object.hasOwn(variantData, 'qc_variant_results')) {
-    return commonErrorTable(variantData['qc_variant_message'], isLoading(false, content), variantData['qc_variant_results'])
+  if (variantData && Object.hasOwn(variantData, 'qc_variant_message')) {
+    return CommonQCVariantErrorTable(variantData['qc_variant_message'], isLoading(false, content), variantData['qc_variant_results'])
   } else {
     return hasError(error,isLoading(variantData == null || bioBankURL == null, content));
   }

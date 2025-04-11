@@ -10,7 +10,7 @@ export const isLoading = (isLoading: boolean, content: () => JSX.Element): JSX.E
   }
 }
 
-export const CommonLoadingMoreOrLess = (qc_variant_results: any) => {
+export const CommonLoadingMoreOrLess = (qc_variant_results) => {
   const [showMore, setShowMore] = useState(false);
 
   const toggleColumns = () => {
@@ -29,35 +29,43 @@ export const CommonLoadingMoreOrLess = (qc_variant_results: any) => {
     </div>
   </>
 }
+const isEmpty = (obj: object) => Object.keys(obj).length === 0;
 
-export const commonErrorTable = (qcVariantMessage: string | null | undefined, content: JSX.Element, qcVariant: any): JSX.Element => {
+export const CommonQCVariantErrorTable = (qcVariantMessage: string | null | undefined, content: JSX.Element, qcVariantResults: object | null): JSX.Element => {
   const tableStyle = {
     width: '100%',
     borderCollapse: 'collapse' as 'collapse',  // Correctly specifying the value type
     margin: '16px 0'
   };
 
+
   return <div>
     {(qcVariantMessage === null || qcVariantMessage === undefined) ? (
       content
     ) : (
       <div>
-        <b>Sorry!</b>: {qcVariantMessage}
-        <table style={tableStyle}>
-          <thead>
-            <tr>
-              <th>Variant</th>
-              <th>Failed filter</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>{qcVariant['variant']}</td>
-              <td>{qcVariant['failed_filter']}</td>
-            </tr>
-          </tbody>
-        </table>
-        <CommonLoadingMoreOrLess qc_variant_results={qcVariant} />
+        <b>Error!</b>: {qcVariantMessage}
+        {isEmpty(qcVariantResults) ? <></> :
+          (
+            <>
+              <table style={tableStyle}>
+                <thead>
+                  <tr>
+                    <th>Variant</th>
+                    <th>Failed filter</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>{qcVariantResults['variant']}</td>
+                    <td>{qcVariantResults['failed_filter']}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <CommonLoadingMoreOrLess qc_variant={qcVariantResults} />
+            </>
+          )
+        }
       </div>
     )}
   </div>
