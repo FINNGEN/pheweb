@@ -226,10 +226,10 @@ def api_variant(query):
         regions = jeeves.get_finemapped_regions(v)
         if variantdat is None:
             missing_variant = jeeves.get_missing_variants(v)
-            if missing_variant is not None:
+            if len(missing_variant) > 1 :
                 return jsonify(qc_variant_results = missing_variant, qc_variant_message = f"The variant {v} has been found in qc variant data!")
             else:
-                die(f"Sorry, I couldn't find the variant {v}")
+                return jsonify(qc_variant_results = {}, qc_variant_message = f"The variant {v} has not been found!")
         variantdat = (variantdat[0], [pheno.json_rep() for pheno in variantdat[1] if pheno.phenocode in use_phenos])
         if regions is not None:
             regions = [region for region in regions if region['phenocode'] in use_phenos]

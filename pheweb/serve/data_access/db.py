@@ -639,8 +639,6 @@ class MissingVariantDao(MissingVariantDB):
         for row in self.tabix_file.fetch(f"chr{variant.chr}", start=variant.pos - 1, end=variant.pos + 1):
             splited_row = row.split("\t")
             if len(header) == 26 & len(splited_row) == 26:
-            # if (split[header.index('variant')] == variant):
-            # variant = split[header.index('variant')]
                 json_obj = dict(zip(header, splited_row))
                 return json_obj
             else:

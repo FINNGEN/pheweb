@@ -590,7 +590,7 @@ class ServerJeeves(object):
         return self.finemapping_dao.get_regions(variant) if self.finemapping_dao is not None else []
 
     def get_missing_variants(self, variant: Variant):
-        return self.missing_variants_dao.get_missing_variants(variant) if self.missing_variants_dao is not None else []
+        return self.missing_variants_dao.get_missing_variants(variant) if self.missing_variants_dao is not None else None
 
     def get_UKBB_n(self, phenocode):
         return self.ukbb_dao.getNs(phenocode) if self.ukbb_dao is not None else None
