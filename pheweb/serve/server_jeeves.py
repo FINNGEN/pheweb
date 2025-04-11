@@ -71,7 +71,7 @@ class ServerJeeves(object):
         self.coding_dao = self.dbs_fact.get_coding_dao()
         self.chip_dao = self.dbs_fact.get_chip_dao()
         self.finemapping_dao = self.dbs_fact.get_finemapping_dao()
-        self.missing_variants_dao = self.dbs_fact.get_missing_variants_dao()
+        self.missing_variant_dao = self.dbs_fact.get_missing_variant_dao()
         self.knownhits_dao = self.dbs_fact.get_knownhits_dao()
         self.autoreporting_dao = self.dbs_fact.get_autoreporting_dao()
         self.colocalization = self.dbs_fact.get_colocalization_dao()
@@ -589,8 +589,8 @@ class ServerJeeves(object):
     def get_finemapped_regions(self, variant: Variant):
         return self.finemapping_dao.get_regions(variant) if self.finemapping_dao is not None else []
 
-    def get_missing_variants(self, variant: Variant):
-        return self.missing_variants_dao.get_missing_variants(variant) if self.missing_variants_dao is not None else None
+    def get_missing_variant(self, variant: Variant):
+        return self.missing_variant_dao.get_missing_variant(variant) if self.missing_variant_dao is not None else None
 
     def get_UKBB_n(self, phenocode):
         return self.ukbb_dao.getNs(phenocode) if self.ukbb_dao is not None else None

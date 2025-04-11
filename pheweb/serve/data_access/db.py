@@ -396,7 +396,7 @@ class CodingDB(object):
 
 class MissingVariantDB(object):
     @abc.abstractmethod
-    def get_missing_variants(self, variant: Variant):
+    def get_missing_variant(self, variant: Variant):
         """Retrieve missing variant data
         Returns: missing variant results
         """
@@ -634,7 +634,7 @@ class MissingVariantDao(MissingVariantDB):
         self.tabix_file = pysam.TabixFile(self.missing_variant_path, parser=None)
         self.headers = self.tabix_file.header[0].split("\t")
 
-    def get_missing_variants(self, variant: Variant):
+    def get_missing_variant(self, variant: Variant):
         header = [h.lower() for h in self.headers]
         for row in self.tabix_file.fetch(f"chr{variant.chr}", start=variant.pos - 1, end=variant.pos + 1):
             splited_row = row.split("\t")
@@ -2043,7 +2043,7 @@ class DataFactory(object):
     def get_gnomad_dao(self):
         return self.dao_impl["gnomad"]
     
-    def get_missing_variants_dao(self):
+    def get_missing_variant_dao(self):
         return self.dao_impl["missing_variants"]
 
     def get_lof_dao(self):

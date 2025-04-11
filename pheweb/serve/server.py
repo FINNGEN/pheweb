@@ -225,7 +225,7 @@ def api_variant(query):
         variantdat = jeeves.get_single_variant_data(v)
         regions = jeeves.get_finemapped_regions(v)
         if variantdat is None:
-            missing_variant = jeeves.get_missing_variants(v)
+            missing_variant = jeeves.get_missing_variant(v)
             if len(missing_variant) > 1 :
                 return jsonify(qc_variant_results = missing_variant, qc_variant_message = f"The variant {v} has been found in qc variant data!")
             else:
