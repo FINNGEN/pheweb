@@ -7,7 +7,7 @@ export const getVariant= (variant: Variant,
                           sink: (s: ModelVariant.Data) => void,
                           setError: (s: string | null) => void,
                           getURL = get) : void => {
-  const handler : Handler = (url : string) => (e : Error) => setError(`Loading variant ${variantToPheweb(variant)} ${e.message}`);
+  const handler : Handler = (url : string) => (e : Error) => setError(`${variantToPheweb(variant)} ${e.message}`);
   getURL(resolveURL(`/api/variant/${variantToPheweb(variant)}`), sink,handler)
 }
 
