@@ -13,7 +13,6 @@ import threading
 import pandas as pd
 import numpy as np
 import pymysql
-import imp
 from typing import List, Tuple, Dict, Union, Optional
 from ...file_utils import MatrixReader, common_filepaths
 from ...utils import get_phenolist, get_gene_tuples, pvalue_to_mlogp, get_use_phenocode_pheno_map
@@ -396,9 +395,9 @@ class CodingDB(object):
 
 class MissingVariantDB(object):
     @abc.abstractmethod
-    def get_missing_variant(self, variant: Variant):
-        """Retrieve missing variant data
-        Returns: missing variant results
+    def get_missing_variant(self, variant: Variant) -> Optional[Dict[str,Any]] | None:
+        """Retrieve missing qc variant data
+        Returns: missing variant results as dictionry containing Dict[str,Any] or None
         """
         return
 
@@ -638,12 +637,12 @@ class MissingVariantDao(MissingVariantDB):
         header = [h.lower() for h in self.headers]
         for row in self.tabix_file.fetch(f"chr{variant.chr}", start=variant.pos - 1, end=variant.pos + 1):
             splited_row = row.split("\t")
-            if len(header) == 26 & len(splited_row) == 26:
+            if len(header) == 26 and len(splited_row) == 26 and f"{splited_row[2].replace('chr', '')}" == f"{variant}":
                 json_obj = dict(zip(header, splited_row))
                 return json_obj
             else:
                 return None
-        return None,
+        return None
 
 
 class TabixGnomadDao(GnomadDB):
