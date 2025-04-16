@@ -167,38 +167,17 @@ const userInterface = {
           accessor: 'dataset1',
           formatter: 'textCellFormatter'
         },
-        {
-          title: 'locus id 1',
-          label: 'locus id 1',
-          accessor: 'hit1',
-          formatter: 'textCellFormatter'
-        },
-        {
-          title: 'locus id 2',
-          label: 'locus id 2',
-          accessor: 'hit2',
-          formatter: 'textCellFormatter'
-        },
+        { type : 'colocalizationLocus1' },
+        { type : 'colocalizationLocus2' },
         {
           title: 'Code',
           label: 'Code',
           accessor: 'trait2',
           formatter: 'textCellFormatter'
         },
-        {
-          title: 'clpp',
-          label: 'clpp',
-          accessor: 'clpp',
-          formatter: 'textCellFormatter'
-        },
-        {
-          title: 'clpa',
-          label: 'clpa',
-          accessor: 'clpa',
-          formatter: 'textCellFormatter'
-        },
-        {
-          title: 'cs1 size',
+        { type: 'colocalizationCLPP' },
+        { type: 'colocalizationCLPA' },
+        { title: 'cs1 size',
           label: 'cs1 size',
           accessor: 'cs1_size',
           formatter: 'textCellFormatter'
