@@ -1,0 +1,60 @@
+{ 
+  "import_pheweb.pheno.gnomad_filepath": "gs://r13-data-green/annotation/gnomad.v4.0.munged.sites_v1.tsv.bgz",
+  "import_pheweb.pheno.annotation_filepath": "gs://r13-data-green/annotation/R13_annotated_variants_v0.gz",
+  "import_pheweb.pheno.compress_manhattan": true,
+  "import_pheweb.docker": "eu.gcr.io/phewas-development/pheweb:ci-b88e27e28f78b5ad945a0980cabcc0c24f09b285",
+  "import_pheweb.summary_files": "gs://r13-data-green/regenie/demophenos/r13_demophenos_summary_stats_loc",
+  "import_pheweb.custom_json": "gs://r13-data-green/regenie/demophenos/r13_demophenos_n.json",
+  "import_pheweb.disk": 8000,
+  "import_pheweb.matrix.cpu": 8,
+  "import_pheweb.mem": 64,
+  "import_pheweb.file_affix": "",
+  "import_pheweb.sites_file": "gs://r13-data-green/annotation/R13_annotated_variants_v0.sites.tsv",
+  "import_pheweb.bed_file": "gs://r13-data-green/annotation/genes-b38-v39.no_PAR_Y.bed",
+  "import_pheweb.fields": [
+    "phenocode",
+    "category",
+    "category_index",
+    "name",
+    "num_cases",
+    "num_controls"
+  ],
+  "import_pheweb.output_url": [
+    "gs://r13-data-green/regenie/demophenos/pheweb"
+  ],
+  "import_pheweb.preprocess.chrom_column": "#chrom",
+  "import_pheweb.preprocess.pos_column": "pos",
+  "import_pheweb.preprocess.ref_column": "ref",
+  "import_pheweb.preprocess.alt_column": "alt",
+  "import_pheweb.preprocess.pval_column": "pval",
+  "import_pheweb.preprocess.mlogp_column": "mlogp",
+  "import_pheweb.preprocess.beta_column": "beta",
+  "import_pheweb.preprocess.se_beta_column": "sebeta",
+  "import_pheweb.preprocess.mem": 64,
+  "import_pheweb.matrix_longformat.mem": 16,
+  "import_pheweb.filter_sumstat.pheno_col": "#pheno",
+  "import_pheweb.filter_sumstat.columns": [
+    "#pheno",
+    "#chrom",
+    "pos",
+    "ref",
+    "alt",
+    "mlogp",
+    "beta",
+    "sebeta"
+  ],
+  "import_pheweb.pval_thres": 0.05,
+  "import_pheweb.matrix_longformat.out_columns": [
+    "#pheno",
+    "chr",
+    "pos",
+    "ref",
+    "alt",
+    "mlogp",
+    "beta",
+    "sebeta"
+  ],
+  "import_pheweb.matrix_longformat.cpu": 6,
+  "import_pheweb.generate_longformat_matrix": true,
+  "import_pheweb.matrix_longformat.batch_size": 16
+}
