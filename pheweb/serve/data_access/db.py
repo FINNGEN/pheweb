@@ -395,9 +395,9 @@ class CodingDB(object):
 
 class MissingVariantDB(object):
     @abc.abstractmethod
-    def get_missing_variant(self, variant: Variant) -> Optional[Dict[str,Any]] | None:
+    def get_missing_variant(self, variant: Variant) -> Optional[Dict[str,Any]]:
         """Retrieve missing qc variant data
-        Returns: missing variant results as dictionry containing Dict[str,Any] or None
+        Returns: missing variant results as dictionry containing Dict[str,Any]
         """
         return
 

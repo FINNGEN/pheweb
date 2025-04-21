@@ -1,28 +1,29 @@
 import os, sys
 import csv
 
-def get_files_list(input_path, output_path, skipped_file_path):
+def get_files_list(input_path, output_path):
     files = []
     for filename in os.listdir(input_path):
         file_path = os.path.join(input_path, filename)
-        if output_path not in file_path and skipped_file_path not in file_path and file_path.endswith('.tsv'):
+        if output_path not in file_path and file_path.endswith('.tsv'):
             files.append(file_path)
     return files
 
-def main_script(input_path, output_path, skipped_file_path):
-    filenames = get_files_list(input_path, output_path, skipped_file_path)
+def main_script(input_path, output_path):
+    filenames = get_files_list(input_path, output_path)
     filenames.sort()
 
     # write the array of objects to a csv file
     if os.path.exists(output_path):
         os.remove(output_path)  # Overwrite the file with an empty DataFrame
-        print(f"\nFile '{output_path}' is already exist, so it is cleared first to remove the old contents")
+        print(f"File '{output_path}' is already exist, so it is cleared first to remove the old contents")
 
     # read in the files
     with open(output_path,"wt",encoding="utf-8") as out_file:
         try:
             # output file header
             output_file_reader = csv.reader(out_file)
+            is_header_written = False
             # store the header for output file
             output_file_header = next(output_file_reader) if not os.path.getsize(output_path) == 0 else None
             for fname in filenames:
@@ -33,19 +34,56 @@ def main_script(input_path, output_path, skipped_file_path):
                     for row in reader:
                         if len(row) == 24:
                             # check if header is not present in output file
-                            if row[0] == 'Variant' and output_file_header is None:
+                            if row[0] == 'Variant' and is_header_written is False and output_file_header is None:
                                 row.insert(0, '#chrom')
                                 row.insert(1, 'pos')
                                 final_header = "\t".join(row)+"\n"
                                 out_file.write(final_header)
+                                is_header_written = True
+                            elif row[0] == 'Variant' and is_header_written is True and output_file_header is None:
+                                continue
                             else:
                                 splited_variant = row[0].split(":")
                                 row.insert(0, splited_variant[0])
                                 row.insert(1, splited_variant[1])
                                 line = f"\t".join(row)+"\n"
                                 out_file.write(line)
+                        elif len(row) == 29:
+                            if (row[25] == 'Variant'):
+                                continue
+                            else:
+                                new_row = []
+                                splited_variant = row[25].split(":")
+                                new_row.insert(0, splited_variant[0])
+                                new_row.insert(1, splited_variant[1])
+                                new_row.insert(2, row[25])
+                                new_row.insert(3, row[15])
+                                new_row.insert(4, row[11])
+                                new_row.insert(5, row[12])
+                                new_row.insert(6, row[16])
+                                new_row.insert(7, row[17])
+                                new_row.insert(8, 'NA')
+                                new_row.insert(9, row[19])
+                                new_row.insert(10, 'NA')
+                                new_row.insert(11, row[3])
+                                new_row.insert(12, row[4])
+                                new_row.insert(13, row[7])
+                                new_row.insert(14, row[8])
+                                new_row.insert(15, row[20])
+                                new_row.insert(16, 'NA')
+                                new_row.insert(17, 'NA')
+                                new_row.insert(18, 'NA')
+                                new_row.insert(19, row[22])
+                                new_row.insert(20, row[2])
+                                new_row.insert(21, row[24])
+                                new_row.insert(22, 'NA')
+                                new_row.insert(23, 'NA')
+                                new_row.insert(24, row[26])
+                                new_row.insert(25, row[28])
+                                line = f"\t".join(new_row)+"\n"
+                                out_file.write(line)
                         else:
-                            print(f"Sorry! The file {fname} and {row} does not consist on proper csv columns.")
+                            print(f"Sorry! The file {fname} and {row} does not consist on proper tsv columns.")
                             exit(1)
                 print(f"Finished!")
         except Exception as e:  # Catch any exception
@@ -56,8 +94,7 @@ if len(sys.argv) == 3:
     INPUT_FOLDER_PATH = sys.argv[1]
     if f"/{sys.argv[2]}".endswith('.tsv'):
         OUTPUT_FOLDER_PATH = INPUT_FOLDER_PATH + f"/{sys.argv[2]}"
-        SKIPPED_FILE_PATH = 'chrX.removed.add_LCR.add_XPAR.add_failed_filter_awk.tsv'
-        main_script(INPUT_FOLDER_PATH, OUTPUT_FOLDER_PATH, SKIPPED_FILE_PATH)
+        main_script(INPUT_FOLDER_PATH, OUTPUT_FOLDER_PATH)
     else:
         print("Sorry, output file name should be tsv. e-g string.tsv")
         exit(1)
