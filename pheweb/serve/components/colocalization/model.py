@@ -106,7 +106,9 @@ class VariantVector(JSONifiable, Kwargs):
                                                              iterable_validator=instance_of(typing.List)))
 
     def json_rep(self):
-        return self.__dict__
+        return { ** self.__dict__ , 'causal_variant_id' : self.rsid , 'variant' : self.rsid , 'pip1' : self.p1  , 'pip2' : self.p1 , 'count_cs' : self.cs1,
+                 'phenotype1' : self.trait1 , 'phenotype2' : self.trait2,
+                 'phenotype1_description' : self.trait1 ,  'phenotype2_description' : self.trait2  }
 
     def __repr__(self) -> typing.Dict[str, typing.Any]:
         return self.__dict__

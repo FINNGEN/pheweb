@@ -1723,9 +1723,17 @@ const pqtColumns = {
 export const cell_locus_id1 = (row : Row<Colocalization>) => row.original.locus_id1
 export const cell_locus_id2 = (row : Row<Colocalization>) => row.original.locus_id2
 export const cell_variant = (row : Row<CasualVariant>) => row.original.variant
+export const cell_rsid = (row : Row<CasualVariant>) => { console.log(row.original); return variantFromStr(row.original.rsid); }
 export const cell_quant1 = (row : Row<Colocalization>) => row.original.quant1
 
 const colocColumns = {
+  subColocalizationRSID :  { title: "Variant" , accessor: "causal_variant_id" , label: "Variant" , Cell : compose(cell_rsid,variantLink) },
+  subColocalizationVariant :  { title: "Variant" , accessor: "varid1" , label: "Variant" , Cell : compose(cell_variant,variantLink) },
+  subColocalizationPIP1 : { title: "pip1" , accessor: "pip1" , label:"PIP 1" , Cell : cellNumber },
+  subColocalizationPIP2 : { title: "pip1" , accessor: "pip2" , label:"PIP 2" , Cell : cellNumber },	
+  subColocalizationBeta1 : { title: "beta1" , accessor: "beta1" , label:"Beta 1" , Cell : cellNumber },
+  subColocalizationBeta2 : { title: "beta2" , accessor: "beta1" , label:"Beta 2" , Cell : cellNumber },	
+
   colocalizationCode : { title: "code", accessor: "phenotype2", label: "Code" },
   colocalizationDescription :  { title: "description", accessor: "phenotype2_description", label: "Description" },
   colocalizationSource: { title: "source", accessor: "source2_displayname", label: "Source", flexBasis: "max-content" },
@@ -1959,11 +1967,11 @@ export const colocalizationTable = [
 ]
 
 export const colocalizationSubtable = [
-  { title: "Variant" , accessor: "varid1" , label: "Variant" , Cell : compose(cell_variant,variantLink) },
-  { title: "pip1" , accessor: "pip1" , label:"PIP 1" , Cell : cellNumber },
-  { title: "beta1" , accessor: "beta1" , label:"Beta 1" , Cell : cellNumber },
-  { title: "pip2" , accessor: "pip2" , label:"PIP 2"  , Cell : cellNumber },
-  { title: "beta2" , accessor: "beta2" , label:"Beta 2"  , Cell : cellNumber }
+  colocColumns.subColocalizationVariant,
+  colocColumns.subColocalizationPIP1,
+  colocColumns.subColocalizationBeta1,
+  colocColumns.subColocalizationPIP2,
+  colocColumns.subColocalizationBeta2
 ]
 
 

@@ -21,8 +21,9 @@ export interface CasualVariant {
 }
 
 export interface Colocalization {
+  readonly dataset2: string,
   readonly colocalization_id : number,
-
+  
   readonly source1 : string,
   readonly source2 : string,
   readonly phenotype1 : string,

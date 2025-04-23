@@ -17,6 +17,7 @@ def hydrate_json(v):
             value = { key + '1': value for key, value in k.items() if key != "rsid" and key != "position"}
             value.update({ key + '2': None for key, value in k.items() if key != "rsid" and key != "position"})
             value["rsid"] = rsid
+            value["causal_variant_id"] = rsid
             value["position"] = k["position"]
             index[rsid] = value
 
@@ -26,9 +27,9 @@ def hydrate_json(v):
             value = index.get(rsid,{ key + '1': None for key, value in k.items() if key != "rsid" and key != "position"})
             value.update({ key + '2': value for key, value in k.items() if key != "rsid" and key != "position"})
             value["rsid"] = rsid
+            value["causal_variant_id"] = rsid
             value["position"] = k["position"]
             index[k["rsid"]] = value
-            
             
     for key,value in index.items():
         if ("p1" in value and value["p1"] is not None ) and ("p2" in value and value["p2"] is not None ):

@@ -98,13 +98,13 @@ const ColocalizationList = (props : Props) => {
 
     useEffect(() => {
         if (colocalization){
-            const arr = colocalization?.map(element => {return element.source2_displayname}); 
+            const arr = colocalization?.map(element => {return element.dataset2}); 
             const src = arr?.filter((item,index) => arr.indexOf(item) === index);
             setInitialSources(src);
             setSelectedSources(src);
             setColocFiltBySource;   
             setSourceSummaryData(colocalization?.map(
-                element => { return {source: element['source2_displayname'], beta: element['beta2'], sourceKey:  element['source2'] }}).sort()
+                element => { return {source: element['dataset2'], beta: element['beta2'], sourceKey:  element['source2'] }}).sort()
             );
 
         }  
@@ -112,7 +112,7 @@ const ColocalizationList = (props : Props) => {
 
     useEffect(() => {
         if (colocalization){
-            setColocFiltBySource(colocalization.filter(element => selectedSources.indexOf(element.source2_displayname) > -1));
+            setColocFiltBySource(colocalization.filter(element => selectedSources.indexOf(element.dataset2) > -1));
             selectedSources.length == initialSources.length ? setAllChecked(true) : setAllChecked(false);
             selectedSources.length == initialSources.length ? setSelectorText("All Selected") : setSelectorText(selectedSources.length + " Selected");
         }  
