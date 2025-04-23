@@ -19,6 +19,7 @@ generated-by-pheweb
 pheweb/serve/static/bundle.js
 config.py
 pheweb/serve/static/bundle.js
+/env
 
 # -*- mode: gitignore; -*-
 *~
