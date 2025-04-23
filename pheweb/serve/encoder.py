@@ -1,6 +1,7 @@
-from flask.json import JSONEncoder
 
-class FGJSONEncoder(JSONEncoder):
+from flask.json.provider import DefaultJSONProvider
+
+class FGJSONEncoder(DefaultJSONProvider):
     def __init__(self, *args, **kwargs):
         super().__init__(*args,**kwargs)
 
@@ -11,4 +12,4 @@ class FGJSONEncoder(JSONEncoder):
             pass
         else:
             return rep
-        return JSONEncoder.default(self, o)
+        return DefaultJSONProvider.default(self, o)
