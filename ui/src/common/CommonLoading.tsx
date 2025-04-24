@@ -31,7 +31,7 @@ export const CommonLoadingMoreOrLess = (qc_variant_results) => {
 }
 const isEmpty = (obj: object) => Object.keys(obj).length === 0;
 
-export const CommonQCVariantErrorTable = (qcVariantMessage: string | null | undefined, content: JSX.Element, qcVariantResults: object | null): JSX.Element => {
+export const handleQCVariantError = (qcVariantMessage: string | null | undefined, content: JSX.Element, qcVariantResults: object | null): JSX.Element => {
   const tableStyle = {
     width: '100%',
     borderCollapse: 'collapse' as 'collapse',  // Correctly specifying the value type

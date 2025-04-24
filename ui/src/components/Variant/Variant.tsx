@@ -4,7 +4,7 @@ import { Ensembl, Variant as VariantModel, Sumstats } from "./variantModel"
 import { getEnsembl, getVariant, getVariantPhenotype } from "./variantAPI"
 import { ConfigurationWindow } from "../Configuration/configurationModel"
 import {mustacheDiv, setPageTitle} from "../../common/commonUtilities"
-import { CommonQCVariantErrorTable, hasError, isLoading } from "../../common/CommonLoading"
+import { handleQCVariantError, hasError, isLoading } from "../../common/CommonLoading"
 import VariantTable from "./VariantTable"
 import VariantLocusZoom from "./VariantLocusZoom"
 import { numberFormatter, scientificFormatter } from "../../common/commonFormatter"
@@ -195,6 +195,7 @@ interface sortOptionsObj {
 export type RSIDMapping = { mapping : Ensembl.Mapping ,
   rsid : string };
 
+
 export const createVariantSummary = (variantData : VariantModel.Data) : VariantSummary | undefined => {
 
   const nearestGenes : string [] = variantData?.variant?.annotation?.annot?.nearest_gene?.split(",") || [];
@@ -215,8 +216,8 @@ export const createVariantSummary = (variantData : VariantModel.Data) : VariantS
     else { return undefined; }
   };
 
-  const mafs : number[] = variantData.results?.map(extractMAFS);
-  const numPhenotypesWithMaf = mafs?.filter(isNumber)
+  const mafs : number[] = variantData.results.map(extractMAFS);
+  const numPhenotypesWithMaf = mafs.filter(isNumber)
   const annot = variantData?.variant?.annotation?.annot
 
   let maf : MAF | undefined = undefined
@@ -230,14 +231,14 @@ export const createVariantSummary = (variantData : VariantModel.Data) : VariantS
     Object.keys(annot).filter((key) => key.indexOf('AF_') === 0 ).map(createIndex)
 
     const value = annot && 'AF' in annot ? annot['AF'] : undefined
-    if(numPhenotypesWithMaf && mafs && mafs?.length === numPhenotypesWithMaf?.length){
+    if(mafs.length === numPhenotypesWithMaf.length){
       maf = {
         value : scientificFormatter(value),
         start : scientificFormatter(Math.min(...mafs)) ,
         stop : scientificFormatter(Math.max(...mafs)) ,
         properties ,
         description : 'across all phenotype' }
-    } else if (numPhenotypesWithMaf) {
+    } else {
       //{v : variantData.variant }
       maf = {
         value : scientificFormatter(value),
@@ -308,13 +309,13 @@ export const createVariantSummary = (variantData : VariantModel.Data) : VariantS
   const acHom = variantData?.variant?.annotation?.annot
   const numberAlternativeHomozygotes = acHom && 'AC_Hom' in acHom && !isNaN(+acHom['AC_Hom'])?numberFormatter(+acHom['AC_Hom']/2):undefined
   const rsids : string[] = variantData?.variant?.annotation?.rsids?.split(',') || []
-  const chrom = variantData.variant?.chr
-  const pos = variantData.variant?.pos
+  const chrom = variantData.variant.chr
+  const pos = variantData.variant.pos
   const posStart = pos - 200000
   const posStop = pos + 200000
 
-  const ref = variantData.variant?.ref
-  const alt = variantData.variant?.alt
+  const ref = variantData.variant.ref
+  const alt = variantData.variant.alt
 
   const variantSummary : VariantSummary = {
     nearestGenes ,
@@ -486,41 +487,45 @@ const Variant = (props : Props) => {
       setVariantDataPlots(variantData);
     }
     // set the biobank urls
-    if(variantData && bioBankURL == null) {
+    if(variantData && bioBankURL == null && 'results' in variantData ) {
       const summary : VariantSummary | undefined = createVariantSummary(variantData);
       generateBioBankURL(parsedVariant, summary).then(setBioBankURL);
     }
+    if(variantData && Object.hasOwn(variantData, 'qc_variant_results') && Object.keys(variantData['qc_variant_results']).length > 0) {
+      setError('This variant was QCd out from the imputation panel!')
+    }
   },[variantData, setBioBankURL,bioBankURL]);
 
+  const isQCVariantFound = () =>  variantData && Object.hasOwn(variantData, 'qc_variant_results') &&  Object.keys(variantData['qc_variant_results']).length > 0 && variantData['qc_variant_results'].constructor === Object;
   // lazy load
-  const content = () =>
-  <VariantContextProvider>
+  const content = () => <VariantContextProvider>
     <React.Fragment>
       <div>
         <div className="variant-info col-xs-12">
-          {'results' in variantData &&  mustacheDiv(banner,bannerData(variantData, bioBankURL))}
+          {'results' in variantData && mustacheDiv(banner,bannerData(variantData, bioBankURL))}
         </div>
-        {'results' in variantData &&  <ReactTooltip className={'variant-tooltip'} multiline={true} html={true} />}
+        {'results' in variantData && <ReactTooltip className={'variant-tooltip'} multiline={true} html={true} />}
       </div>
 
       <div>
-        {'results' in variantData &&  <VariantLavaaPlot variantData={variantDataPlots}/>}
+      {'results' in variantData && <VariantLavaaPlot variantData={variantDataPlots}/>}
       </div>
 
       <div>
-      {'results' in variantData &&  <VariantLocusZoom variantData={variantDataPlots}/>}
+        {'results' in variantData && <VariantLocusZoom variantData={variantDataPlots}/>}
       </div>
 
       <div>
-      {'results' in variantData && <VariantTable variantData={variantData} getSumstats={getSumstats} activePage={activePage} />}
+        {'results' in variantData && <VariantTable variantData={variantData} getSumstats={getSumstats} activePage={activePage} />}
       </div>
     </React.Fragment>
   </VariantContextProvider>
-  if (variantData && Object.hasOwn(variantData, 'qc_variant_message')) {
-    return CommonQCVariantErrorTable(variantData['qc_variant_message'], isLoading(false, content), variantData['qc_variant_results'])
-  } else {
-    return hasError(error,isLoading(variantData == null || bioBankURL == null, content));
-  }
+    if (isQCVariantFound()) {
+      return handleQCVariantError(error, isLoading(false, content), variantData['qc_variant_results'])
+    } else {
+      return hasError(error,isLoading(variantData == null || bioBankURL == null, content));
+    }
+
 }
 
 export default Variant;
