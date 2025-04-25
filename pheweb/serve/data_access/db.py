@@ -13,7 +13,6 @@ import threading
 import pandas as pd
 import numpy as np
 import pymysql
-import imp
 from typing import List, Tuple, Dict, Union, Optional
 from ...file_utils import MatrixReader, common_filepaths
 from ...utils import get_phenolist, get_gene_tuples, pvalue_to_mlogp, get_use_phenocode_pheno_map
@@ -394,6 +393,13 @@ class CodingDB(object):
         """
         return
 
+class MissingVariantDB(object):
+    @abc.abstractmethod
+    def get_missing_variant(self, variant: Variant) -> Optional[Dict[str,Any]]:
+        """Retrieve missing qc variant data
+        Returns: missing variant results as dictionry containing Dict[str,Any]
+        """
+        return
 
 class ChipDB(object):
     @abc.abstractmethod
@@ -620,6 +626,23 @@ class ElasticGnomadDao(GnomadDB):
             }
             for anno in annotation["hits"]["hits"]
         ]
+
+class MissingVariantDao(MissingVariantDB):
+    def __init__(self, missing_variant_path):
+        self.missing_variant_path = missing_variant_path
+        self.tabix_file = pysam.TabixFile(self.missing_variant_path, parser=None)
+        self.headers = self.tabix_file.header[0].split("\t")
+
+    def get_missing_variant(self, variant: Variant):
+        header = [h.lower() for h in self.headers]
+        for row in self.tabix_file.fetch(f"chr{variant.chr}", start=variant.pos - 1, end=variant.pos + 1):
+            splited_row = row.split("\t")
+            if splited_row is not None and splited_row[self.headers.index("Variant")].replace('chr', '') == f"{variant}":
+                json_obj = dict(zip(header, splited_row))
+                return json_obj
+            else:
+                return None
+        return None
 
 
 class TabixGnomadDao(GnomadDB):
@@ -2018,6 +2041,9 @@ class DataFactory(object):
 
     def get_gnomad_dao(self):
         return self.dao_impl["gnomad"]
+    
+    def get_missing_variant_dao(self):
+        return self.dao_impl["missing_variants"]
 
     def get_lof_dao(self):
         return self.dao_impl["lof"] if "lof" in self.dao_impl else None

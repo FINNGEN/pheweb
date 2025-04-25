@@ -71,6 +71,7 @@ class ServerJeeves(object):
         self.coding_dao = self.dbs_fact.get_coding_dao()
         self.chip_dao = self.dbs_fact.get_chip_dao()
         self.finemapping_dao = self.dbs_fact.get_finemapping_dao()
+        self.missing_variant_dao = self.dbs_fact.get_missing_variant_dao()
         self.knownhits_dao = self.dbs_fact.get_knownhits_dao()
         self.autoreporting_dao = self.dbs_fact.get_autoreporting_dao()
         self.colocalization = self.dbs_fact.get_colocalization_dao()
@@ -306,6 +307,16 @@ class ServerJeeves(object):
         ## chaining variants like these retain all the existing annotations.
         r = self.result_dao.get_single_variant_results(variant)
 
+        # if matrix is of longformat append rest of the phenotypes for which summary stats were filtered
+        if r is not None and self.result_dao.longformat:
+            r = self.result_dao.append_filt_phenos(r)
+        v_annot = None
+        if r is not None:
+            v_annot = self.annotation_dao.get_single_variant_annotations(r[0], self.conf.anno_cpra)
+
+        # add rsids from varaint annotation if wasn't available in the merged sumstat matrix
+        if v_annot is not None and self.result_dao.longformat and "rsids" in v_annot is None:
+            v_annot.add_annotation("rsids", v_annot.annotation['annot']['rsid'])
 
         if r is not None:
             # if matrix is of longformat append rest of the phenotypes for which summary stats were filtered
@@ -577,6 +588,9 @@ class ServerJeeves(object):
 
     def get_finemapped_regions(self, variant: Variant):
         return self.finemapping_dao.get_regions(variant) if self.finemapping_dao is not None else []
+
+    def get_missing_variant(self, variant: Variant):
+        return self.missing_variant_dao.get_missing_variant(variant) if self.missing_variant_dao is not None else None
 
     def get_UKBB_n(self, phenocode):
         return self.ukbb_dao.getNs(phenocode) if self.ukbb_dao is not None else None

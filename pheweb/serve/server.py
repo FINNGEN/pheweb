@@ -224,7 +224,11 @@ def api_variant(query):
         v = Variant(q[0].replace('X', '23'),q[1],q[2], q[3])
         variantdat = jeeves.get_single_variant_data(v)
         if variantdat is None:
-            die("Sorry, I couldn't find the variant {}".format(query))
+            missing_variant = jeeves.get_missing_variant(v)
+            if missing_variant is None:
+                die("Sorry, I couldn't find the variant {}".format(query))
+            else:
+                return { "qc_variant_results" : missing_variant}
         variantdat = (variantdat[0], [pheno.json_rep() for pheno in variantdat[1] if pheno.phenocode in use_phenos])
         regions = jeeves.get_finemapped_regions(v)
         if regions is not None:
