@@ -4,7 +4,7 @@ import { Ensembl, Variant as VariantModel, Sumstats } from "./variantModel"
 import { getEnsembl, getVariant, getVariantPhenotype } from "./variantAPI"
 import { ConfigurationWindow } from "../Configuration/configurationModel"
 import {mustacheDiv, setPageTitle} from "../../common/commonUtilities"
-import { hasError, isLoading } from "../../common/CommonLoading"
+import { handleQCVariantError, hasError, isLoading } from "../../common/CommonLoading"
 import VariantTable from "./VariantTable"
 import VariantLocusZoom from "./VariantLocusZoom"
 import { numberFormatter, scientificFormatter } from "../../common/commonFormatter"
@@ -487,36 +487,44 @@ const Variant = (props : Props) => {
       setVariantDataPlots(variantData);
     }
     // set the biobank urls
-    if(variantData && bioBankURL == null) {
+    if(variantData && bioBankURL == null && 'results' in variantData ) {
       const summary : VariantSummary | undefined = createVariantSummary(variantData);
       generateBioBankURL(parsedVariant, summary).then(setBioBankURL);
     }
+    if(variantData && Object.hasOwn(variantData, 'qc_variant_results') && Object.keys(variantData['qc_variant_results']).length > 0) {
+      setError('This variant was QCd out from the imputation panel!')
+    }
   },[variantData, setBioBankURL,bioBankURL]);
 
+  const isQCVariantFound = () =>  variantData && Object.hasOwn(variantData, 'qc_variant_results') &&  Object.keys(variantData['qc_variant_results']).length > 0 && variantData['qc_variant_results'].constructor === Object;
   // lazy load
   const content = () => <VariantContextProvider>
     <React.Fragment>
       <div>
         <div className="variant-info col-xs-12">
-          {mustacheDiv(banner,bannerData(variantData, bioBankURL))}
+          {'results' in variantData && mustacheDiv(banner,bannerData(variantData, bioBankURL))}
         </div>
-        <ReactTooltip className={'variant-tooltip'} multiline={true} html={true} />
+        {'results' in variantData && <ReactTooltip className={'variant-tooltip'} multiline={true} html={true} />}
       </div>
 
       <div>
-        <VariantLavaaPlot variantData={variantDataPlots}/>
+      {'results' in variantData && <VariantLavaaPlot variantData={variantDataPlots}/>}
       </div>
 
       <div>
-        <VariantLocusZoom variantData={variantDataPlots}/>
+        {'results' in variantData && <VariantLocusZoom variantData={variantDataPlots}/>}
       </div>
 
       <div>
-        <VariantTable variantData={variantData} getSumstats={getSumstats} activePage={activePage} />
+        {'results' in variantData && <VariantTable variantData={variantData} getSumstats={getSumstats} activePage={activePage} />}
       </div>
     </React.Fragment>
   </VariantContextProvider>
-  return hasError(error,isLoading(variantData == null || bioBankURL == null,content));
+    if (isQCVariantFound()) {
+      return handleQCVariantError(error, isLoading(false, content), variantData['qc_variant_results'])
+    } else {
+      return hasError(error,isLoading(variantData == null || bioBankURL == null, content));
+    }
 
 }
 
