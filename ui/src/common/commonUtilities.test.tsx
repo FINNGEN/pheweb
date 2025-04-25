@@ -1,6 +1,16 @@
 /* eslint-env jest */
 // https://stackoverflow.com/questions/59833839/swap-one-typescript-type-with-another-inside-an-object
-import { defaultEmptyArray, compose, flatten, get, mustacheDiv, mustacheSpan, mustacheText, isNonEmptyArray } from './commonUtilities';
+import {
+    defaultEmptyArray,
+    compose,
+    flatten,
+    get,
+    mustacheDiv,
+    mustacheSpan,
+    mustacheText,
+    isNonEmptyArray,
+    capitalizeFirstLetter
+} from './commonUtilities';
 import { configure, mount } from "enzyme";
 import { v4 } from "uuid";
 
@@ -8,6 +18,15 @@ import Adapter from "enzyme-adapter-react-16";
 import { variantToPheweb } from './commonModel';
 
 configure({ adapter: new Adapter() });
+
+test("capitalizeFirstLetter", () => {
+    expect(capitalizeFirstLetter("hello")).toBe("Hello")
+    expect(capitalizeFirstLetter("world")).toBe("World")
+    expect(capitalizeFirstLetter("")).toBe("")
+    expect(capitalizeFirstLetter(null)).toBe("")
+    expect(capitalizeFirstLetter("test")).toBe("test")
+});
+
 
 test("get search results : trivial", () => {
   expect(

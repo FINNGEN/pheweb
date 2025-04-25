@@ -9,7 +9,7 @@ import {
 import { GeneContext, GeneState } from "./GeneContext";
 import commonLoading from "../../common/CommonLoading";
 import { resolveURL } from "../Configuration/configurationModel";
-import { add_dashboard_button } from "../Region/LocusZoom/RegionLocus";
+import { add_dashboard_button } from "../Region/LocusZoom/regionLocusZoomHook";
 import { clinvar_layout } from "../Region/LocusZoom/RegionLayouts";
 import { ConfigurationWindow } from "../Configuration/configurationModel";
 import { Plot } from "locuszoom";

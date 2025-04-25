@@ -8,7 +8,7 @@ import RegionContextProvider from "./RegionContext";
 import ColocalizationContextProvider from "./Colocalization/ColocalizationContext";
 import RegionSelection from "./RegionSelection";
 import { RouteComponentProps } from "react-router-dom";
-import { RegionParams } from "./RegionModel";
+import { RegionParams } from "./regionModel";
 import {setPageTitle} from "../../common/commonUtilities";
 
 type Props = RouteComponentProps<RegionParams>;
@@ -21,7 +21,7 @@ const Region = (props : Props) => {
     return (
         <RegionContextProvider params={props.match.params}>
             <ColocalizationContextProvider params={props.match.params}>
-                <div className="container-fluid"  style={{ width : "95%"}}>
+                <div id="b85c6b35-146e-438d-a38a-2a80cd3b46f6" className="container-fluid"  style={{ width : "95%"}}>
                     <RegionBanner/>
                     <RegionSummary/>
                     <RegionSelection/>

@@ -14,7 +14,7 @@ pipeline {
 	}
 
     stage('Staging') {
-            when { expression { env.GIT_BRANCH == 'origin/master' } }
+            when { expression { env.GIT_BRANCH == 'origin/master'  || env.GIT_BRANCH =~ /.*-test$/ } }
 	    steps {
                 withCredentials([file(credentialsId: 'jenkins-sa', variable: 'gcp')]) {
 		    sh '''helm plugin list | grep gcs || helm plugin install https://github.com/hayorov/helm-gcs.git --version 0.4.0'''

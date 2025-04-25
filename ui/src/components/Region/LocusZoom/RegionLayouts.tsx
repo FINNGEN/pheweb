@@ -1,5 +1,7 @@
 import { Layout, LayoutDataLayersEntity, Layouts } from "locuszoom";
-import { RegionModel, Region } from '../RegionModel';
+import { RegionModel, Summary } from '../regionModel';
+import Region = Summary.Region;
+
 import { ConfigurationWindow } from "../../Configuration/configurationModel";
 
 declare let window: ConfigurationWindow;
@@ -88,7 +90,7 @@ const assoc_fields_quantitative : string[] = lz_configuration?.assoc_fields?.qua
 	default_assoc_fields_common_quantitative;
 
 export const assoc_fields: (region: Region) => string[] = (region: Region) =>
-	region?.pheno?.is_binary == false? assoc_fields_quantitative : assoc_fields_binary
+	region?.phenotype?.is_binary == false? assoc_fields_quantitative : assoc_fields_binary
 
 export const region_layout: (region: Region) => Layout = (region: Region) => {
 	const width : number = Math.round(window.innerWidth * 0.95);
@@ -108,7 +110,7 @@ export const region_layout: (region: Region) => Layout = (region: Region) => {
 		"dashboard": { "components": [{	type: 'link',
 						title: 'Go to Manhattan Plot',
 						text:' Manhattan Plot',
-						url: '/pheno/' + region.pheno.phenocode	},
+						url: '/pheno/' + region.phenotype.phenocode	},
 					      { type: 'move',
 						text: '<<',
 						title: 'Shift view 1/4 to the left',
@@ -145,7 +147,7 @@ export const region_layout: (region: Region) => Layout = (region: Region) => {
 
 export const association_layout: (region: Region) => Layout = (region: Region) => {
 	return { "id": "association",
-		 "title": { "text": application.browser || "pheweb", "x": 55, "y": 30 },
+		 "title": { "text": application.browser || "Association", "x": 55, "y": 30 },
 		 "proportional_height": 0.2,
 		 "min_width": 400,
 		 "min_height": 100,
@@ -310,10 +312,9 @@ export const association_layout: (region: Region) => Layout = (region: Region) =
 				  tooltip: { closable: false,
 					     "show": { "or": ["highlighted", "selected"] },
 					     "hide": { "and": ["unhighlighted", "unselected"] },
-					     html: tooltip_html.replace('PHENO', region.pheno.phenostring || region.pheno.phenocode) },
+					     html: tooltip_html.replace('PHENO', region.phenotype.phenostring || region.phenotype.phenocode) },
 				  "x_axis": { "field": "association:position", "axis": 1 },
 				  "y_axis": { "axis": 1,
-				  /*          "field": "association:pvalue|neglog10_or_100", */
 				   	      "field": "association:mlogp",
 					      "floor": 0,
 					      "upper_buffer": 0.1,

@@ -1,7 +1,7 @@
 import React, { useContext } from "react";
 import { GeneContext, GeneState } from "./GeneContext";
 import { ConfigurationWindow } from "../Configuration/configurationModel";
-import { GeneColocalizations as GeneColocalizationsModel } from "./geneModel";
+import { GeneColocalizations as GeneColocalizationsModel   } from './geneModel';
 import { Column } from "react-table";
 import { createTableColumns, geneColocTableColumns, phenoColocSubTable } from "../../common/commonTableColumn";
 import CommonDownloadTable, { DownloadTableProps } from "../../common/CommonDownloadTable";
@@ -17,6 +17,8 @@ const tableColumns : Column<GeneColocalizationsModel.Row>[] = createTableColumns
 const tableProperties = {
   defaultPageSize : 10
 }
+
+const tableSubColumns = createTableColumns(userInterface?.gene?.geneColocalizations?.subTableColumns) || phenoColocSubTable
 
 const defaultSorted = [{
   id: 'n_colocs',
@@ -35,20 +37,20 @@ export const hasError = (errorMessage : string | null | undefined, content:  JSX
 
 const colocalizationSubTable = ( row :  ReactTable ) : JSX.Element | any => {
   const value = row.original.disease_colocalizations;
-  const pageSize = Math.min(10, Object.values(value).length);  
+  const pageSize = Math.min(10, Object.values(value).length);
   return (
     <div style={{ padding: "20px" }}>
-        <ReactTable  
-          data={value}  
-          columns={phenoColocSubTable} 
+        <ReactTable
+          data={value}
+          columns={tableSubColumns}
           defaultPageSize={pageSize}
-        /> 
+        />
     </div>
   )
 }
 
 const GeneColocs = (props) => {
-  
+
   const { gene } = useContext<Partial<GeneState>>(GeneContext);
   const filename=`${gene}_disease_colocs.tsv`
 
@@ -58,7 +60,7 @@ const GeneColocs = (props) => {
     dataToTableRows,
     tableColumns ,
     tableProperties,
-    defaultSorted, 
+    defaultSorted,
     subComponent: colocalizationSubTable
   }
 

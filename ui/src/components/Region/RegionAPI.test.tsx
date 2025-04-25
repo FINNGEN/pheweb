@@ -1,4 +1,4 @@
-import { RegionParams } from "./RegionModel";
+import { RegionParams } from "./regionModel";
 import { Locus } from "../../common/commonModel";
 import { region_url } from "./RegionAPI";
 
