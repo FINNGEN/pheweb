@@ -6,14 +6,14 @@ interface Props {}
 const RegionBanner =  (props : Props) => {
     const { region } = useContext<Partial<RegionState>>(RegionContext);
     if(region) {
-        const {pheno} = region;
+        const {phenotype} = region;
 
         return (<div className="row">
             <div className="col-xs-12">
             { /* RegionBanner */ }
-                <h1>{pheno && pheno.phenostring} </h1>
+                <h1>{phenotype && phenotype.phenostring} </h1>
                     <p>
-                        <a href={`https://risteys.finregistry.fi/phenocode/${pheno.phenocode}`}
+                        <a href={`https://risteys.finregistry.fi/phenocode/${phenotype.phenocode}`}
                            rel="noopener noreferrer"
 			   target="_blank">RISTEYS</a>
                     </p>

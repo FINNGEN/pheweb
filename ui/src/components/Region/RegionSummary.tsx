@@ -7,11 +7,11 @@ interface Props {}
 const RegionSummary =  (props : Props) => {
     const { region } = useContext<Partial<RegionState>>(RegionContext);
     if(region) {
-        const { pheno } = region;
+        const { phenotype } = region;
         return (<div className="row">
             <div className="pheno-info col-xs-12">
-                <p><b>{pheno.num_cases}</b> cases, <b>{pheno.num_controls}</b> controls</p>
-                <p>{pheno.category}</p>
+                <p><b>{phenotype.num_cases}</b> cases, <b>{phenotype.num_controls}</b> controls</p>
+                <p>{phenotype.category}</p>
                 { <RegionSelectFinemapping/> }
             </div>
         </div>)

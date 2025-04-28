@@ -1,21 +1,22 @@
 import React, { Fragment, useContext, useEffect, useState } from "react";
-import { cond_fm_regions_types, CondFMRegions, layout_types, Params } from "../RegionModel";
+import {CondFMRegions, layout_types, Params, RegionSummary, RegionSummaryType} from "../RegionModel";
 import { RegionContext, RegionState } from "../RegionContext";
 import LeadVariants from './LeadVariants'
+import region from "../Region";
 
 
-const Component = (cond_fm_regions : cond_fm_regions_types, dataSources , plot) => {
+const Component = (region_summary : RegionSummary[], dataSources , plot) => {
     const finemapping_methods : layout_types[] =
-      Array.from( (cond_fm_regions || [])
+      Array.from( (region_summary || [])
         .filter(r => r.type === 'susie' || r.type === 'finemap')
         .reduce((acc,value) => {acc.add(value.type); return acc; } ,
           new Set<layout_types>()))
 
     const [selectedMethod, setSelectedMethod] = useState<layout_types | undefined>(finemapping_methods.length > 0?finemapping_methods[0]:undefined);
-    const cond_signals : CondFMRegions | undefined = (cond_fm_regions || []).find(region => region.type === 'conditional')
+    const cond_signals : RegionSummary | undefined = (region_summary || []).find(region => region.type === 'conditional')
     const n_cond_signals = cond_signals?.n_signals || 0
     const [conditionalIndex, setConditionalIndex] = useState<number | undefined>(n_cond_signals > 0?0:undefined);
-    const finemap : CondFMRegions | undefined = (cond_fm_regions || []).find(region => region.type === 'finemap' || region.type === 'susie');
+    const finemap : RegionSummary | undefined = (region_summary || []).find(region => region.type === 'finemap' || region.type === 'susie');
     const finemappedCondRegion: string = `${finemap.chr}:${finemap.start}-${finemap.end}` || null;
 
     const [showLeadvars, setShowLeadvars] = useState< {
@@ -61,24 +62,24 @@ const Component = (cond_fm_regions : cond_fm_regions_types, dataSources , plot) 
         dataSources && plot &&  setSelectedMethod(s); 
     }
           
-    const signalLabel = (region : CondFMRegions) => {
+    const signalLabel = (regionSummary : RegionSummary, i : number) => {
         return (
             <Fragment>
             <div className="flex-row-container">
             <div className="arrow-container">
-                <div className={`arrow ${showLeadvars[region.type] ? "up" : "down"}`} onClick={() => setShowLeadvars(prev => ({...prev, [region.type]: !showLeadvars[region.type]})) }></div>
+                <div className={`arrow ${showLeadvars[regionSummary.type] ? "up" : "down"}`} onClick={() => setShowLeadvars(prev => ({...prev, [regionSummary.type]: !showLeadvars[regionSummary.type]})) }></div>
             </div>
             {
-                region.type !== 'finemap' ?
+                regionSummary.type !== 'finemap' ?
                 <Fragment>
-                    <span>{region.n_signals} {region.type} signals </span><br/>
+                    <span>{regionSummary.n_signals} {regionSummary.type} signals </span><br/>
                 </Fragment> 
                 : <Fragment>
-                    <span>{region.n_signals} {region.type} signals (prob. {region.n_signals_prob.toFixed(3)})</span>
+                    <span>{regionSummary.n_signals} {regionSummary.type} signals (prob. {regionSummary.n_signals_prob.toFixed(3)})</span>
                 </Fragment>
             }
             </div> 
-            <LeadVariants type={region.type} show={showLeadvars[region.type]}/> 
+            <LeadVariants regionSummary={regionSummary} show={showLeadvars[regionSummary.type]} index={i}/>
             </Fragment>
             )
         }
@@ -96,7 +97,7 @@ const Component = (cond_fm_regions : cond_fm_regions_types, dataSources , plot) 
     <Fragment>
           
           <span>Finemapping/conditional region: <b>{finemappedCondRegion}</b></span>
-          { cond_fm_regions.map((region,i) => <div key={i}>{  signalLabel(region) }</div>)}
+          { region_summary.map((region,i) => <div key={i}>{  signalLabel(region, i) }</div>)}
 
           {n_cond_signals > 0 ?
             <Fragment>
@@ -134,15 +135,14 @@ const Component = (cond_fm_regions : cond_fm_regions_types, dataSources , plot) 
     return summaryHTML
 }
 
-
 export const RegionSelectFinemapping = () => {
 
-    const { region : {cond_fm_regions} = {} ,
+    const { region : {region_summary} = {} ,
             locusZoomContext : { dataSources , plot } = {} } = useContext<Partial<RegionState>>(RegionContext);
 
     let summaryHTML;
-    if (cond_fm_regions && cond_fm_regions.length > 0)
-    { summaryHTML = Component(cond_fm_regions, dataSources , plot) }
+    if (region_summary && region_summary.length > 0)
+    { summaryHTML = Component(region_summary, dataSources , plot) }
     else
     { summaryHTML = <Fragment/> }
 
