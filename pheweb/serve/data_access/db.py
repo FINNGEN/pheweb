@@ -37,6 +37,7 @@ from ..components.chip.fs_storage import FileChipDAO
 from ..components.coding.fs_storage import FileCodingDAO
 from pathlib import Path
 from .drug_db import DrugDB, DrugDao
+from .db_util import load_mysql_authentication, create_connection
 from ..components.autocomplete.tries_dao import AutocompleterTriesDAO
 from ..components.autocomplete.sqlite_dao import AutocompleterSqliteDAO
 from ..components.autocomplete.mysql_dao import AutocompleterMYSQLDAO
@@ -1746,17 +1747,11 @@ class FineMappingMySQLDao(FineMappingDB):
     def __init__(self, authentication_file, base_paths):
         self.authentication_file = authentication_file
         self.base_paths = base_paths
-        auth_module = imp.load_source("mysql_auth", self.authentication_file)
-        self.user = getattr(auth_module, "mysql")["user"]
-        self.password = getattr(auth_module, "mysql")["password"]
-        self.host = getattr(auth_module, "mysql")["host"]
-        self.db = getattr(auth_module, "mysql")["db"]
-        self.release = getattr(auth_module, "mysql")["release"]
-
+        load_mysql_authentication(self,
+                                  self.authentication_file)
+        
     def get_connection(self):
-        return pymysql.connect(
-            host=self.host, user=self.user, password=self.password, db=self.db
-        )
+        return create_connection(self)
 
     def get_max_region(self, phenocode, chr, start, end):
         conn = self.get_connection()

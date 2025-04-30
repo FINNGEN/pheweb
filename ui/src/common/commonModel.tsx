@@ -26,6 +26,10 @@ export interface Colocalization {
   
   readonly source1 : string,
   readonly source2 : string,
+  readonly phenotype?: string,
+  readonly trait1?: string,
+  readonly trait2?: string,
+  
   readonly phenotype1 : string,
   readonly phenotype1_description : string,
   readonly phenotype2 : string,
