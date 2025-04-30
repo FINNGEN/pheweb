@@ -20,6 +20,7 @@ export interface CasualVariant {
   readonly membership_cs : number;
 }
 
+
 export interface Colocalization {
   readonly dataset2: string,
   readonly colocalization_id : number,
