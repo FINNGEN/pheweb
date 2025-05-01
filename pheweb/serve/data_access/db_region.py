@@ -57,14 +57,14 @@ class MYSQLRegionDAO(DBRegionDAO, MysqlDAO):
                           FROM {table} WHERE 
                           phenotype = %s and
                           region_chromosome = %s and
-                          region_start >= %s and %s >= region_end"""
+                          (region_end >= %s and region_start <= %s)"""
                 parameters = [phenotype,
                               region.chromosome,
                               region.start,
-                              region.stop]    
+                              region.stop]
                 cursor.execute(sql, parameters)
                 return cursor.fetchall()
-    
+
     def get_region_summary(self, phenotype: str, region: Region):
         with closing(self.get_connection()) as conn:
             with conn.cursor(pymysql.cursors.DictCursor) as cursor:
@@ -74,11 +74,11 @@ class MYSQLRegionDAO(DBRegionDAO, MysqlDAO):
                           FROM {table} WHERE 
                           phenotype = %s and
                           region_chromosome = %s and
-                          region_start >= %s and %s >= region_end"""
+                          (region_end >= %s and region_start <= %s)"""
                 parameters = [phenotype,
                               region.chromosome,
                               region.start,
-                              region.stop]    
+                              region.stop]
                 cursor.execute(sql, parameters)
                 rows = cursor.fetchall()
                 return rows
