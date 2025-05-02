@@ -1730,9 +1730,9 @@ const colocColumns = {
   subColocalizationRSID :  { title: "Variant" , accessor: "causal_variant_id" , label: "Variant" , Cell : compose(cell_rsid,variantLink) },
   subColocalizationVariant :  { title: "Variant" , accessor: "varid1" , label: "Variant" , Cell : compose(cell_variant,variantLink) },
   subColocalizationPIP1 : { title: "pip1" , accessor: "pip1" , label:"PIP 1" , Cell : cellNumber },
-  subColocalizationPIP2 : { title: "pip1" , accessor: "pip2" , label:"PIP 2" , Cell : cellNumber },	
+  subColocalizationPIP2 : { title: "pip2" , accessor: "pip2" , label:"PIP 2" , Cell : cellNumber },	
   subColocalizationBeta1 : { title: "beta1" , accessor: "beta1" , label:"Beta 1" , Cell : cellNumber },
-  subColocalizationBeta2 : { title: "beta2" , accessor: "beta1" , label:"Beta 2" , Cell : cellNumber },	
+  subColocalizationBeta2 : { title: "beta2" , accessor: "beta2" , label:"Beta 2" , Cell : cellNumber },	
 
   colocalizationCode : { title: "code", accessor: "phenotype2", label: "Code" },
   colocalizationDescription :  { title: "description", accessor: "phenotype2_description", label: "Description" },
