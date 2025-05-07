@@ -146,7 +146,23 @@ gcloud sql databases describe ${DB_NAME} --instance=${DB_INSTANCE}  # check data
 
 Set the service account currently being used
 
-`
+### Setup QC Variant data
+
+Go to pheweb project:
+
+1. Download qc variant file from `gs://r13-data/panel_variant_qc/` and copy the entire folder in your desired path.
+1. Run the scripts with command ```python3 scripts/import_missing_qc_variants_files.py '/mnt/disks/data/data-directory/path/to/qc_variant_folder' 'combined_sorted_output_file.tsv'``` it will generate a combine tsv file with provide name `combined_sorted_output_file.tsv`. Note: you can also replace the `combined_sorted_output_file.tsv` with name of your choice.
+2. Convert the tsv to gz file with the command:
+   -  `cat <(head -n1 combined_sorted_output_file.tsv) <(tail -n+2 combined_sorted_output_file.tsv|sort -k1,1V -k2,2g)|bgzip > combined_sorted_output_file.tsv.gz`
+3. Then convert gz to tabix file with the command:
+   -  `tabix -s1 -e 2 -b2 combined_sorted_output_file.tsv.gz`
+4. Copy the path of file generated in step 2 and Modify the config.py file with add the following lines
+```{ "missing_variants": { "MissingVariantDao": { "missing_variant_path": "/mnt/disks/data/data-directory/variant_qc/panel_variant_qc/combined_sorted_output_file.tsv" }}}``` replace the `missing_variant_path` with your qc variants file path
+5. In the pheweb repo
+   - run the package install with command `pip install .`
+6. Start the pheweb server
+
+
 # database service account
 export SERVICE_ACCOUNT=$(gcloud sql instances describe ${DB_INSTANCE} | yq .serviceAccountEmailAddress)
 `
