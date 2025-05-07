@@ -76,7 +76,7 @@ setup(
         'latex~=0.7.0',
         'attrs',
         'pandas~=2.2.3',
-        'SQLAlchemy~=1.3.19',
+        'SQLAlchemy~=1.4.54',
         'PyMySQL>=0.10.1',
         'mysqlclient>=2.0.1',
         'smart_open[gcs]~=7.1.0',
