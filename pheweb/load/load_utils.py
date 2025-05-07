@@ -9,7 +9,6 @@ import time
 import os
 import subprocess
 import multiprocessing
-import blist
 import bisect
 import random
 import itertools
@@ -136,7 +135,7 @@ class MaxPriorityQueue:
     priorities must be comparable (duh).
     '''
     def __init__(self):
-        self._q = blist.blist() # a sorted list of [(priority, idx), ...]
+        self._q = list() # a sorted list of [(priority, idx), ...]
         self._items = {} # maps idx -> item
         self._counter = itertools.count()
 
