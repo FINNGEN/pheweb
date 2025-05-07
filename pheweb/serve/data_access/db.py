@@ -389,13 +389,6 @@ class ResultDB(object):
         Returns None if variant does not exist.
         """
 
-    def append_filt_phenos(
-        self, varaint_phenores: Tuple[Variant, List[PhenoResult]]
-    ) -> Tuple[Variant, List[PhenoResult]]:
-        """For a single variant appends phenotypes filtered in longformat matrix.
-           Populates missing summary stats with none.
-        """
-    
     def get_variant_and_nearest_genes_pheno_results(self, non_filtered_variant, variant, v_annot, result_dao, gnomad_dao, ukbb_matrixdao, variant_phenotype) -> Tuple[Variant, List[PhenoResult]]:
         """
         Returns tuple with variant and phenoresults.
@@ -1008,15 +1001,23 @@ class TabixResultDao(ResultDB):
 
         return top
 
+class TabixResultFiltDao(ResultDB):
+    def __init__(self, phenos, matrix_path, columns):
+        self.matrix_path = matrix_path
+        self.columns = columns
+        self.header = gzip.open(self.matrix_path,'rt').readline().split("\t")
+        self.header_offset = {item.split('\n')[0]: i for i, item in enumerate(self.header)}
+        self.phenos = [(None, 0)]
+        self.pheno_map = phenos(0)
+        self.longformat = True
+
     def append_filt_phenos(
         self, varaint_phenores: Tuple[Variant, PhenoResult]
     ) -> Tuple[Variant, PhenoResult]:
         '''For a single variant append phenotypes filtered in longformat matrix.
-           Populates missing summary stats with none'''
-
+        Populates missing summary stats with none'''
         phenolist = varaint_phenores[1]
         var_phenocodes = [r.phenocode for r in phenolist]
-
         for phenotype in self.pheno_map:
             if phenotype not in var_phenocodes:
                 pr = PhenoResult(
@@ -1044,14 +1045,16 @@ class TabixResultDao(ResultDB):
                     else "NA",
                 )
                 phenolist.append(pr)
-
         return (varaint_phenores[0], phenolist)
 
-    def get_variant_and_nearest_genes_pheno_results(self, non_filtered_variant, variant, v_annot, result_dao, gnomad_dao, ukbb_matrixdao, variant_phenotype):
+    def get_variant_and_nearest_genes_pheno_results(self, non_filtered_variant, variant, v_annot, gnomad_dao, ukbb_matrixdao, variant_phenotype):
+        """
+        Returns tuple with variant and phenoresults.
+        """
         if non_filtered_variant is not None:
             # if matrix is of longformat append rest of the phenotypes for which summary stats were filtered
-            if result_dao.longformat:
-                non_filtered_variant = result_dao.append_filt_phenos(non_filtered_variant)
+            if self.longformat:
+                non_filtered_variant = self.append_filt_phenos(non_filtered_variant)
             if v_annot is None:
                 ## no annotations found even results were found. Should not happen except if the results and annotation files are not in sync
                 print("Warning! Variant results for " + str(non_filtered_variant[0]) + " found but no basic annotation!")
@@ -1060,7 +1063,7 @@ class TabixResultDao(ResultDB):
             else:
                 var = v_annot
             # add rsids from variant annotation if wasn't available in the merged sumstat matrix
-            if result_dao.longformat and var.rsids is None:
+            if self.longformat and var.rsids is None:
                 var.add_annotation("rsids", var.annotation['annot']['rsid'])
             gnomad = gnomad_dao.get_variant_annotations([var])
             if len(gnomad) == 1:
@@ -1080,15 +1083,6 @@ class TabixResultDao(ResultDB):
         else:
             return None
 
-class TabixResultFiltDao(ResultDB):
-    def __init__(self, phenos, matrix_path, columns):
-        self.matrix_path = matrix_path
-        self.columns = columns
-        self.header = gzip.open(self.matrix_path,'rt').readline().split("\t")
-        self.header_offset = {item.split('\n')[0]: i for i, item in enumerate(self.header)}
-        self.phenos = [(None, 0)]
-        self.pheno_map = phenos(0)
-        self.longformat = True
 
 class ExternalMatrixResultDao(ExternalResultDB):
     def __init__(self, matrix, metadatafile):
