@@ -395,7 +395,11 @@ class ResultDB(object):
         """For a single variant appends phenotypes filtered in longformat matrix.
            Populates missing summary stats with none.
         """
-
+    
+    def get_variant_and_nearest_genes_pheno_results(self, non_filtered_variant, variant, v_annot, result_dao, gnomad_dao, ukbb_matrixdao, variant_phenotype) -> Tuple[Variant, List[PhenoResult]]:
+        """
+        Returns tuple with variant and phenoresults.
+        """
 
 class CodingDB(object):
     @abc.abstractmethod
@@ -1043,7 +1047,40 @@ class TabixResultDao(ResultDB):
 
         return (varaint_phenores[0], phenolist)
 
-class TabixResultFiltDao(TabixResultDao):
+    def get_variant_and_nearest_genes_pheno_results(self, non_filtered_variant, variant, v_annot, result_dao, gnomad_dao, ukbb_matrixdao, variant_phenotype):
+        if non_filtered_variant is not None:
+            # if matrix is of longformat append rest of the phenotypes for which summary stats were filtered
+            if result_dao.longformat:
+                non_filtered_variant = result_dao.append_filt_phenos(non_filtered_variant)
+            if v_annot is None:
+                ## no annotations found even results were found. Should not happen except if the results and annotation files are not in sync
+                print("Warning! Variant results for " + str(non_filtered_variant[0]) + " found but no basic annotation!")
+                var = non_filtered_variant[0]
+                var.add_annotation("annot", {})
+            else:
+                var = v_annot
+            # add rsids from variant annotation if wasn't available in the merged sumstat matrix
+            if result_dao.longformat and var.rsids is None:
+                var.add_annotation("rsids", var.annotation['annot']['rsid'])
+            gnomad = gnomad_dao.get_variant_annotations([var])
+            if len(gnomad) == 1:
+                var.add_annotation('gnomad', gnomad[0]['var_data'])
+            phenos = [p.phenocode for p in non_filtered_variant[1]]
+            ukb = ukbb_matrixdao.get_multiphenoresults( {variant:phenos} )
+            phenotype = variant_phenotype.get_variant_phenotype(int(variant.chr),int(variant.pos),variant.ref,variant.alt) if variant_phenotype else dict()
+            for res in non_filtered_variant[1]:
+                if res.phenocode in phenotype:
+                    res.set_suplementary(phenotype[res.phenocode])
+            if var in ukb:
+                ukb_idx = { u:u for u in ukb[var] }
+                for res in non_filtered_variant[1]:
+                    if res.phenocode in ukb_idx:
+                        res.add_matching_result('ukbb',ukb[var][res.phenocode])
+            return var,non_filtered_variant[1]
+        else:
+            return None
+
+class TabixResultFiltDao(ResultDB):
     def __init__(self, phenos, matrix_path, columns):
         self.matrix_path = matrix_path
         self.columns = columns
