@@ -1,6 +1,9 @@
 import typing
-from sqlalchemy import Table, MetaData, create_engine, Column, Integer, String, Float, Text, ForeignKey, Index
-from sqlalchemy.orm import mapper, composite, relationship
+from sqlalchemy import Table, MetaData, create_engine, Column, Integer, String, Float, Text, ForeignKey, Index # type: ignore
+from sqlalchemy.orm import composite, relationship # type: ignore
+from sqlalchemy.orm import registry # type: ignore
+
+mapper_registry = registry()
 
 from pheweb.serve.components.colocalization.finngen_common_data_model.genomics import Variant, Locus
 #from pheweb.serve.components.colocalization.finngen_common_data_model.colocalization import CausalVariant, Colocalization
@@ -98,7 +101,7 @@ class ColocalizationMapping():
                                                                           causal_variant_table.c.variant_chromosome,
                                                                           causal_variant_table.c.colocalization_id)
 
-        causal_variant_mapper = mapper(self.model.CausalVariant,
+        causal_variant_mapper = mapper_registry.map_imperatively(self.model.CausalVariant,
                                        causal_variant_table,
                                        properties = { 'variant': composite(NullableVariant,
                                                                            causal_variant_table.c.variant_chromosome,
@@ -107,7 +110,7 @@ class ColocalizationMapping():
                                                                            causal_variant_table.c.variant_alt)
                                        })
 
-        cluster_coordinate_mapper = mapper(self.model.Colocalization,
+        cluster_coordinate_mapper = mapper_registry.map_imperatively(self.model.Colocalization,
                                            colocalization_table,
                                            properties={'locus_id1': composite(Variant,
                                                                               colocalization_table.c.locus_id1_chromosome,

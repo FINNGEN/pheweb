@@ -222,19 +222,19 @@ def api_variant(query):
         if len(q)!=4:
             die("Malformed variant query. Use chr-pos-ref-alt")
         v = Variant(q[0].replace('X', '23'),q[1],q[2], q[3])
-        variantdat = jeeves.get_single_variant_data(v)
-        if variantdat is None:
+        variant_data = jeeves.get_single_variant_data(v)
+        if variant_data is None:
             missing_variant = jeeves.get_missing_variant(v)
             if missing_variant is None:
                 die("Sorry, I couldn't find the variant {}".format(query))
             else:
                 return { "qc_variant_results" : missing_variant}
-        variantdat = (variantdat[0], [pheno.json_rep() for pheno in variantdat[1] if pheno.phenocode in use_phenos])
+        variant_data = (variant_data[0], [pheno.json_rep() for pheno in variant_data[1] if pheno.phenocode in use_phenos])
         regions = jeeves.get_finemapped_regions(v)
         if regions is not None:
             regions = [region for region in regions if region['phenocode'] in use_phenos]
-        result = { "variant" : variantdat[0] ,
-                   "results" : variantdat[1] ,
+        result = { "variant" : variant_data[0],
+                   "results" : variant_data[1],
                    "regions" : regions }
         return result
     except Exception as exc:
