@@ -2044,7 +2044,7 @@ class DataFactory(object):
         return self.dao_impl["gnomad"]
     
     def get_missing_variant_dao(self):
-        return self.dao_impl["missing_variants"]
+        return self.dao_impl["missing_variants"] if "missing_variants" in self.dao_impl else None
 
     def get_lof_dao(self):
         return self.dao_impl["lof"] if "lof" in self.dao_impl else None
