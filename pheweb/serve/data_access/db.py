@@ -825,7 +825,7 @@ class TabixResultDao(ResultDB):
         self.matrix_path = matrix_path
         self.pheno_map = phenos(0)
         self.columns = columns
-        self.header = gzip.open(self.matrix_path,'rt').readline().split("\t")
+        self.header = gzip.open(self.matrix_path, "rt").readline().split("\t")
         self.phenos = [
             (h.split("@")[1], p_col_idx)
             for p_col_idx, h in enumerate(self.header)
@@ -849,14 +849,15 @@ class TabixResultDao(ResultDB):
         chrom = "23" if chrom == "X" else chrom
         try:
             tabix_iter = pysam.TabixFile(self.matrix_path, parser=None).fetch(
-                chrom, start - 1, end)
+                chrom, start - 1, end
+            )
         except ValueError:
             print(
                 "No variants in the given range. {}:{}-{}".format(chrom, start - 1, end)
             )
             return []
 
-        ind = [i for i,e in enumerate(self.header) if 'chr' in e][0]
+        ind = [i for i, e in enumerate(self.header) if "chr" in e][0]
         result = {}
         for variant_row in tabix_iter:
             split = variant_row.split("\t")
@@ -867,27 +868,22 @@ class TabixResultDao(ResultDB):
                 .replace("Y", "24")
                 .replace("MT", "25")
             )
-            v = Variant(chrom, split[ind+1], split[ind+2], split[ind+3])
+            v = Variant(chrom, split[ind + 1], split[ind + 2], split[ind + 3])
             for pheno in self.phenos:
                 tabix_common = TabixResultCommonDao(self.phenos)
-                phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval =  tabix_common.getVariantCommonFields(
-                    split, pheno, self.header_offset, self.columns
+                phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval = (
+                    tabix_common.getVariantCommonFields(
+                        split, pheno, self.header_offset, self.columns
+                    )
                 )
                 if mlogp is not None and mlogp is not "" and mlogp != "NA":
                     if pval is None:
                         pval = str(math.pow(10, -1 * float(mlogp)))
                 if pval is not None and not pval == "" and not pval == "NA":
                     pr = tabix_common.getCommonPhenoResults(
-                        phenotype,
-                        pval,
-                        beta,
-                        sebeta,
-                        maf,
-                        maf_case,
-                        maf_control,
-                        mlogp
+                        phenotype, pval, beta, sebeta, maf, maf_case, maf_control, mlogp
                     )
-                    pr = extend_pheno_result(pr,pheno[1],self.header_offset,split)
+                    pr = extend_pheno_result(pr, pheno[1], self.header_offset, split)
                     if v in result:
                         result[v].append(pr)
                     else:
@@ -934,14 +930,16 @@ class TabixResultDao(ResultDB):
         top = defaultdict(lambda: defaultdict(dict))
 
         n_vars = 0
-        ind = [i for i,e in enumerate(self.header) if 'chr' in e][0]
+        ind = [i for i, e in enumerate(self.header) if "chr" in e][0]
         for variant_row in tabix_iter:
             n_vars = n_vars + 1
             split = variant_row.split("\t")
             for pheno in self.phenos:
                 tabix_common = TabixResultCommonDao(self.phenos)
-                phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval =  tabix_common.getVariantCommonFields(
-                    split, pheno, self.header_offset, self.columns
+                phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval = (
+                    tabix_common.getVariantCommonFields(
+                        split, pheno, self.header_offset, self.columns
+                    )
                 )
                 # Pick the smaller of values.  First try using mlog which
                 # maybe absent in earlier releases.  In this case fall back
@@ -959,21 +957,15 @@ class TabixResultDao(ResultDB):
                         pval is not ""
                         and pval != "NA"
                         and (
-                            phenotype not in top or (float(pval)) < top[phenotype][1].pval
+                            phenotype not in top
+                            or (float(pval)) < top[phenotype][1].pval
                         )
                     )
                 if is_less_than:
                     pr = tabix_common.getCommonPhenoResults(
-                        phenotype,
-                        pval,
-                        beta,
-                        sebeta,
-                        maf,
-                        maf_case,
-                        maf_control,
-                        mlogp
+                        phenotype, pval, beta, sebeta, maf, maf_case, maf_control, mlogp
                     )
-                    v = Variant(chrom, split[ind+1], split[ind+2], split[ind+3])
+                    v = Variant(chrom, split[ind + 1], split[ind + 2], split[ind + 3])
                     top[phenotype] = (v, pr)
 
         print(str(n_vars) + " variants iterated")
@@ -990,12 +982,15 @@ class TabixResultDao(ResultDB):
 
         return top
 
+
 class TabixResultFiltDao(ResultDB):
     def __init__(self, phenos, matrix_path, columns):
         self.matrix_path = matrix_path
         self.columns = columns
-        self.header = gzip.open(self.matrix_path,'rt').readline().split("\t")
-        self.header_offset = {item.split('\n')[0]: i for i, item in enumerate(self.header)}
+        self.header = gzip.open(self.matrix_path, "rt").readline().split("\t")
+        self.header_offset = {
+            item.split("\n")[0]: i for i, item in enumerate(self.header)
+        }
         self.phenos = [(None, 0)]
         self.pheno_map = phenos(0)
         self.longformat = True
@@ -1003,23 +998,23 @@ class TabixResultFiltDao(ResultDB):
     def append_filt_phenos(
         self, varaint_phenores: Tuple[Variant, PhenoResult]
     ) -> Tuple[Variant, PhenoResult]:
-        '''For a single variant append phenotypes filtered in longformat matrix.
-           Populates missing summary stats with none'''
+        """For a single variant append phenotypes filtered in longformat matrix.
+        Populates missing summary stats with none"""
         phenolist = varaint_phenores[1]
         var_phenocodes = [r.phenocode for r in phenolist]
         for phenotype in self.pheno_map:
             if phenotype not in var_phenocodes:
                 tabix_common = TabixResultCommonDao(self.phenos)
                 pr = tabix_common.getCommonPhenoResults(
-                        phenotype,
-                        'NA', # pval
-                        None, # beta
-                        None, # sebeta
-                        None, # maf
-                        None, # maf_case
-                        None, # maf_control
-                        'NA', # mlogp
-                    )
+                    phenotype,
+                    "NA",  # pval
+                    None,  # beta
+                    None,  # sebeta
+                    None,  # maf
+                    None,  # maf_case
+                    None,  # maf_control
+                    "NA",  # mlogp
+                )
                 phenolist.append(pr)
         return (varaint_phenores[0], phenolist)
 
