@@ -742,6 +742,83 @@ def extend_pheno_result(pr : PhenoResult,
             setattr(pr, key, row[record_offset+offset])
     return pr
 
+class TabixResultCommonDao():
+    def __init__(self, phenos):
+        self.pheno_map = phenos(0)
+
+    def getVariantCommonFields(self, split, pheno, header_offset, columns):
+        phenotype = pheno[0] if pheno[0] else split[header_offset[columns["pheno"]]]
+        beta = split[pheno[1] + header_offset[columns["beta"]]]
+        sebeta = (
+            split[pheno[1] + header_offset[columns["sebeta"]]]
+            if "sebeta" in columns
+            else None
+        )
+        maf = (
+            split[pheno[1] + self.header_offset[columns["maf"]]]
+            if "maf" in columns
+            else None
+        )
+        maf_case = (
+            split[pheno[1] + header_offset[columns["maf_cases"]]]
+            if "maf_cases" in columns
+            else None
+        )
+        maf_control = (
+            split[pheno[1] + header_offset[columns["maf_controls"]]]
+            if "maf_controls" in columns
+            else None
+        )
+        mlogp = (
+            split[pheno[1] + header_offset[columns["mlogp"]]]
+            if "mlogp" in columns
+            else None
+        )
+        pval = (
+            split[pheno[1] + header_offset[columns["pval"]]]
+            if "pval" in columns
+            else None
+        )
+        return phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval
+
+    def getCommonPhenoResults(
+        self, phenotype, pval, beta, sebeta, maf, maf_case, maf_control, mlogp
+    ):
+        pr = PhenoResult(
+            phenotype,
+            self.pheno_map[phenotype]["phenostring"],
+            self.pheno_map[phenotype]["category"],
+            (
+                self.pheno_map[phenotype]["category_index"]
+                if "category_index" in self.pheno_map[phenotype]
+                else None
+            ),
+            pval,
+            beta,
+            sebeta,
+            maf,
+            maf_case,
+            maf_control,
+            (
+                self.pheno_map[phenotype]["num_cases"]
+                if "num_cases" in self.pheno_map[phenotype]
+                else 0
+            ),
+            (
+                self.pheno_map[phenotype]["num_controls"]
+                if "num_controls" in self.pheno_map[phenotype]
+                else 0
+            ),
+            mlogp,
+            (
+                self.pheno_map[phenotype]["num_samples"]
+                if "num_samples" in self.pheno_map[phenotype]
+                else "NA"
+            ),
+        )
+        return pr
+
+
 class TabixResultDao(ResultDB):
     def __init__(self, phenos, matrix_path, columns):
 
