@@ -743,8 +743,8 @@ def extend_pheno_result(pr : PhenoResult,
     return pr
 
 class TabixResultCommonDao():
-    def __init__(self, phenos):
-        self.pheno_map = phenos(0)
+    def __init__(self, pheno_map):
+        self.pheno_map = pheno_map
 
     def getVariantCommonFields(self, split, pheno, header_offset, columns):
         phenotype = pheno[0] if pheno[0] else split[header_offset[columns["pheno"]]]
@@ -843,7 +843,7 @@ class TabixResultDao(ResultDB):
             p = s[1] if len(s) > 1 else None
 
         self.longformat = False
-        self.tabix_common_dao = TabixResultCommonDao(self.phenos)
+        self.tabix_common_dao = TabixResultCommonDao(self.pheno_map)
 
     def get_variant_results_range(self, chrom, start, end):
 
@@ -993,7 +993,7 @@ class TabixResultFiltDao(ResultDB):
         self.phenos = [(None, 0)]
         self.pheno_map = phenos(0)
         self.longformat = True
-        self.tabix_common_dao = TabixResultCommonDao(self.phenos)
+        self.tabix_common_dao = TabixResultCommonDao(self.pheno_map)
 
     def append_filt_phenos(
         self, varaint_phenores: Tuple[Variant, PhenoResult]
