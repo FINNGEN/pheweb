@@ -869,65 +869,23 @@ class TabixResultDao(ResultDB):
             )
             v = Variant(chrom, split[ind+1], split[ind+2], split[ind+3])
             for pheno in self.phenos:
-                phenotype = pheno[0] if pheno[0] else split[self.header_offset[self.columns['pheno']]]
-                beta = split[pheno[1] + self.header_offset[self.columns['beta']]]
-                sebeta = (
-                    split[pheno[1] + self.header_offset[self.columns['sebeta']]]
-                    if "sebeta" in self.columns
-                    else None
-                )
-                maf = (
-                    split[pheno[1] + self.header_offset[self.columns['maf']]]
-                    if 'maf' in self.columns
-                    else None
-                )
-                maf_case = (
-                    split[pheno[1] + self.header_offset[self.columns['maf_cases']]]
-                    if 'maf_cases' in self.columns
-                    else None
-                )
-                maf_control = (
-                    split[pheno[1] + self.header_offset[self.columns['maf_controls']]]
-                    if 'maf_controls' in self.columns
-                    else None
-                )
-                mlogp = (
-                    split[pheno[1] + self.header_offset[self.columns['mlogp']]]
-                    if 'mlogp' in self.columns
-                    else None
-                )
-                pval = (
-                    split[pheno[1] + self.header_offset[self.columns['pval']]]
-                    if 'pval' in self.columns
-                    else None
+                tabix_common = TabixResultCommonDao(self.phenos)
+                phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval =  tabix_common.getVariantCommonFields(
+                    split, pheno, self.header_offset, self.columns
                 )
                 if mlogp is not None and mlogp is not "" and mlogp != "NA":
                     if pval is None:
                         pval = str(math.pow(10, -1 * float(mlogp)))
                 if pval is not None and not pval == "" and not pval == "NA":
-                    pr = PhenoResult(
+                    pr = tabix_common.getCommonPhenoResults(
                         phenotype,
-                        self.pheno_map[phenotype]["phenostring"],
-                        self.pheno_map[phenotype]["category"],
-                        self.pheno_map[phenotype]["category_index"]
-                        if "category_index" in self.pheno_map[phenotype]
-                        else None,
                         pval,
                         beta,
                         sebeta,
                         maf,
                         maf_case,
                         maf_control,
-                        self.pheno_map[phenotype]["num_cases"]
-                        if "num_cases" in self.pheno_map[phenotype]
-                        else 0,
-                        self.pheno_map[phenotype]["num_controls"]
-                        if "num_controls" in self.pheno_map[phenotype]
-                        else 0,
-                        mlogp,
-                        self.pheno_map[phenotype]["num_samples"]
-                        if "num_samples" in self.pheno_map[phenotype]
-                        else "NA",
+                        mlogp
                     )
                     pr = extend_pheno_result(pr,pheno[1],self.header_offset,split)
                     if v in result:
@@ -981,37 +939,9 @@ class TabixResultDao(ResultDB):
             n_vars = n_vars + 1
             split = variant_row.split("\t")
             for pheno in self.phenos:
-                phenotype = pheno[0] if pheno[0] else split[self.header_offset[self.columns['pheno']]]
-                beta = split[pheno[1] + self.header_offset[self.columns['beta']]]
-                sebeta = (
-                    split[pheno[1] + self.header_offset[self.columns['sebeta']]]
-                    if "sebeta" in self.columns
-                    else None
-                )
-                maf = (
-                    split[pheno[1] + self.header_offset[self.columns['maf']]]
-                    if 'maf' in self.columns
-                    else None
-                )
-                maf_case = (
-                    split[pheno[1] + self.header_offset[self.columns['maf_cases']]]
-                    if 'maf_cases' in self.columns
-                    else None
-                )
-                maf_control = (
-                    split[pheno[1] + self.header_offset[self.columns['maf_controls']]]
-                    if 'maf_controls' in self.columns
-                    else None
-                )
-                mlogp = (
-                    split[pheno[1] + self.header_offset[self.columns['mlogp']]]
-                    if 'mlogp' in self.columns
-                    else None
-                )
-                pval = (
-                    split[pheno[1] + self.header_offset[self.columns['pval']]]
-                    if 'pval' in self.columns
-                    else None
+                tabix_common = TabixResultCommonDao(self.phenos)
+                phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval =  tabix_common.getVariantCommonFields(
+                    split, pheno, self.header_offset, self.columns
                 )
                 # Pick the smaller of values.  First try using mlog which
                 # maybe absent in earlier releases.  In this case fall back
@@ -1033,29 +963,15 @@ class TabixResultDao(ResultDB):
                         )
                     )
                 if is_less_than:
-                    pr = PhenoResult(
+                    pr = tabix_common.getCommonPhenoResults(
                         phenotype,
-                        self.pheno_map[phenotype]["phenostring"],
-                        self.pheno_map[phenotype]["category"],
-                        self.pheno_map[phenotype]["category_index"]
-                        if "category_index" in self.pheno_map[phenotype]
-                        else None,
                         pval,
                         beta,
                         sebeta,
                         maf,
                         maf_case,
                         maf_control,
-                        self.pheno_map[phenotype]["num_cases"]
-                        if "num_cases" in self.pheno_map[phenotype]
-                        else 0,
-                        self.pheno_map[phenotype]["num_controls"]
-                        if "num_controls" in self.pheno_map[phenotype]
-                        else 0,
-                        mlogp,
-                        self.pheno_map[phenotype]["num_samples"]
-                        if "num_samples" in self.pheno_map[phenotype]
-                        else "NA",
+                        mlogp
                     )
                     v = Variant(chrom, split[ind+1], split[ind+2], split[ind+3])
                     top[phenotype] = (v, pr)
