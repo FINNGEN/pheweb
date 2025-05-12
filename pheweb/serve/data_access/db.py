@@ -843,6 +843,7 @@ class TabixResultDao(ResultDB):
             p = s[1] if len(s) > 1 else None
 
         self.longformat = False
+        self.tabix_common_dao = TabixResultCommonDao(self.phenos)
 
     def get_variant_results_range(self, chrom, start, end):
 
@@ -870,9 +871,8 @@ class TabixResultDao(ResultDB):
             )
             v = Variant(chrom, split[ind + 1], split[ind + 2], split[ind + 3])
             for pheno in self.phenos:
-                tabix_common = TabixResultCommonDao(self.phenos)
                 phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval = (
-                    tabix_common.getVariantCommonFields(
+                    self.tabix_common_dao.getVariantCommonFields(
                         split, pheno, self.header_offset, self.columns
                     )
                 )
@@ -880,7 +880,7 @@ class TabixResultDao(ResultDB):
                     if pval is None:
                         pval = str(math.pow(10, -1 * float(mlogp)))
                 if pval is not None and not pval == "" and not pval == "NA":
-                    pr = tabix_common.getCommonPhenoResults(
+                    pr = self.tabix_common_dao.getCommonPhenoResults(
                         phenotype, pval, beta, sebeta, maf, maf_case, maf_control, mlogp
                     )
                     pr = extend_pheno_result(pr, pheno[1], self.header_offset, split)
@@ -935,9 +935,8 @@ class TabixResultDao(ResultDB):
             n_vars = n_vars + 1
             split = variant_row.split("\t")
             for pheno in self.phenos:
-                tabix_common = TabixResultCommonDao(self.phenos)
                 phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval = (
-                    tabix_common.getVariantCommonFields(
+                    self.tabix_common_dao.getVariantCommonFields(
                         split, pheno, self.header_offset, self.columns
                     )
                 )
@@ -962,7 +961,7 @@ class TabixResultDao(ResultDB):
                         )
                     )
                 if is_less_than:
-                    pr = tabix_common.getCommonPhenoResults(
+                    pr = self.tabix_common_dao.getCommonPhenoResults(
                         phenotype, pval, beta, sebeta, maf, maf_case, maf_control, mlogp
                     )
                     v = Variant(chrom, split[ind + 1], split[ind + 2], split[ind + 3])
