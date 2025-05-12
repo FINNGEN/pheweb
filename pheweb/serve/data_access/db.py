@@ -389,10 +389,6 @@ class ResultDB(object):
         Returns None if variant does not exist.
         """
 
-    def get_variant_and_nearest_genes_pheno_results(self, non_filtered_variant, variant, v_annot, result_dao, gnomad_dao, ukbb_matrixdao, variant_phenotype) -> Tuple[Variant, List[PhenoResult]]:
-        """
-        Returns tuple with variant and phenoresults.
-        """
 
 class CodingDB(object):
     @abc.abstractmethod
