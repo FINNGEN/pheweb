@@ -994,6 +994,7 @@ class TabixResultFiltDao(ResultDB):
         self.phenos = [(None, 0)]
         self.pheno_map = phenos(0)
         self.longformat = True
+        self.tabix_common_dao = TabixResultCommonDao(self.phenos)
 
     def append_filt_phenos(
         self, varaint_phenores: Tuple[Variant, PhenoResult]
@@ -1004,8 +1005,7 @@ class TabixResultFiltDao(ResultDB):
         var_phenocodes = [r.phenocode for r in phenolist]
         for phenotype in self.pheno_map:
             if phenotype not in var_phenocodes:
-                tabix_common = TabixResultCommonDao(self.phenos)
-                pr = tabix_common.getCommonPhenoResults(
+                pr = self.tabix_common_dao.getCommonPhenoResults(
                     phenotype,
                     "NA",  # pval
                     None,  # beta
