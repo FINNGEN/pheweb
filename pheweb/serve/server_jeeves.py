@@ -313,9 +313,9 @@ class ServerJeeves(object):
         
     def get_single_variant_data(self, variant: Variant)-> Tuple[Variant, List[PhenoResult]]:
         """ Returns tuple with variant and phenoresults."""
-        rough_variant = self.result_dao.get_single_variant_results(variant)
-        variant_annotation = self.get_variant_annotation(rough_variant)
-        variant_nearest_genes = self.result_dao.get_variant_and_nearest_genes_pheno_results(rough_variant, variant, variant_annotation, self.gnomad_dao, self.ukbb_matrixdao, self.variant_phenotype)
+        single_variant = self.result_dao.get_single_variant_results(variant)
+        variant_annotation = self.get_variant_annotation(single_variant)
+        variant_nearest_genes = self.result_dao.get_variant_and_nearest_genes_pheno_results(single_variant, variant, variant_annotation, self.gnomad_dao, self.ukbb_matrixdao, self.variant_phenotype)
         return variant_nearest_genes
 
     def add_annotations(self, chr, start, end, datalist, small_region_cuttoff=None):

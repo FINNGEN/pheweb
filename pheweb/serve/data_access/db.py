@@ -746,7 +746,7 @@ class TabixResultCommonDao():
     def __init__(self, pheno_map):
         self.pheno_map = pheno_map
 
-    def getVariantCommonFields(self, split, pheno, header_offset, columns):
+    def getVariantCommonColumns(self, split, pheno, header_offset, columns):
         phenotype = pheno[0] if pheno[0] else split[header_offset[columns["pheno"]]]
         beta = split[pheno[1] + header_offset[columns["beta"]]]
         sebeta = (
@@ -872,7 +872,7 @@ class TabixResultDao(ResultDB):
             v = Variant(chrom, split[ind + 1], split[ind + 2], split[ind + 3])
             for pheno in self.phenos:
                 phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval = (
-                    self.tabix_common_dao.getVariantCommonFields(
+                    self.tabix_common_dao.getVariantCommonColumns(
                         split, pheno, self.header_offset, self.columns
                     )
                 )
@@ -936,7 +936,7 @@ class TabixResultDao(ResultDB):
             split = variant_row.split("\t")
             for pheno in self.phenos:
                 phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval = (
-                    self.tabix_common_dao.getVariantCommonFields(
+                    self.tabix_common_dao.getVariantCommonColumns(
                         split, pheno, self.header_offset, self.columns
                     )
                 )
@@ -1017,18 +1017,18 @@ class TabixResultFiltDao(ResultDB):
                 phenolist.append(pr)
         return (varaint_phenores[0], phenolist)
 
-    def get_variant_and_nearest_genes_pheno_results(self, non_filtered_variant, variant, v_annot, gnomad_dao, ukbb_matrixdao, variant_phenotype):
+    def get_variant_and_nearest_genes_pheno_results(self, single_variant, variant, v_annot, gnomad_dao, ukbb_matrixdao, variant_phenotype):
         """
         Returns tuple with variant and phenoresults.
         """
-        if non_filtered_variant is not None:
+        if single_variant is not None:
             # if matrix is of longformat append rest of the phenotypes for which summary stats were filtered
             if self.longformat:
-                non_filtered_variant = self.append_filt_phenos(non_filtered_variant)
+                single_variant = self.append_filt_phenos(single_variant)
             if v_annot is None:
                 ## no annotations found even results were found. Should not happen except if the results and annotation files are not in sync
-                print("Warning! Variant results for " + str(non_filtered_variant[0]) + " found but no basic annotation!")
-                var = non_filtered_variant[0]
+                print("Warning! Variant results for " + str(single_variant[0]) + " found but no basic annotation!")
+                var = single_variant[0]
                 var.add_annotation("annot", {})
             else:
                 var = v_annot
@@ -1038,18 +1038,18 @@ class TabixResultFiltDao(ResultDB):
             gnomad = gnomad_dao.get_variant_annotations([var])
             if len(gnomad) == 1:
                 var.add_annotation('gnomad', gnomad[0]['var_data'])
-            phenos = [p.phenocode for p in non_filtered_variant[1]]
+            phenos = [p.phenocode for p in single_variant[1]]
             ukb = ukbb_matrixdao.get_multiphenoresults( {variant:phenos} )
             phenotype = variant_phenotype.get_variant_phenotype(int(variant.chr),int(variant.pos),variant.ref,variant.alt) if variant_phenotype else dict()
-            for res in non_filtered_variant[1]:
+            for res in single_variant[1]:
                 if res.phenocode in phenotype:
                     res.set_suplementary(phenotype[res.phenocode])
             if var in ukb:
                 ukb_idx = { u:u for u in ukb[var] }
-                for res in non_filtered_variant[1]:
+                for res in single_variant[1]:
                     if res.phenocode in ukb_idx:
                         res.add_matching_result('ukbb',ukb[var][res.phenocode])
-            return var,non_filtered_variant[1]
+            return var,single_variant[1]
         else:
             return None
 
