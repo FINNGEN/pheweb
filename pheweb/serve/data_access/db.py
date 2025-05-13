@@ -825,7 +825,7 @@ class TabixResultDao(ResultDB):
         self.matrix_path = matrix_path
         self.pheno_map = phenos(0)
         self.columns = columns
-        self.header = gzip.open(self.matrix_path, "rt").readline().split("\t")
+        self.header = gzip.open(self.matrix_path, "rt").readline().rstrip("\n").split("\t")
         self.phenos = [
             (h.split("@")[1], p_col_idx)
             for p_col_idx, h in enumerate(self.header)
@@ -986,7 +986,7 @@ class TabixResultFiltDao(ResultDB):
     def __init__(self, phenos, matrix_path, columns):
         self.matrix_path = matrix_path
         self.columns = columns
-        self.header = gzip.open(self.matrix_path, "rt").readline().split("\t")
+        self.header = gzip.open(self.matrix_path, "rt").readline().rstrip("\n").split("\t")
         self.header_offset = {
             item.split("\n")[0]: i for i, item in enumerate(self.header)
         }
