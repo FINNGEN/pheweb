@@ -1,5 +1,6 @@
 import os, sys
 import csv
+import argparse
 
 def get_files_list(input_path, output_path):
     files = []
@@ -90,10 +91,17 @@ def main_script(input_path, output_path):
             print(f"An error occurred: {e}")
 
 # check the argument 
-if len(sys.argv) == 3:
-    INPUT_FOLDER_PATH = sys.argv[1]
-    if f"/{sys.argv[2]}".endswith('.tsv'):
-        OUTPUT_FOLDER_PATH = INPUT_FOLDER_PATH + f"/{sys.argv[2]}"
+parser = argparse.ArgumentParser(description="The QC variant import script!")
+
+parser.add_argument('input_file_path', type=str, default='/mnt/disks/data/data-directory/path/to/qc_variant_folder')
+parser.add_argument('output_file_name', type=str, default='combined_sorted_output_file.tsv')
+
+args = parser.parse_args()
+
+if args.input_file_path and args.output_file_name:
+    INPUT_FOLDER_PATH = args.input_file_path
+    if f"/{args.output_file_name}".endswith('.tsv'):
+        OUTPUT_FOLDER_PATH = INPUT_FOLDER_PATH + f"/{args.output_file_name}"
         main_script(INPUT_FOLDER_PATH, OUTPUT_FOLDER_PATH)
     else:
         print("Sorry, output file name should be tsv. e-g string.tsv")
