@@ -68,7 +68,7 @@ task preprocess {
     	cpu: 2
         memory: "${mem} GB"
         bootDiskSizeGb: 30
-        disks: "local-disk 40 HDD"
+        disks: "local-disk 10 HDD"
         zones: "europe-west1-b"
         preemptible: 0
   }
