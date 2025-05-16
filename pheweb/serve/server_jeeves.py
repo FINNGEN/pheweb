@@ -315,7 +315,7 @@ class ServerJeeves(object):
             v_annot = self.annotation_dao.get_single_variant_annotations(r[0], self.conf.anno_cpra)
 
         # add rsids from varaint annotation if wasn't available in the merged sumstat matrix
-        if v_annot is not None and self.result_dao.longformat and "rsids" in v_annot is None:
+        if v_annot is not None and self.result_dao.longformat and v_annot.rsids is None:
             v_annot.add_annotation("rsids", v_annot.annotation['annot']['rsid'])
 
         if r is not None:
