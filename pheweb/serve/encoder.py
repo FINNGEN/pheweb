@@ -1,11 +1,15 @@
 
 from flask.json.provider import DefaultJSONProvider
-from datetime import datetime
 
 class FGJSONEncoder(DefaultJSONProvider):
-    def default(self, o):
-        # Custom handling for datetime objects
-        if isinstance(o, datetime):
-            return o.isoformat()  # Convert to ISO format string
-        # Call the parent class's method for other objects
-        return super().default(o)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args,**kwargs)
+
+    def default(self,o):
+        try:
+            rep =o.json_rep()
+        except Exception as e:
+            pass
+        else:
+            return rep
+        return DefaultJSONProvider.default(self, o)
