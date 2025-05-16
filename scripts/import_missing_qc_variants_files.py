@@ -6,9 +6,19 @@ def get_files_list(input_path, output_path):
     files = []
     for filename in os.listdir(input_path):
         file_path = os.path.join(input_path, filename)
-        if output_path not in file_path and file_path.endswith('.tsv'):
+        if output_path not in file_path and file_path.endswith('.tsv') and ('chr1.removed.add_LCR.add_failed_filter_awk.tsv' in file_path or 'chrX.removed.add_LCR.add_XPAR.add_failed_filter_awk.ts' in file_path):
             files.append(file_path)
     return files
+
+custome_header_list = {
+
+}
+
+def row_generate_custom_indexs(row):
+   # result_row = row
+    print(row)
+    return row
+    
 
 def main_script(input_path, output_path):
     filenames = get_files_list(input_path, output_path)
@@ -32,16 +42,17 @@ def main_script(input_path, output_path):
                     print(fname)
                     print('Loading data ...')
                     reader = csv.reader(infile, delimiter='\t')
+                    custom_header = []
                     for row in reader:
                         if len(row) == 24:
                             # check if header is not present in output file
-                            if row[0] == 'Variant' and is_header_written is False and output_file_header is None:
+                            if 'Variant' in row and row.index('Variant') < 1 and is_header_written is False and output_file_header is None:
                                 row.insert(0, '#chrom')
                                 row.insert(1, 'pos')
                                 final_header = "\t".join(row)+"\n"
                                 out_file.write(final_header)
                                 is_header_written = True
-                            elif row[0] == 'Variant' and is_header_written is True and output_file_header is None:
+                            elif 'Variant' in row and is_header_written is True and output_file_header is None:
                                 continue
                             else:
                                 splited_variant = row[0].split(":")
@@ -50,16 +61,20 @@ def main_script(input_path, output_path):
                                 line = f"\t".join(row)+"\n"
                                 out_file.write(line)
                         elif len(row) == 29:
-                            if (row[25] == 'Variant'):
+
+                            if 'Variant' in row and row.index('Variant') > 0:
+                                print(row)
+                                custom_header = row
                                 continue
                             else:
                                 new_row = []
+                                # print(custom_header)
                                 splited_variant = row[25].split(":")
                                 new_row.insert(0, splited_variant[0])
                                 new_row.insert(1, splited_variant[1])
-                                new_row.insert(2, row[25])
-                                new_row.insert(3, row[15])
-                                new_row.insert(4, row[11])
+                                new_row.insert(2, row[custom_header.index('Variant')])
+                                new_row.insert(3, row['variant_qc.call_rate'])
+                                new_row.insert(4, row['variant_qc.AC'])
                                 new_row.insert(5, row[12])
                                 new_row.insert(6, row[16])
                                 new_row.insert(7, row[17])
