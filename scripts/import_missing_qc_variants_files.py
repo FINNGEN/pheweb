@@ -1,4 +1,4 @@
-import os, sys
+import os
 import csv
 import argparse
 
@@ -9,6 +9,37 @@ def get_files_list(input_path, output_path):
         if output_path not in file_path and file_path.endswith('.tsv'):
             files.append(file_path)
     return files
+
+def generate_resulted_row(custom_header, row):
+    resulted_row = []
+    variant = row[custom_header.index('Variant')]
+    splited_variant = variant.split(":")
+    resulted_row.insert(0, splited_variant[0].replace('chr', ''))
+    resulted_row.insert(1, splited_variant[1])
+    resulted_row.insert(2, variant.replace('chr', ''))
+    resulted_row.insert(3, row[custom_header.index('variant_qc.call_rate')])
+    resulted_row.insert(5, row[custom_header.index('variant_qc.AF')])
+    resulted_row.insert(6, row[custom_header.index('variant_qc.n_called')])
+    resulted_row.insert(7, row[custom_header.index('variant_qc.n_not_called')])
+    resulted_row.insert(8, 'NA')
+    resulted_row.insert(9, row[custom_header.index('variant_qc.n_het')])
+    resulted_row.insert(10, 'NA')
+    resulted_row.insert(11, row[custom_header.index('variant_qc.dp_stats.mean')])
+    resulted_row.insert(12, row[custom_header.index('variant_qc.dp_stats.stdev')])
+    resulted_row.insert(13, row[custom_header.index('variant_qc.gq_stats.mean')])
+    resulted_row.insert(14, row[custom_header.index('variant_qc.gq_stats.stdev')])
+    resulted_row.insert(15, row[custom_header.index('variant_qc.n_non_ref')])
+    resulted_row.insert(16, 'NA')
+    resulted_row.insert(17, 'NA')
+    resulted_row.insert(18, 'NA')
+    resulted_row.insert(19, row[custom_header.index('variant_qc.p_value_hwe')])
+    resulted_row.insert(20, row[custom_header.index('filters')])
+    resulted_row.insert(21, row[custom_header.index('info.QD')])
+    resulted_row.insert(22, 'NA')
+    resulted_row.insert(23, 'NA')
+    resulted_row.insert(24, row[custom_header.index('IS_LCR')])
+    resulted_row.insert(25, row[custom_header.index('failed_filter')])
+    return f"\t".join(resulted_row)+"\n"
 
 def main_script(input_path, output_path):
     filenames = get_files_list(input_path, output_path)
@@ -22,26 +53,24 @@ def main_script(input_path, output_path):
     # read in the files
     with open(output_path,"wt",encoding="utf-8") as out_file:
         try:
-            # output file header
-            output_file_reader = csv.reader(out_file)
+            # flag to check header is written or not
             is_header_written = False
-            # store the header for output file
-            output_file_header = next(output_file_reader) if not os.path.getsize(output_path) == 0 else None
             for fname in filenames:
                 with open(fname,"rt",encoding="utf-8") as infile:
                     print(fname)
                     print('Loading data ...')
                     reader = csv.reader(infile, delimiter='\t')
+                    custom_header = []
                     for row in reader:
                         if len(row) == 24:
                             # check if header is not present in output file
-                            if row[0] == 'Variant' and is_header_written is False and output_file_header is None:
+                            if 'Variant' in row and row.index('Variant') < 1 and is_header_written is False:
                                 row.insert(0, '#chrom')
                                 row.insert(1, 'pos')
                                 final_header = "\t".join(row)+"\n"
                                 out_file.write(final_header)
                                 is_header_written = True
-                            elif row[0] == 'Variant' and is_header_written is True and output_file_header is None:
+                            elif 'Variant' in row and is_header_written is True:
                                 continue
                             else:
                                 splited_variant = row[0].split(":")
@@ -49,39 +78,12 @@ def main_script(input_path, output_path):
                                 row.insert(1, splited_variant[1])
                                 line = f"\t".join(row)+"\n"
                                 out_file.write(line)
-                        elif len(row) == 29:
-                            if (row[25] == 'Variant'):
+                        elif len(row) > 24:
+                            if 'Variant' in row and row.index('Variant') > 0:
+                                custom_header = row
                                 continue
                             else:
-                                new_row = []
-                                splited_variant = row[25].split(":")
-                                new_row.insert(0, splited_variant[0])
-                                new_row.insert(1, splited_variant[1])
-                                new_row.insert(2, row[25])
-                                new_row.insert(3, row[15])
-                                new_row.insert(4, row[11])
-                                new_row.insert(5, row[12])
-                                new_row.insert(6, row[16])
-                                new_row.insert(7, row[17])
-                                new_row.insert(8, 'NA')
-                                new_row.insert(9, row[19])
-                                new_row.insert(10, 'NA')
-                                new_row.insert(11, row[3])
-                                new_row.insert(12, row[4])
-                                new_row.insert(13, row[7])
-                                new_row.insert(14, row[8])
-                                new_row.insert(15, row[20])
-                                new_row.insert(16, 'NA')
-                                new_row.insert(17, 'NA')
-                                new_row.insert(18, 'NA')
-                                new_row.insert(19, row[22])
-                                new_row.insert(20, row[2])
-                                new_row.insert(21, row[24])
-                                new_row.insert(22, 'NA')
-                                new_row.insert(23, 'NA')
-                                new_row.insert(24, row[26])
-                                new_row.insert(25, row[28])
-                                line = f"\t".join(new_row)+"\n"
+                                line = generate_resulted_row(custom_header, row)
                                 out_file.write(line)
                         else:
                             print(f"Sorry! The file {fname} and {row} does not consist on proper tsv columns.")
