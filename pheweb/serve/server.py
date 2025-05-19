@@ -98,7 +98,7 @@ app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 9
 app.config['PREFERRED_URL_SCHEME'] = 'https'
 
-app.json.provider_class = FGJSONEncoder(app)
+app.json = FGJSONEncoder(app)
 
 if os.path.isdir(conf.custom_templates):
     app.jinja_loader.searchpath.insert(0, conf.custom_templates)
