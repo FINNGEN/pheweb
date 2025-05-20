@@ -16,8 +16,18 @@ import numpy as np
 import pymysql
 from typing import List, Tuple, Dict, Union, Optional, Any
 from ...file_utils import MatrixReader, common_filepaths
-from ...utils import get_phenolist, get_gene_tuples, pvalue_to_mlogp, get_use_phenocode_pheno_map
-from ..components.health.health_check import default_dao as health_default_dao, HealthSimpleDAO, HealthNotificationDAO, HealthTrivialDAO
+from ...utils import (
+    get_phenolist,
+    get_gene_tuples,
+    pvalue_to_mlogp,
+    get_use_phenocode_pheno_map,
+)
+from ..components.health.health_check import (
+    default_dao as health_default_dao,
+    HealthSimpleDAO,
+    HealthNotificationDAO,
+    HealthTrivialDAO,
+)
 from pheweb.serve.components.autocomplete.sqlite_dao import GeneAliasesSqliteDAO
 from pheweb.serve.data_access.gene_info import NCBIGeneInfoDao
 from collections import namedtuple
@@ -34,7 +44,7 @@ import subprocess
 import sys
 import glob
 from pheweb.serve.components.colocalization.model_db import ColocalizationDAO
-from .variant_phenotype import  VariantPhenotypeDao
+from .variant_phenotype import VariantPhenotypeDao
 from ..components.chip.fs_storage import FileChipDAO
 from ..components.coding.fs_storage import FileCodingDAO
 from pathlib import Path
@@ -42,19 +52,25 @@ from .drug_db import DrugDB, DrugDao
 from ..components.autocomplete.tries_dao import AutocompleterTriesDAO
 from ..components.autocomplete.sqlite_dao import AutocompleterSqliteDAO
 from ..components.autocomplete.mysql_dao import AutocompleterMYSQLDAO
-from pheweb.serve.data_access.file import FilePathResultDao, ManhattanFileResultDao, ManhattanCompressedResultDao
+from pheweb.serve.data_access.file import (
+    FilePathResultDao,
+    ManhattanFileResultDao,
+    ManhattanCompressedResultDao,
+)
 
 from .pqtl_colocalization import PqtlColocalisationDao
 
+
 def load_source(modname, filename):
-     loader = importlib.machinery.SourceFileLoader(modname, filename)
-     spec = importlib.util.spec_from_file_location(modname, filename, loader=loader)
-     module = importlib.util.module_from_spec(spec)
-     # The module is always executed and not cached in sys.modules.
-     # Uncomment the following line to cache the module.
-     # sys.modules[module.__name__] = module
-     loader.exec_module(module)
-     return module
+    loader = importlib.machinery.SourceFileLoader(modname, filename)
+    spec = importlib.util.spec_from_file_location(modname, filename, loader=loader)
+    module = importlib.util.module_from_spec(spec)
+    # The module is always executed and not cached in sys.modules.
+    # Uncomment the following line to cache the module.
+    # sys.modules[module.__name__] = module
+    loader.exec_module(module)
+    return module
+
 
 class JSONifiable(object):
     @abc.abstractmethod
@@ -69,7 +85,9 @@ class Variant(JSONifiable):
         try:
             self.chr = int(chr)
         except:
-            raise Exception(f"Chromosome '{chr}' can be only numeric! Use x=23, y=24 and MT=25")
+            raise Exception(
+                f"Chromosome '{chr}' can be only numeric! Use x=23, y=24 and MT=25"
+            )
 
         self.pos = int(pos)
         self.ref = ref
@@ -133,12 +151,13 @@ class Variant(JSONifiable):
 def optional_float(x):
     if x is None:
         return None
-    elif x == 'NA':
+    elif x == "NA":
         return None
-    elif x == '':
+    elif x == "":
         return None
     else:
         return float(x)
+
 
 class PhenoResult(JSONifiable):
     def __init__(
@@ -157,7 +176,7 @@ class PhenoResult(JSONifiable):
         n_control,
         mlogp,
         n_sample=None,
-        suplementary=None
+        suplementary=None,
     ):
         self.phenocode = phenocode
         self.phenostring = phenostring
@@ -206,11 +225,16 @@ class PhenoResult(JSONifiable):
             self.suplementary = suplementary
 
     def json_rep(self):
-        suplementary = {} if not hasattr(self, "suplementary") or self.suplementary is None else self.suplementary
+        suplementary = (
+            {}
+            if not hasattr(self, "suplementary") or self.suplementary is None
+            else self.suplementary
+        )
         rep = {**suplementary, **self.__dict__}
         if "suplementary" in rep:
             del rep["suplementary"]
         return rep
+
 
 @attr.s
 class PhenoResults(JSONifiable):
@@ -280,13 +304,17 @@ class AnnotationDB(object):
         return
 
     @abc.abstractmethod
-    def get_single_variant_annotations(self, variant: Variant, cpra) -> Optional[Variant]:
+    def get_single_variant_annotations(
+        self, variant: Variant, cpra
+    ) -> Optional[Variant]:
         """
         Retrieve variant annotations for a single variant. Returns a variant with annotations in id 'annot'  and including all old annotations
         """
 
     @abc.abstractmethod
-    def get_gene_functional_variant_annotations(self, gene : str,  use_aliases : Optional[bool]):
+    def get_gene_functional_variant_annotations(
+        self, gene: str, use_aliases: Optional[bool]
+    ):
         """Retrieve annotations of functional variants for a given gene.
         Args: gene gene symbol
         Returns: A list of dictionaries. Dictionary has 2 elements:
@@ -417,13 +445,15 @@ class CodingDB(object):
         """
         return
 
+
 class MissingVariantDB(object):
     @abc.abstractmethod
-    def get_missing_variant(self, variant: Variant) -> Optional[Dict[str,Any]]:
+    def get_missing_variant(self, variant: Variant) -> Optional[Dict[str, Any]]:
         """Retrieve missing qc variant data
         Returns: missing variant results as dictionry containing Dict[str,Any]
         """
         return
+
 
 class ChipDB(object):
     @abc.abstractmethod
@@ -531,7 +561,9 @@ class ElasticAnnotationDao(AnnotationDB):
             for anno in annotation["hits"]["hits"]
         ]
 
-    def get_gene_functional_variant_annotations(self, gene : str, use_aliases : Optional[bool]):
+    def get_gene_functional_variant_annotations(
+        self, gene: str, use_aliases: Optional[bool]
+    ):
         annotation = self.elastic.search(
             index=self.index,
             body={
@@ -651,11 +683,14 @@ class ElasticGnomadDao(GnomadDB):
             for anno in annotation["hits"]["hits"]
         ]
 
+
 class MissingVariantDao(MissingVariantDB):
     def __init__(self, missing_variant_path):
         self.missing_variant_path = missing_variant_path
         self.tabix_file = pysam.TabixFile(self.missing_variant_path, parser=None)
-        self.headers = self.tabix_file.header[0].split("\t") if self.tabix_file.header else []
+        self.headers = (
+            self.tabix_file.header[0].split("\t") if self.tabix_file.header else []
+        )
 
     def get_missing_variant(self, variant: Variant):
         header = [h.lower() for h in self.headers]
@@ -675,7 +710,6 @@ class TabixGnomadDao(GnomadDB):
         tabix_file = pysam.TabixFile(self.matrix_path, parser=None)
         self.headers = tabix_file.header[0].split("\t")
 
-
     def get_variant_annotations(self, var_list):
         annotations = []
         t = time.time()
@@ -694,13 +728,12 @@ class TabixGnomadDao(GnomadDB):
                 .replace("25", "Y")
             )
 
-            tabix_iter = tabix.fetch(
-               fetch_chr, variant.pos - 1, variant.pos)
+            tabix_iter = tabix.fetch(fetch_chr, variant.pos - 1, variant.pos)
 
             for row in tabix_iter:
                 split = row.split("\t")
-                ref = split[header.index('ref')]
-                alt = split[header.index('alt')]
+                ref = split[header.index("ref")]
+                alt = split[header.index("alt")]
                 if ref == variant.ref and alt == variant.alt:
                     for i, s in enumerate(split):
                         if (
@@ -752,16 +785,15 @@ class TabixGnomadDao(GnomadDB):
 
         return annotations
 
-def extend_pheno_result(pr : PhenoResult,
-                        record_offset : int,
-                        field_offsets,
-                        row):
+
+def extend_pheno_result(pr: PhenoResult, record_offset: int, field_offsets, row):
     for key, offset in field_offsets.items():
         if not hasattr(pr, key):
-            setattr(pr, key, row[record_offset+offset])
+            setattr(pr, key, row[record_offset + offset])
     return pr
 
-class TabixResultCommonDao():
+
+class TabixResultCommonDao:
     def __init__(self, pheno_map):
         self.pheno_map = pheno_map
 
@@ -840,11 +872,12 @@ class TabixResultCommonDao():
 
 class TabixResultDao(ResultDB):
     def __init__(self, phenos, matrix_path, columns):
-
         self.matrix_path = matrix_path
         self.pheno_map = phenos(0)
         self.columns = columns
-        self.header = gzip.open(self.matrix_path, "rt").readline().rstrip("\n").split("\t")
+        self.header = (
+            gzip.open(self.matrix_path, "rt").readline().rstrip("\n").split("\t")
+        )
         self.phenos = [
             (h.split("@")[1], p_col_idx)
             for p_col_idx, h in enumerate(self.header)
@@ -1005,7 +1038,9 @@ class TabixResultFiltDao(ResultDB):
     def __init__(self, phenos, matrix_path, columns):
         self.matrix_path = matrix_path
         self.columns = columns
-        self.header = gzip.open(self.matrix_path, "rt").readline().rstrip("\n").split("\t")
+        self.header = (
+            gzip.open(self.matrix_path, "rt").readline().rstrip("\n").split("\t")
+        )
         self.header_offset = {
             item.split("\n")[0]: i for i, item in enumerate(self.header)
         }
@@ -1036,7 +1071,15 @@ class TabixResultFiltDao(ResultDB):
                 phenolist.append(pr)
         return (varaint_phenores[0], phenolist)
 
-    def get_variant_and_nearest_genes_pheno_results(self, single_variant, variant, v_annot, gnomad_dao, ukbb_matrixdao, variant_phenotype):
+    def get_variant_and_nearest_genes_pheno_results(
+        self,
+        single_variant,
+        variant,
+        v_annot,
+        gnomad_dao,
+        ukbb_matrixdao,
+        variant_phenotype,
+    ):
         """
         Returns tuple with variant and phenoresults.
         """
@@ -1046,29 +1089,39 @@ class TabixResultFiltDao(ResultDB):
                 single_variant = self.append_filt_phenos(single_variant)
             if v_annot is None:
                 ## no annotations found even results were found. Should not happen except if the results and annotation files are not in sync
-                print("Warning! Variant results for " + str(single_variant[0]) + " found but no basic annotation!")
+                print(
+                    "Warning! Variant results for "
+                    + str(single_variant[0])
+                    + " found but no basic annotation!"
+                )
                 var = single_variant[0]
                 var.add_annotation("annot", {})
             else:
                 var = v_annot
             # add rsids from variant annotation if wasn't available in the merged sumstat matrix
             if self.longformat and var.rsids is None:
-                var.add_annotation("rsids", var.annotation['annot']['rsid'])
+                var.add_annotation("rsids", var.annotation["annot"]["rsid"])
             gnomad = gnomad_dao.get_variant_annotations([var])
             if len(gnomad) == 1:
-                var.add_annotation('gnomad', gnomad[0]['var_data'])
+                var.add_annotation("gnomad", gnomad[0]["var_data"])
             phenos = [p.phenocode for p in single_variant[1]]
-            ukb = ukbb_matrixdao.get_multiphenoresults( {variant:phenos} )
-            phenotype = variant_phenotype.get_variant_phenotype(int(variant.chr),int(variant.pos),variant.ref,variant.alt) if variant_phenotype else dict()
+            ukb = ukbb_matrixdao.get_multiphenoresults({variant: phenos})
+            phenotype = (
+                variant_phenotype.get_variant_phenotype(
+                    int(variant.chr), int(variant.pos), variant.ref, variant.alt
+                )
+                if variant_phenotype
+                else dict()
+            )
             for res in single_variant[1]:
                 if res.phenocode in phenotype:
                     res.set_suplementary(phenotype[res.phenocode])
             if var in ukb:
-                ukb_idx = { u:u for u in ukb[var] }
+                ukb_idx = {u: u for u in ukb[var]}
                 for res in single_variant[1]:
                     if res.phenocode in ukb_idx:
-                        res.add_matching_result('ukbb',ukb[var][res.phenocode])
-            return var,single_variant[1]
+                        res.add_matching_result("ukbb", ukb[var][res.phenocode])
+            return var, single_variant[1]
         else:
             return None
 
@@ -1100,7 +1153,6 @@ class ExternalMatrixResultDao(ExternalResultDB):
                     "ncases": p[ncase_idx],
                     "ncontrols": p[ncontrol_idx],
                 }
-
 
         with gzip.open(self.matrix, "rt") as res:
             header = res.readline().rstrip("\n").split("\t")
@@ -1145,9 +1197,7 @@ class ExternalMatrixResultDao(ExternalResultDB):
                 t = time.time()
 
                 try:
-                    iter = tabix.fetch(
-                        var.chrom, var.pos - 1, var.pos
-                    )
+                    iter = tabix.fetch(var.chrom, var.pos - 1, var.pos)
                     for ext_var in iter:
                         ext_var = ext_var.split("\t")
                         ext_v = Variant(ext_var[0], ext_var[1], ext_var[2], ext_var[3])
@@ -1222,12 +1272,14 @@ class ExternalMatrixResultDao(ExternalResultDB):
                 try:
                     ## todo remove CHR when annotations fixed
                     iter = tabix.fetch(
-                        "chr" + str(var.chr), var.pos - 1, var.pos,
+                        "chr" + str(var.chr),
+                        var.pos - 1,
+                        var.pos,
                     )
 
-                    #iter = self.tabixfiles[threading.get_ident()].fetch(
+                    # iter = self.tabixfiles[threading.get_ident()].fetch(
                     #    "chr" + str(var.chr), var.pos - 1, var.pos,
-                    #)
+                    # )
                     for ext_var in iter:
                         ext_var = ext_var.split("\t")
                         chrom = (
@@ -1440,34 +1492,37 @@ class TabixAnnotationDao(AnnotationDB):
 
     # float gets special treatment to nan so it automatically works in json/javascript. Nobody knows my sorrow...
     DATA_CONVS = {
-        "uint32": lambda x: None
-        if x.lower() in TabixAnnotationDao.ACCEPT_MISSING
-        else int(x),
-        "float": lambda x: float("nan")
-        if x.lower() in TabixAnnotationDao.ACCEPT_MISSING
-        else float(x),
-        "bool": lambda x: None
-        if x.lower() in TabixAnnotationDao.ACCEPT_MISSING
-        else bool(x),
+        "uint32": lambda x: (
+            None if x.lower() in TabixAnnotationDao.ACCEPT_MISSING else int(x)
+        ),
+        "float": lambda x: (
+            float("nan") if x.lower() in TabixAnnotationDao.ACCEPT_MISSING else float(x)
+        ),
+        "bool": lambda x: (
+            None if x.lower() in TabixAnnotationDao.ACCEPT_MISSING else bool(x)
+        ),
         "string": lambda x: x,
     }
 
-    def __init__(self, matrix_path,
-                 gene_column="gene",
-                 gene_aliases_path : Optional[str] = None,
-                 default_use_aliases : bool = True):
+    def __init__(
+        self,
+        matrix_path,
+        gene_column="gene",
+        gene_aliases_path: Optional[str] = None,
+        default_use_aliases: bool = True,
+    ):
 
         self.matrix_path = matrix_path
-        
+
         self.gene_column = gene_column
 
         if gene_aliases_path is None:
-            self._gene_alias_dao=None
+            self._gene_alias_dao = None
         else:
-            self._gene_alias_dao=GeneAliasesSqliteDAO(filepath=gene_aliases_path)
-        
-        self._default_use_aliases=default_use_aliases
-        
+            self._gene_alias_dao = GeneAliasesSqliteDAO(filepath=gene_aliases_path)
+
+        self._default_use_aliases = default_use_aliases
+
         self.gene_region_mapping = {
             genename: (chrom, pos1, pos2)
             for chrom, pos1, pos2, genename in get_gene_tuples()
@@ -1526,7 +1581,9 @@ class TabixAnnotationDao(AnnotationDB):
                 "No annotation datatype configuration found. Data will be stored as is."
             )
 
-    def get_single_variant_annotations(self, variant: Variant, cpra) -> Optional[Variant]:
+    def get_single_variant_annotations(
+        self, variant: Variant, cpra
+    ) -> Optional[Variant]:
         res = self.get_variant_annotations([variant], cpra)
         for r in res:
             if r == variant:
@@ -1537,7 +1594,7 @@ class TabixAnnotationDao(AnnotationDB):
 
         annotations = []
         t = time.time()
-        tabixf =pysam.TabixFile(self.matrix_path, parser=None)
+        tabixf = pysam.TabixFile(self.matrix_path, parser=None)
         for variant in variants:
             fetch_chr = (
                 str(variant.chr)
@@ -1585,7 +1642,9 @@ class TabixAnnotationDao(AnnotationDB):
 
         chrom = "23" if chrom == "X" else chrom
         try:
-            tabix_iter =pysam.TabixFile(self.matrix_path, parser=None).fetch(chrom, start - 1, end)
+            tabix_iter = pysam.TabixFile(self.matrix_path, parser=None).fetch(
+                chrom, start - 1, end
+            )
         except ValueError:
             print(
                 "No variants in the given range. {}:{}-{}".format(chrom, start - 1, end)
@@ -1612,7 +1671,9 @@ class TabixAnnotationDao(AnnotationDB):
 
         return annotations
 
-    def get_gene_functional_variant_annotations(self, gene : str, use_aliases : Optional[bool]):
+    def get_gene_functional_variant_annotations(
+        self, gene: str, use_aliases: Optional[bool]
+    ):
         if gene not in self.gene_region_mapping:
             return []
         chrom, start, end = self.gene_region_mapping[gene]
@@ -1623,8 +1684,9 @@ class TabixAnnotationDao(AnnotationDB):
             self.start = time.time()
             self.last_time = time.time()
         try:
-            tabix_iter =  pysam.TabixFile(self.matrix_path, parser=None).fetch(
-                chrom.replace("X", "23"), start - 1, end)
+            tabix_iter = pysam.TabixFile(self.matrix_path, parser=None).fetch(
+                chrom.replace("X", "23"), start - 1, end
+            )
         except Exception as e:
             print("Error occurred {}".format(e))
             return annotations
@@ -1632,14 +1694,14 @@ class TabixAnnotationDao(AnnotationDB):
         # use default if not supplied
         if use_aliases is None:
             use_aliases = self._default_use_aliases
-            
+
         if self._gene_alias_dao is not None and use_aliases:
-            gene_aliases=self._gene_alias_dao.get_gene_aliases(gene)
+            gene_aliases = self._gene_alias_dao.get_gene_aliases(gene)
         else:
-            gene_aliases=set()
-        
+            gene_aliases = set()
+
         gene_aliases.add(gene.upper())
-        
+
         for row in tabix_iter:
             split = row.split("\t")
             chrom, pos, ref, alt = split[0].split(":")
@@ -1681,7 +1743,7 @@ class LofMySQLDao(LofDB):
         self.host = getattr(auth_module, "mysql")["host"]
         self.db = getattr(auth_module, "mysql")["db"]
         self.release = getattr(auth_module, "mysql")["release"]
-        self.table_name=table_name
+        self.table_name = table_name
 
     def get_connection(self):
         return pymysql.connect(
@@ -1892,11 +1954,11 @@ class FineMappingMySQLDao(FineMappingDB):
         return result
 
 
-def _safe_bool(boolstr:str) -> bool:
+def _safe_bool(boolstr: str) -> bool:
 
-    if boolstr.upper()== "FALSE":
-        return  False
-    elif boolstr.upper()== "TRUE":
+    if boolstr.upper() == "FALSE":
+        return False
+    elif boolstr.upper() == "TRUE":
         return True
     else:
         raise Exception("Expected boolean string FALSE,TRUE in any casing.")
@@ -1929,9 +1991,9 @@ class AutoreportingDao(AutorepVariantDB):
         finally:
             conn.close()
 
-
-
-    def get_group_report(self,phenotype) -> List[Dict[str,Union[str,int,float,bool]]]:
+    def get_group_report(
+        self, phenotype
+    ) -> List[Dict[str, Union[str, int, float, bool]]]:
         """Returns the records in a group report as a list of dictionaries, one for each group.
         Dictionary keys, with value: value identifier (key):
         locus lead variant: locus_id
@@ -1952,67 +2014,95 @@ class AutoreportingDao(AutorepVariantDB):
 
         """
 
-        filename = os.path.join(self.group_report_path,f"{phenotype}.top.out")
+        filename = os.path.join(self.group_report_path, f"{phenotype}.top.out")
         if os.path.exists(filename):
             with open(filename) as f:
                 hdr = f.readline().strip("\n").split("\t")
-                hdi = {a:i for i,a in enumerate(hdr)}
+                hdi = {a: i for i, a in enumerate(hdr)}
                 data = []
                 for _line in f:
                     cols = _line.strip("\n").split("\t")
-                    #some columns are named differently in R5
+                    # some columns are named differently in R5
                     if self.release == 5:
                         record = {
-                            "chrom":cols[hdi["chr"]],
-                            "pval":float(cols[hdi["lead_pval"]]),
-                            "lead_enrichment":float(cols[hdi["enrichment"]]) if cols[hdi["enrichment"]] != "NA" else float("nan"),
-                            "lead_af_alt":float(cols[hdi["lead_AF"]]) if cols[hdi["lead_AF"]] != "NA" else float("nan"),
-                            "lead_most_severe_gene":cols[hdi["most_severe_gene"]],
+                            "chrom": cols[hdi["chr"]],
+                            "pval": float(cols[hdi["lead_pval"]]),
+                            "lead_enrichment": (
+                                float(cols[hdi["enrichment"]])
+                                if cols[hdi["enrichment"]] != "NA"
+                                else float("nan")
+                            ),
+                            "lead_af_alt": (
+                                float(cols[hdi["lead_AF"]])
+                                if cols[hdi["lead_AF"]] != "NA"
+                                else float("nan")
+                            ),
+                            "lead_most_severe_gene": cols[hdi["most_severe_gene"]],
                         }
                     else:
                         record = {
-                            "chrom":cols[hdi["chrom"]],
-                            "pval":float(cols[hdi["pval"]]),
-                            "lead_enrichment":float(cols[hdi["lead_enrichment"]]) if cols[hdi["lead_enrichment"]] != "NA" else float("nan"),
-                            "lead_af_alt":float(cols[hdi["lead_af_alt"]]) if cols[hdi["lead_af_alt"]] != "NA" else float("nan"),
-                            "lead_most_severe_gene":cols[hdi["lead_most_severe_gene"]],
+                            "chrom": cols[hdi["chrom"]],
+                            "pval": float(cols[hdi["pval"]]),
+                            "lead_enrichment": (
+                                float(cols[hdi["lead_enrichment"]])
+                                if cols[hdi["lead_enrichment"]] != "NA"
+                                else float("nan")
+                            ),
+                            "lead_af_alt": (
+                                float(cols[hdi["lead_af_alt"]])
+                                if cols[hdi["lead_af_alt"]] != "NA"
+                                else float("nan")
+                            ),
+                            "lead_most_severe_gene": cols[hdi["lead_most_severe_gene"]],
                         }
-                    #common cols
+                    # common cols
                     record.update(
                         {
-                            "locus_id":cols[hdi["locus_id"]],
-                            "phenocode":phenotype,
-                            "good_cs":_safe_bool(cols[hdi["good_cs"]]),
-                            "lead_mlogp":float(cols[hdi["lead_mlogp"]]),
-                            "lead_beta":float(cols[hdi["lead_beta"]]),
-                            "functional_variants_strict":cols[hdi["functional_variants_strict"]],
-                            "credible_set_variants":cols[hdi["credible_set_variants"]],
-                            "cs_size":int(cols[hdi["cs_size"]]),
-                            "cs_log_bayes_factor":float(cols[hdi["cs_log_bayes_factor"]]) if cols[hdi["cs_log_bayes_factor"]] != "NA" else float("nan"),
+                            "locus_id": cols[hdi["locus_id"]],
+                            "phenocode": phenotype,
+                            "good_cs": _safe_bool(cols[hdi["good_cs"]]),
+                            "lead_mlogp": float(cols[hdi["lead_mlogp"]]),
+                            "lead_beta": float(cols[hdi["lead_beta"]]),
+                            "functional_variants_strict": cols[
+                                hdi["functional_variants_strict"]
+                            ],
+                            "credible_set_variants": cols[hdi["credible_set_variants"]],
+                            "cs_size": int(cols[hdi["cs_size"]]),
+                            "cs_log_bayes_factor": (
+                                float(cols[hdi["cs_log_bayes_factor"]])
+                                if cols[hdi["cs_log_bayes_factor"]] != "NA"
+                                else float("nan")
+                            ),
                             "lead_sebeta": cols[hdi["lead_sebeta"]],
-                            "pos":cols[hdi["pos"]],
+                            "pos": cols[hdi["pos"]],
                         }
                     )
-                    #join trait cols
+                    # join trait cols
                     if "specific_efo_trait_associations_relaxed" in hdr:
-                        #filter out empty and missing entries
-                        merge_func = lambda a,b : ";".join(list(filter(lambda x:(x!="NA" and x != ""),[a,b])))
+                        # filter out empty and missing entries
+                        merge_func = lambda a, b: ";".join(
+                            list(filter(lambda x: (x != "NA" and x != ""), [a, b]))
+                        )
                         all_traits_strict = merge_func(
                             cols[hdi["specific_efo_trait_associations_strict"]],
-                            cols[hdi["found_associations_strict"]]
+                            cols[hdi["found_associations_strict"]],
                         )
                         all_traits_relaxed = merge_func(
                             cols[hdi["specific_efo_trait_associations_relaxed"]],
-                            cols[hdi["found_associations_relaxed"]]
+                            cols[hdi["found_associations_relaxed"]],
                         )
-                        all_traits_strict = "NA" if all_traits_strict == "" else all_traits_strict
-                        all_traits_relaxed = "NA" if all_traits_relaxed == "" else all_traits_relaxed
+                        all_traits_strict = (
+                            "NA" if all_traits_strict == "" else all_traits_strict
+                        )
+                        all_traits_relaxed = (
+                            "NA" if all_traits_relaxed == "" else all_traits_relaxed
+                        )
                     else:
                         all_traits_strict = cols[hdi["found_associations_strict"]]
                         all_traits_relaxed = cols[hdi["found_associations_relaxed"]]
                     record["all_traits_strict"] = all_traits_strict
                     record["all_traits_relaxed"] = all_traits_relaxed
-                    #fill in NA for missing values
+                    # fill in NA for missing values
                     for key in record:
                         if record[key] == "":
                             record[key] = "NA"
@@ -2021,12 +2111,13 @@ class AutoreportingDao(AutorepVariantDB):
             return data
         return []
 
+
 class DataFactory(object):
     arg_definitions = {
         "PHEWEB_PHENOS": lambda _: {
             pheno["phenocode"]: pheno for pheno in get_phenolist()
         },
-        "PHEWEB_USE_PHENOS": lambda : copy.deepcopy(get_use_phenocode_pheno_map()),
+        "PHEWEB_USE_PHENOS": lambda: copy.deepcopy(get_use_phenocode_pheno_map()),
         "MATRIX_PATH": common_filepaths["matrix"],
         "ANNOTATION_MATRIX_PATH": common_filepaths["annotation-matrix"],
         "GNOMAD_MATRIX_PATH": common_filepaths["gnomad-matrix"],
@@ -2061,21 +2152,27 @@ class DataFactory(object):
 
     def get_manhattan_dao(self):
         return self.dao_impl["manhattan"] if "manhattan" in self.dao_impl else None
-    
+
     def get_health_dao(self):
         return self.dao_impl["health"]
 
     def get_autocompleter_dao(self):
-        return self.dao_impl["autocompleter"] if "autocompleter" in self.dao_impl else None
+        return (
+            self.dao_impl["autocompleter"] if "autocompleter" in self.dao_impl else None
+        )
 
     def get_annotation_dao(self):
         return self.dao_impl["annotation"]
 
     def get_gnomad_dao(self):
         return self.dao_impl["gnomad"]
-    
+
     def get_missing_variant_dao(self):
-        return self.dao_impl["missing_variants"] if "missing_variants" in self.dao_impl else None
+        return (
+            self.dao_impl["missing_variants"]
+            if "missing_variants" in self.dao_impl
+            else None
+        )
 
     def get_lof_dao(self):
         return self.dao_impl["lof"] if "lof" in self.dao_impl else None
@@ -2123,7 +2220,15 @@ class DataFactory(object):
         return self.dao_impl["chip"] if "chip" in self.dao_impl else None
 
     def get_variant_phenotype_dao(self):
-        return self.dao_impl["variant_phenotype"] if "variant_phenotype" in self.dao_impl else None
+        return (
+            self.dao_impl["variant_phenotype"]
+            if "variant_phenotype" in self.dao_impl
+            else None
+        )
 
     def get_pqtl_colocalization_dao(self):
-        return self.dao_impl["pqtl_colocalization"] if "pqtl_colocalization" in self.dao_impl else None
+        return (
+            self.dao_impl["pqtl_colocalization"]
+            if "pqtl_colocalization" in self.dao_impl
+            else None
+        )
