@@ -42,7 +42,7 @@ def generate_resulted_row(output_header, row, xfile_header):
     
     variant = row[xfile_columns_index['Variant']]
     splited_variant = variant.split(":")
-    resulted_row.append(splited_variant[0].replace('chr', ''))
+    resulted_row.append(splited_variant[0].replace('chrX', 'chr23'))
     resulted_row.append(splited_variant[1])
 
     for index,column_name in enumerate(output_header):
