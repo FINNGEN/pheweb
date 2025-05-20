@@ -10,28 +10,25 @@ def get_files_list(input_path, output_path):
             files.append(file_path)
     return files
 
-# mapping the from chrom xfile => autosomal
+# mapping the columns name from chrom xfile => autosomal
 COLUMNS_MAPPING_DICT = {
-    "Variant" : "Variant",
-    "variant_qc.call_rate": "callRate",
-    "variant_qc.AF": "AF",
-    "variant_qc.n_called": "nCalled",
-    "variant_qc.n_not_called": "nNotCalled",
-    "variant_qc.n_het": "nHet",
-    "variant_qc.dp_stats.mean":'dpMean',
-    "variant_qc.dp_stats.stdev": 'dpStDev',
-    "variant_qc.gq_stats.mean": 'gqMean',
-    "variant_qc.gq_stats.stdev": 'gqStDev',
-    "variant_qc.n_non_ref": 'nNonRef',
-    "variant_qc.p_value_hwe": 'pHWE',
-    "filters": "FILTERS",
-    "info.QD": "QD",
+    "Variant": "Variant",
+    "callRate": "variant_qc.call_rate",
+    "AF": "variant_qc.AF",
+    "nCalled": "variant_qc.n_called",
+    "nNotCalled": "variant_qc.n_not_called",
+    "nHet": "variant_qc.n_het",
+    "dpMean": "variant_qc.dp_stats.mean",
+    "dpStDev": "variant_qc.dp_stats.stdev",
+    "gqMean": "variant_qc.gq_stats.mean",
+    "gqStDev": "variant_qc.gq_stats.stdev",
+    "nNonRef": "variant_qc.n_non_ref",
+    "pHWE": "variant_qc.p_value_hwe",
+    "FILTERS": "filters",
+    "QD": "info.QD",
     "IS_LCR": "IS_LCR",
     "failed_filter": "failed_filter"
 }
-
-#inverting the column mapping dict
-INVERTED_COLUMN_MAPPING = {v: k for k, v in COLUMNS_MAPPING_DICT.items()}
 
 def generate_resulted_row(output_header, row, xfile_header):
     """
@@ -49,8 +46,8 @@ def generate_resulted_row(output_header, row, xfile_header):
     resulted_row.append(splited_variant[1])
 
     for index,column_name in enumerate(output_header):
-        if column_name in INVERTED_COLUMN_MAPPING:
-            column_name_xfile = INVERTED_COLUMN_MAPPING[column_name]
+        if column_name in COLUMNS_MAPPING_DICT:
+            column_name_xfile = COLUMNS_MAPPING_DICT[column_name]
             resulted_row.append(row[xfile_columns_index[column_name_xfile]])
         else:
             resulted_row.append('NA')
