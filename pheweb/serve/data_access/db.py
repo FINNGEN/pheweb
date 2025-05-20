@@ -389,6 +389,25 @@ class ResultDB(object):
         Returns None if variant does not exist.
         """
 
+    def append_filt_phenos(
+        self, varaint_phenores: Tuple[Variant, PhenoResult]
+    ) -> Tuple[Variant, PhenoResult]:
+        """For a single variant append phenotypes filtered in longformat matrix.
+        Populates missing summary stats with none"""
+
+    def get_variant_and_nearest_genes_pheno_results(
+        self,
+        single_variant,
+        variant,
+        v_annot,
+        gnomad_dao,
+        ukbb_matrixdao,
+        variant_phenotype,
+    ):
+        """
+        Returns tuple with variant and nearest genes phenoresults.
+        """
+
 
 class CodingDB(object):
     @abc.abstractmethod
