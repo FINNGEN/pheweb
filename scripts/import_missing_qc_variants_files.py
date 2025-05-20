@@ -39,13 +39,13 @@ def generate_resulted_row(output_header, row, xfile_header):
     
     for index,name in enumerate(xfile_header): 
         xfile_columns_index[name] = index
-    
+
     variant = row[xfile_columns_index['Variant']]
     splited_variant = variant.split(":")
     resulted_row.append(splited_variant[0].replace('chrX', 'chr23'))
     resulted_row.append(splited_variant[1])
 
-    for index,column_name in enumerate(output_header):
+    for index,column_name in enumerate(output_header.split("\t")):
         if column_name in COLUMNS_MAPPING_DICT:
             column_name_xfile = COLUMNS_MAPPING_DICT[column_name]
             resulted_row.append(row[xfile_columns_index[column_name_xfile]])
@@ -75,10 +75,10 @@ def main_script(input_path, output_path):
                     print('Loading data ...')
                     reader = csv.reader(infile, delimiter='\t')
                     header = next(reader)
-                    header_row = "chrom\t\pos\t" + "\t".join(header)
+                    header_row = "chrom\tpos\t" + "\t".join(header)
                     if is_header_written is False:
                         output_header = header_row
-                        out_file.write(header_row)
+                        out_file.write(header_row +'\n')
                         is_header_written = True
                     for row in reader:
                         # autosomal file
