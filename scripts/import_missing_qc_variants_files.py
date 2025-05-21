@@ -40,15 +40,18 @@ def generate_resulted_row(output_header, row, xfile_header):
     for index,name in enumerate(xfile_header): 
         xfile_columns_index[name] = index
 
-    variant = row[xfile_columns_index['Variant']]
+    variant = row[xfile_columns_index['Variant']].replace('chr', '').replace('X', '23')
     splited_variant = variant.split(":")
-    resulted_row.append(splited_variant[0].replace('chrX', 'chr23'))
+    resulted_row.append(splited_variant[0])
     resulted_row.append(splited_variant[1])
 
     for index,column_name in enumerate(output_header.split("\t")):
         if column_name in COLUMNS_MAPPING_DICT:
             column_name_xfile = COLUMNS_MAPPING_DICT[column_name]
-            resulted_row.append(row[xfile_columns_index[column_name_xfile]])
+            if column_name == 'Variant':
+                resulted_row.append(variant)
+            else:
+                resulted_row.append(row[xfile_columns_index[column_name_xfile]])
         else:
             resulted_row.append('NA')
 
@@ -83,9 +86,11 @@ def main_script(input_path, output_path):
                     for row in reader:
                         # autosomal file
                         if len(row) == 24:
-                            splited_variant = row[0].split(":")
+                            variant = row[0].replace('chr', '')
+                            splited_variant = variant.split(":")
                             row.insert(0, splited_variant[0])
                             row.insert(1, splited_variant[1])
+                            row[2] = variant
                             line = f"\t".join(row)+"\n"
                             out_file.write(line)
                         # Xfile check
