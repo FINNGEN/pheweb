@@ -14,6 +14,7 @@ def get_files_list(input_path, output_path):
 COLUMNS_MAPPING_DICT = {
     "Variant": "Variant",
     "callRate": "variant_qc.call_rate",
+    "AC": "variant_qc.AC",
     "AF": "variant_qc.AF",
     "nCalled": "variant_qc.n_called",
     "nNotCalled": "variant_qc.n_not_called",
@@ -36,6 +37,7 @@ def generate_resulted_row(output_header, row, xfile_header):
     """
     resulted_row = []
     xfile_columns_index = {}
+    splited_output_header = output_header.split("\t")
     
     for index,name in enumerate(xfile_header): 
         xfile_columns_index[name] = index
@@ -45,10 +47,11 @@ def generate_resulted_row(output_header, row, xfile_header):
     resulted_row.append(splited_variant[0])
     resulted_row.append(splited_variant[1])
 
-    for index,column_name in enumerate(output_header.split("\t")):
+    # skip #chrom and pos from output_header
+    for index,column_name in enumerate(splited_output_header[2:]):
         if column_name in COLUMNS_MAPPING_DICT:
             column_name_xfile = COLUMNS_MAPPING_DICT[column_name]
-            if column_name == 'Variant':
+            if 'Variant' in column_name:
                 resulted_row.append(variant)
             else:
                 resulted_row.append(row[xfile_columns_index[column_name_xfile]])
