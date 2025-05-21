@@ -647,9 +647,9 @@ class MissingVariantDao(MissingVariantDB):
 
     def get_missing_variant(self, variant: Variant):
         header = [h.lower() for h in self.headers]
-        for row in self.tabix_file.fetch(f"chr{variant.chr}", start=variant.pos - 1, end=variant.pos + 1):
+        for row in self.tabix_file.fetch(f"{variant.chr}", start=variant.pos - 1, end=variant.pos + 1):
             splited_row = row.split("\t")
-            if self.headers and splited_row is not None and splited_row[self.headers.index("Variant")].replace('chr', '') == f"{variant}":
+            if self.headers and splited_row is not None and splited_row[self.headers.index("Variant")] == f"{variant}":
                 json_obj = dict(zip(header, splited_row))
                 return json_obj
             else:
