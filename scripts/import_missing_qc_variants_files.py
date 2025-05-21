@@ -75,7 +75,7 @@ def main_script(input_path, output_path):
                     print('Loading data ...')
                     reader = csv.reader(infile, delimiter='\t')
                     header = next(reader)
-                    header_row = "chrom\tpos\t" + "\t".join(header)
+                    header_row = "#chrom\tpos\t" + "\t".join(header)
                     if is_header_written is False:
                         output_header = header_row
                         out_file.write(header_row +'\n')
