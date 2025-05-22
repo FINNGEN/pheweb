@@ -88,15 +88,30 @@ ClinvarDataSource.prototype.fetchRequest = function(state: any, chain: any, fiel
         return res.promise;
       }
 
-      if (data.esearchresult.idlist != null) {
-        const promises = chunk(data.esearchresult.idlist,410).map(ids => clinvarlESearchURL(url)(ids as string[])).map(url => createCORSPromise("GET", url));
-        return Promise.all(promises).then(x => x.map((x)=> JSON.parse(x as string) )).then(clinvarlESearchCollect).then(JSON.stringify);
-      } else {
-        const resultFailed = defer();
-        console.warn("Failed to query clinvar" + JSON.stringify(data, null, 4));
-        resultFailed.reject("Failed to query clinvar" + JSON.stringify(data, null, 4));
-        return resultFailed;
-      }
+    if (data.esearchresult.idlist != null) {
+      const promises = chunk(data.esearchresult.idlist, 410).map(ids => clinvarlESearchURL(url)(ids as string[])).map(url => createCORSPromise("GET", url));
+      return Promise.all(promises)
+      .then(results => {
+        return results.map(result => {
+          if (typeof result !== 'string' || !result.trim()) {
+            return null; // or skip or throw, depending on your needs
+          }
+          try {
+            return JSON.parse(result);
+          } catch (e) {
+            console.warn("Skipping invalid JSON:", result);
+            return null; // or continue based on your application logic
+          }
+        }).filter(Boolean);
+      })
+      .then(clinvarlESearchCollect)
+      .then(JSON.stringify);
+    } else {
+      const resultFailed = defer();
+      console.warn("Failed to query clinvar" + JSON.stringify(data, null, 4));
+      resultFailed.reject("Failed to query clinvar" + JSON.stringify(data, null, 4));
+      return resultFailed;
+    }
     }
   );
 };
