@@ -8,10 +8,10 @@
 
 
 from setuptools import setup
-import imp
 import os.path
+from pheweb.load_source.load_source import load_source
 
-version = imp.load_source('pheweb.version', os.path.join('pheweb', 'version.py')).version
+version = load_source('pheweb.version', os.path.join('pheweb', 'version.py')).version
 
 setup(
     name='PheWeb',

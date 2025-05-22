@@ -4,7 +4,7 @@ class FGJSONEncoder(DefaultJSONProvider):
     def __init__(self, *args, **kwargs):
         super().__init__(*args,**kwargs)
 
-    def default(o):
+    def default(self, o):
         try:
             rep =o.json_rep()
         except Exception as e:
