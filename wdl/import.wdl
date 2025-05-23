@@ -67,8 +67,8 @@ task preprocess {
         docker: "${docker}"
     	cpu: 2
         memory: "${mem} GB"
-        bootDiskSizeGb: 50
-        disks: "local-disk 200 HDD"
+        bootDiskSizeGb: 30
+        disks: "local-disk 10 HDD"
         zones: "europe-west1-b"
         preemptible: 0
     }
@@ -112,7 +112,7 @@ task sites {
         docker: "${docker}"
     	cpu: 2
     	memory: "2 GB"
-        bootDiskSizeGb: 50
+        bootDiskSizeGb: 30
         disks: "local-disk ${disk} HDD"
         zones: "europe-west1-b"
         preemptible: 0
@@ -306,8 +306,8 @@ task pheno {
         docker: "${docker}"
     	cpu: 2
     	memory: "10 GB"
-        bootDiskSizeGb: 50
-        disks: "local-disk 200 HDD"
+        bootDiskSizeGb: 30
+        disks: "local-disk 70 HDD"
         zones: "europe-west1-b"
         preemptible: 0
     }
@@ -655,7 +655,7 @@ task filter_sumstat {
         docker: "${docker}"
         memory: "2 GB"
         cpu: "1"
-        bootDiskSizeGb: 50
+        bootDiskSizeGb: 30
         disks: "local-disk ${disk_size} SSD"
         zones: "europe-west1-b"
         preemptible: 0
@@ -699,7 +699,7 @@ task get_phenolist {
         docker: "${docker}"
         memory: "8 GB"
         cpu: "2"
-        bootDiskSizeGb: 50
+        bootDiskSizeGb: 30
         zones: "europe-west1-b"
         disks: "local-disk ${disk} HDD"
         preemptible: 0
