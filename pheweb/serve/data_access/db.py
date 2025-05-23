@@ -398,6 +398,12 @@ class ResultDB(object):
         """For a single variant appends phenotypes filtered in longformat matrix.
            Populates missing summary stats with none.
         """
+    
+    def get_top_per_pheno_variant_results_range(
+        self, chrom, start, end
+    ) -> Tuple[Variant, List[PhenoResult]]:
+        """return the top of variant per pheno result range.
+        """
 
 
 class CodingDB(object):
