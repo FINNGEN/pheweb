@@ -797,9 +797,7 @@ class TabixResultCommonDao:
         )
         return phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval
 
-    def getCommonPhenoResults(
-        self, phenotype, pval, beta, sebeta, maf, maf_case, maf_control, mlogp
-    ):
+    def getCommonPhenoResults(self, phenotype, pval, beta, sebeta, maf, maf_case, maf_control, mlogp):
         pr = PhenoResult(
             phenotype,
             self.pheno_map[phenotype]["phenostring"],
@@ -831,7 +829,6 @@ class TabixResultCommonDao:
             ),
         )
         return pr
-
 
 class TabixResultDao(ResultDB):
     def __init__(self, phenos, matrix_path, columns):
@@ -929,7 +926,6 @@ class TabixResultDao(ResultDB):
                 if r[0] == v:
                     results.append(r)
         return results
-
 
 class TabixResultFiltDao(TabixResultDao):
     def __init__(self, phenos, matrix_path, columns):
