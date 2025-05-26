@@ -927,7 +927,7 @@ class TabixResultDao(ResultDB):
                     results.append(r)
         return results
 
-class TabixResultFiltDao(TabixResultDao):
+class TabixResultFiltDao(ResultDB):
     def __init__(self, phenos, matrix_path, columns):
         self.matrix_path = matrix_path
         self.columns = columns
@@ -949,30 +949,7 @@ class TabixResultFiltDao(TabixResultDao):
 
         for phenotype in self.pheno_map:
             if phenotype not in var_phenocodes:
-                pr = PhenoResult(
-                    phenotype,
-                    self.pheno_map[phenotype]["phenostring"],
-                    self.pheno_map[phenotype]["category"],
-                    self.pheno_map[phenotype]["category_index"]
-                    if "category_index" in self.pheno_map[phenotype]
-                    else None,
-                    'NA', # pval
-                    None, # beta
-                    None, # sebeta
-                    None, # maf
-                    None, # maf_case
-                    None, # maf_control
-                    self.pheno_map[phenotype]["num_cases"]
-                    if "num_cases" in self.pheno_map[phenotype]
-                    else 0,
-                    self.pheno_map[phenotype]["num_controls"]
-                    if "num_controls" in self.pheno_map[phenotype]
-                    else 0,
-                    'NA', # mlogp
-                    self.pheno_map[phenotype]["num_samples"]
-                    if "num_samples" in self.pheno_map[phenotype]
-                    else "NA",
-                )
+                pr = self.tabix_common_dao.getCommonPhenoResults(phenotype, 'NA', None, None, None, None, None, 'NA')
                 phenolist.append(pr)
 
         return (varaint_phenores[0], phenolist)
