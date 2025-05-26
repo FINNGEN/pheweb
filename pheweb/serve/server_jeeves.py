@@ -262,46 +262,10 @@ class ServerJeeves(object):
         else:
             return {}
 
-    def get_variant_annotation(self, variant):
-        """
-            Returns variant results with annotation.
-        """
-        if variant is not None and self.result_dao.longformat:
-            variant = self.result_dao.append_filt_phenos(variant)
-        variant_annot = None
-        if variant is not None:
-            variant_annot = self.annotation_dao.get_single_variant_annotations(variant[0], self.conf.anno_cpra)
-
-        # add rsids from varaint annotation if wasn't available in the merged sumstat matrix
-        if variant_annot is not None and self.result_dao.longformat and variant_annot.rsids is None:
-            variant_annot.add_annotation("rsids", variant_annot.annotation['annot']['rsid'])
-        return variant_annot
-
-    def add_gnomad_rsids_to_annotation(self, variant, v_annot):
-        """
-            Returns variant after adding the annotation (rsids and gnomad) object.
-        """
-        if v_annot is None:
-            ## no annotations found even results were found. Should not happen except if the results and annotation files are not in sync
-            print("Warning! Variant results for " + str(variant[0]) + " found but no basic annotation!")
-            variant_result = variant[0]
-            variant_result.add_annotation("annot", {})
-        else:
-            variant_result = v_annot
-        # add rsids from variant annotation if wasn't available in the merged sumstat matrix
-        if self.result_dao.longformat and variant_result.rsids is None:
-            variant_result.add_annotation("rsids", variant_result.annotation['annot']['rsid'])
-        gnomad = self.gnomad_dao.get_variant_annotations([variant_result])
-
-        if len(gnomad) == 1:
-            variant_result.add_annotation('gnomad', gnomad[0]['var_data'])
-        return variant_result
-
     def get_single_variant_data(self, variant: Variant)-> Tuple[Variant, List[PhenoResult]]:
         """
             Returns association results and basic annotations for a single variant. Returns tuple with variant and phenoresults.
         """
-        single_variant = self.result_dao.get_single_variant_results(variant)
 
         variant_annotated = None
         single_variant_results = self.result_dao.get_single_variant_results(variant)
