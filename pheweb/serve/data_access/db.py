@@ -828,7 +828,7 @@ class TabixResultCommonDao:
         return pr
 
 class TabixResultDao(ResultDB):
-    def __init__(self, phenos, matrix_path, columns):
+    def __init__(self, phenos, matrix_path, columns, isFilterDao=False):
 
         self.matrix_path = matrix_path
         self.pheno_map = phenos(0)
@@ -838,17 +838,21 @@ class TabixResultDao(ResultDB):
             (h.split("@")[1], p_col_idx)
             for p_col_idx, h in enumerate(self.header)
             if h.startswith("pval")
-        ]
+        ] if isFilterDao == False else [(None, 0)]
         self.header_offset = {}
-        i = 0
-        for h in self.header:
-            s = h.split("@")
-            if "@" in h:
-                if p is not None and s[1] != p:
-                    break
-                self.header_offset[s[0]] = i
-                i = i + 1
-            p = s[1] if len(s) > 1 else None
+        if isFilterDao == False:
+            i = 0
+            for h in self.header:
+                s = h.split("@")
+                if "@" in h:
+                    if p is not None and s[1] != p:
+                        break
+                    self.header_offset[s[0]] = i
+                    i = i + 1
+                p = s[1] if len(s) > 1 else None
+        else:
+            self.header_offset = {item.split('\n')[0]: i for i, item in enumerate(self.header)}
+
         self.longformat = False
         self.tabix_common_dao = TabixResultCommonDao(self.pheno_map)
 
@@ -1016,7 +1020,7 @@ class TabixResultFiltDao(ResultDB):
         self.pheno_map = phenos(0)
         self.longformat = True
         self.tabix_common_dao = TabixResultCommonDao(self.pheno_map)
-        self.tabix_result = TabixResultDao(phenos, matrix_path, columns)
+        self.tabix_result = TabixResultDao(phenos, matrix_path, columns, True)
 
     def append_filt_phenos(
         self, varaint_phenores: Tuple[Variant, PhenoResult]
