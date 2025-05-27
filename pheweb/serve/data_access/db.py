@@ -864,6 +864,7 @@ class TabixResultDao(ResultDB):
         res = self.get_variants_results([variant])
         for r in res:
             if r[0] == variant:
+                r = self.append_filt_phenos(r)
                 return r
         return None
 
