@@ -218,10 +218,10 @@ def phenolist():
 @app.route('/api/variant/<query>')
 def api_variant(query):
     try:
-        splited_query=re.split('-|:|/|_',query)
-        if len(splited_query)!=4:
+        split_query=re.split('-|:|/|_',query)
+        if len(split_query)!=4:
             die("Malformed variant query. Use chr-pos-ref-alt")
-        variant = Variant(splited_query[0].replace('X', '23'),splited_query[1],splited_query[2], splited_query[3])
+        variant = Variant(split_query[0].replace('X', '23'),split_query[1],split_query[2], split_query[3])
         variant_data = jeeves.get_single_variant_data(variant)
         if variant_data is None:
             missing_variant = jeeves.get_missing_variant(variant)
