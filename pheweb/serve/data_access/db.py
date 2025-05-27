@@ -886,7 +886,7 @@ class TabixResultCommonDao:
         return result.items()
 
 class TabixResultDao(ResultDB):
-    def __init__(self, phenos, matrix_path, columns):
+    def __init__(self, phenos, matrix_path, columns, isFilterDao=False):
 
         self.matrix_path = matrix_path
         self.pheno_map = phenos(0)
@@ -896,7 +896,7 @@ class TabixResultDao(ResultDB):
             (h.split("@")[1], p_col_idx)
             for p_col_idx, h in enumerate(self.header)
             if h.startswith("pval")
-        ]
+        ] if isFilterDao == False else [(None, 0)]
         self.header_offset = {}
         i = 0
         for h in self.header:
