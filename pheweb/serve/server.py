@@ -229,12 +229,12 @@ def api_variant(query):
                 die("Sorry, I couldn't find the variant {}".format(query))
             else:
                 return { "qc_variant_results" : missing_variant}
-        variant_data = (variant_data[0], [pheno.json_rep() for pheno in variant_data[1] if pheno.phenocode in use_phenos])
-        regions = jeeves.get_finemapped_regions(variant)
+        variantdat = (variantdat[0], [pheno.json_rep() for pheno in variantdat[1] if pheno.phenocode in use_phenos])
+        regions = jeeves.get_finemapped_regions(v)
         if regions is not None:
             regions = [region for region in regions if region['phenocode'] in use_phenos]
-        result = { "variant" : variant_data[0] ,
-                   "results" : variant_data[1] ,
+        result = { "variant" : variantdat[0] ,
+                   "results" : variantdat[1] ,
                    "regions" : regions }
         return result
     except Exception as exc:
