@@ -834,22 +834,8 @@ class TabixResultDao(ResultDB):
         self.pheno_map = phenos(0)
         self.columns = columns
         self.header = gzip.open(self.matrix_path,'rt').readline().split("\t")
-        self.phenos = [
-            (h.split("@")[1], p_col_idx)
-            for p_col_idx, h in enumerate(self.header)
-            if h.startswith("pval")
-        ]
-        self.header_offset = {}
-        i = 0
-        for h in self.header:
-            s = h.split("@")
-            if "@" in h:
-                if p is not None and s[1] != p:
-                    break
-                self.header_offset[s[0]] = i
-                i = i + 1
-            p = s[1] if len(s) > 1 else None
-
+        self.header_offset = {item.split('\n')[0]: i for i, item in enumerate(self.header)}
+        self.phenos = [(None, 0)]
         self.longformat = False
         self.tabix_common_dao = TabixResultCommonDao(self.pheno_map)
 
@@ -934,6 +920,7 @@ class TabixResultFiltDao(ResultDB):
         self.pheno_map = phenos(0)
         self.longformat = True
         self.tabix_common_dao = TabixResultCommonDao(self.pheno_map)
+        self.tabix_result = TabixResultDao(phenos, matrix_path, columns)
 
     def append_filt_phenos(
         self, varaint_phenores: Tuple[Variant, PhenoResult]
@@ -1018,6 +1005,21 @@ class TabixResultFiltDao(ResultDB):
         top.sort(key=lambda pheno: pheno.assoc.mlogp, reverse=True)
 
         return top
+
+
+    def get_single_variant_results(
+        self, variant: Variant
+    ) -> Optional[Tuple[Variant, List[PhenoResult]]]:
+        """
+        Returns all results and annotations for given variant.
+        """
+        res = self.tabix_result.get_variants_results([variant])
+        for r in res:
+            if r[0] == variant:
+                # if matrix is of longformat append rest of the phenotypes for which summary stats were filtered
+                r = self.append_filt_phenos(r)
+                return r
+        return None
 
 
 class ExternalMatrixResultDao(ExternalResultDB):
