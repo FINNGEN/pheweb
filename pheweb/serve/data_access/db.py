@@ -366,7 +366,7 @@ class ResultDB(object):
         """Return associations of all phenotypes in given range
         Returns a list of variants and results in chromosomal order. Each element contains tuple of 2 elements: Variant object and a list of PhenoResult objects
         """
-        return
+        raise NotImplementedError
 
     @abc.abstractmethod
     def get_top_per_pheno_variant_results_range(
@@ -375,7 +375,7 @@ class ResultDB(object):
         """Retrieves top variant for each phenotype in a given range
         Returns: A list of PhenoResults "pheno" which contains a phenotype dict, and "assoc" containing PhenoResult object, 'variant' contains Variant object. The list is sorted by p-value.
         """
-        return
+        raise NotImplementedError
 
     def get_variants_results(
         self, variants: List[Variant]
@@ -391,6 +391,7 @@ class ResultDB(object):
         Returns all results and annotations for given variant. Returns tuple of Variant (including updated annotations if any) and phenotype results.
         Returns None if variant does not exist.
         """
+        raise NotImplementedError
 
     def append_filt_phenos(
         self, varaint_phenores: Tuple[Variant, List[PhenoResult]]
@@ -398,12 +399,8 @@ class ResultDB(object):
         """For a single variant appends phenotypes filtered in longformat matrix.
            Populates missing summary stats with none.
         """
-    
-    def get_top_per_pheno_variant_results_range(
-        self, chrom, start, end
-    ) -> Tuple[Variant, List[PhenoResult]]:
-        """return the top of variant per pheno result range.
-        """
+        raise NotImplementedError
+
 
 
 class CodingDB(object):
