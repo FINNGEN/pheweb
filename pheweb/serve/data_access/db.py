@@ -834,8 +834,21 @@ class TabixResultDao(ResultDB):
         self.pheno_map = phenos(0)
         self.columns = columns
         self.header = gzip.open(self.matrix_path,'rt').readline().split("\t")
-        self.header_offset = {item.split('\n')[0]: i for i, item in enumerate(self.header)}
-        self.phenos = [(None, 0)]
+        self.phenos = [
+            (h.split("@")[1], p_col_idx)
+            for p_col_idx, h in enumerate(self.header)
+            if h.startswith("pval")
+        ]
+        self.header_offset = {}
+        i = 0
+        for h in self.header:
+            s = h.split("@")
+            if "@" in h:
+                if p is not None and s[1] != p:
+                    break
+                self.header_offset[s[0]] = i
+                i = i + 1
+            p = s[1] if len(s) > 1 else None
         self.longformat = False
         self.tabix_common_dao = TabixResultCommonDao(self.pheno_map)
 
@@ -909,6 +922,89 @@ class TabixResultDao(ResultDB):
                 if r[0] == v:
                     results.append(r)
         return results
+
+    def get_top_per_pheno_variant_results_range(self, chrom, start, end):
+
+        chrom = "23" if chrom == "X" else chrom
+        try:
+            tabix_iter = pysam.TabixFile(self.matrix_path, parser=None).fetch(
+                chrom, start - 1, end
+            )
+
+        except ValueError:
+            print(
+                "No variants in the given range. {}:{}-{}".format(chrom, start - 1, end)
+            )
+            return []
+        top = defaultdict(lambda: defaultdict(dict))
+
+        n_vars = 0
+        ind = [i for i,e in enumerate(self.header) if 'chr' in e][0]
+        for variant_row in tabix_iter:
+            n_vars = n_vars + 1
+            split = variant_row.split("\t")
+            for pheno in self.phenos:
+                # get the common variant columns
+                phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval = (
+                    self.tabix_common_dao.getVariantCommonColumns(
+                        split, pheno, self.header_offset, self.columns
+                    )
+                )
+                # Pick the smaller of values.  First try using mlog which
+                # maybe absent in earlier releases.  In this case fall back
+                # to using pval to order.
+                if mlogp is not None and mlogp is not "" and mlogp != "NA":
+                    if pval is None:
+                        pval = str(math.pow(10, -1 * float(mlogp)))
+                    # have mlogp compare mlog
+                    is_less_than = (
+                        phenotype not in top or (float(mlogp)) > top[phenotype][1].mlogp
+                    )
+                else:
+                    # we don't have mlogp use pval
+                    is_less_than = (
+                        pval is not ""
+                        and pval != "NA"
+                        and (
+                            phenotype not in top or (float(pval)) < top[phenotype][1].pval
+                        )
+                    )
+                if is_less_than:
+                    pr = self.tabix_common_dao.getCommonPhenoResults(
+                        phenotype, pval, beta, sebeta, maf, maf_case, maf_control, mlogp
+                    )
+                    v = Variant(chrom, split[ind+1], split[ind+2], split[ind+3])
+                    top[phenotype] = (v, pr)
+
+        print(str(n_vars) + " variants iterated")
+        top = [
+            PhenoResults(pheno=self.pheno_map[pheno], assoc=dat, variant=v)
+            for pheno, (v, dat) in top.items()
+        ]
+
+        # A hack to handle missing mlogp
+        # as sort is stable it should return
+        # with the the pval order.
+        top.sort(key=lambda pheno: pheno.assoc.pval)
+        top.sort(key=lambda pheno: pheno.assoc.mlogp, reverse=True)
+
+        return top
+
+    def append_filt_phenos(
+        self, varaint_phenores: Tuple[Variant, PhenoResult]
+    ) -> Tuple[Variant, PhenoResult]:
+        '''For a single variant append phenotypes filtered in longformat matrix.
+           Populates missing summary stats with none'''
+
+        phenolist = varaint_phenores[1]
+        var_phenocodes = [r.phenocode for r in phenolist]
+
+        for phenotype in self.pheno_map:
+            if phenotype not in var_phenocodes:
+                pr = self.tabix_common_dao.getCommonPhenoResults(phenotype, 'NA', None, None, None, None, None, 'NA')
+                phenolist.append(pr)
+
+        return (varaint_phenores[0], phenolist)
 
 class TabixResultFiltDao(ResultDB):
     def __init__(self, phenos, matrix_path, columns):
