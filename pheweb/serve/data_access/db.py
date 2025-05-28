@@ -827,7 +827,7 @@ class TabixResultCommonDao:
         )
         return pr
 
-    def get_common_top_per_pheno_variant(self, chrom, start, end, columns, header, header_offset, phenos, tabix_iter, top):
+    def get_common_top_per_pheno_variant(self, chrom, start, end, columns, header, header_offset, phenos):
         chrom = "23" if chrom == "X" else chrom
         try:
             tabix_iter = pysam.TabixFile(self.matrix_path, parser=None).fetch(
@@ -974,10 +974,10 @@ class TabixResultDao(ResultDB):
             p = s[1] if len(s) > 1 else None
 
         self.longformat = False
-        self.tabix_common_dao = TabixResultCommonDao(self.pheno_map)
+        self.tabix_result_common_dao = TabixResultCommonDao(self.pheno_map)
 
     def get_variant_results_range(self, chrom, start, end):
-        variant_results = self.tabix_common_dao.get_common_variant_results_range(
+        variant_results = self.tabix_result_common_dao.get_common_variant_results_range(
             chrom, start, end, self.matrix_path, self.header, self.header_offset, self.columns, self.phenos
         )
         return variant_results
@@ -1008,7 +1008,7 @@ class TabixResultDao(ResultDB):
         return results
 
     def get_top_per_pheno_variant_results_range(self, chrom, start, end):
-        pheno_results = self.tabix_common_dao.get_common_top_per_pheno_variant(chrom, start, end, self.columns, self.header, self.header_offset, self.phenos, tabix_iter, current_pheno_top)
+        pheno_results = self.tabix_result_common_dao.get_common_top_per_pheno_variant(chrom, start, end, self.columns, self.header, self.header_offset, self.phenos)
         return pheno_results
 
     def append_filt_phenos(
@@ -1017,7 +1017,9 @@ class TabixResultDao(ResultDB):
         '''For a single variant append phenotypes filtered in longformat matrix.
            Populates missing summary stats with none'''
 
-        variant_pheno_result, phenolist = self.tabix_common_dao.append_common_filter_pheno_results(variant_phenores, self.pheno_map)
+        variant_pheno_result, phenolist = self.tabix_result_common_dao.append_common_filter_pheno_results(
+            variant_phenores, self.pheno_map
+        )
         return (variant_pheno_result, phenolist)
 
 class TabixResultFiltDao(ResultDB):
@@ -1029,10 +1031,10 @@ class TabixResultFiltDao(ResultDB):
         self.phenos = [(None, 0)]
         self.pheno_map = phenos(0)
         self.longformat = True
-        self.tabix_common_dao = TabixResultCommonDao(self.pheno_map)
+        self.tabix_result_common_dao = TabixResultCommonDao(self.pheno_map)
 
     def get_variant_results_range(self, chrom, start, end):
-        variant_results = self.tabix_common_dao.get_common_variant_results_range(
+        variant_results = self.tabix_result_common_dao.get_common_variant_results_range(
             chrom, start, end, self.matrix_path, self.header, self.header_offset, self.columns, self.phenos
         )
         return variant_results
@@ -1065,7 +1067,7 @@ class TabixResultFiltDao(ResultDB):
         return results
 
     def get_top_per_pheno_variant_results_range(self, chrom, start, end):
-        pheno_results = self.tabix_common_dao.get_common_top_per_pheno_variant(chrom, start, end, self.columns, self.header, self.header_offset, self.phenos, tabix_iter, current_pheno_top)
+        pheno_results = self.tabix_result_common_dao.get_common_top_per_pheno_variant(chrom, start, end, self.columns, self.header, self.header_offset, self.phenos)
         return pheno_results
 
     def append_filt_phenos(
@@ -1074,7 +1076,9 @@ class TabixResultFiltDao(ResultDB):
         '''For a single variant append phenotypes filtered in longformat matrix.
            Populates missing summary stats with none'''
 
-        variant_pheno_result, phenolist = self.tabix_common_dao.append_common_filter_pheno_results(variant_phenores, self.pheno_map)
+        variant_pheno_result, phenolist = self.tabix_result_common_dao.append_common_filter_pheno_results(
+            variant_phenores, self.pheno_map
+        )
         return (variant_pheno_result, phenolist)
 
 class ExternalMatrixResultDao(ExternalResultDB):
