@@ -267,17 +267,18 @@ class ServerJeeves(object):
             Returns association results and basic annotations for a single variant. Returns tuple with variant and phenoresults.
         """
 
-        variant_annotation = None
-        single_variant = self.result_dao.get_single_variant_results(variant)
-        if single_variant is not None:
-            variant_annotation = self.annotation_dao.get_single_variant_annotations(single_variant[0], self.conf.anno_cpra)
-            if variant_annotation is None:
+        variant_annotated = None
+        single_variant_results = self.result_dao.get_single_variant_results(variant)
+        if single_variant_results is not None:
+            single_variant, pheno_results = single_variant_results
+            variant_annotated = self.annotation_dao.add_single_variant_annotations(single_variant, self.conf.anno_cpra)
+            if variant_annotated is None:
                 ## no annotations found even results were found. Should not happen except if the results and annotation files are not in sync
-                print("Warning! Variant results for " + str(single_variant[0]) + " found but no basic annotation!")
-                variant_result = single_variant[0]
+                print("Warning! Variant results for " + str(single_variant) + " found but no basic annotation!")
+                variant_result = single_variant
                 variant_result.add_annotation("annot", {})
             else:
-                variant_result = variant_annotation
+                variant_result = variant_annotated
             # add rsids from variant annotation if wasn't available in the merged sumstat matrix
             if variant_result.rsids is None:
                 variant_result.add_annotation("rsids", variant_result.annotation['annot']['rsid'])
@@ -286,20 +287,20 @@ class ServerJeeves(object):
             if len(gnomad) == 1:
                 variant_result.add_annotation('gnomad', gnomad[0]['var_data'])
 
-            phenos = [ p.phenocode for p in single_variant[1]]
+            phenos = [ p.phenocode for p in pheno_results]
             uk_biobank = self.ukbb_matrixdao.get_multiphenoresults( {variant:phenos} )
             phenotype = self.variant_phenotype.get_variant_phenotype(int(variant.chr),int(variant.pos),variant.ref,variant.alt) if self.variant_phenotype else dict()
-            for res in single_variant[1]:
+            for res in pheno_results:
                 if res.phenocode in phenotype:
                     res.set_suplementary(phenotype[res.phenocode])
 
             if variant_result in uk_biobank:
                 ukb_idx = { u:u for u in uk_biobank[variant_result] }
-                for res in single_variant[1]:
+                for res in pheno_results:
                     if res.phenocode in ukb_idx:
                         res.add_matching_result('ukbb',uk_biobank[variant_result][res.phenocode])
 
-            return variant_result,single_variant[1]
+            return variant_result,pheno_results
         else:
             return None
 

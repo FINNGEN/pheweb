@@ -260,20 +260,21 @@ class AnnotationDB(object):
         """Retrieve variant annotations given a list of Variants.
         Returns a list of Variant objects with new annotations with id 'annot' and with all annotations that existed in the search Variant
         """
-        return
+        raise NotImplementedError
 
     @abc.abstractmethod
     def get_variant_annotations_range(self, chrom, start, end):
         """Retrieve variant annotations given a range.
         Returns a list of Variant objects with new annotations with id 'annot'
         """
-        return
+        raise NotImplementedError
 
     @abc.abstractmethod
-    def get_single_variant_annotations(self, variant: Variant, cpra) -> Optional[Variant]:
+    def  add_single_variant_annotations(self, variant: Variant, cpra) -> Optional[Variant]:
         """
-        Retrieve variant annotations for a single variant. Returns a variant with annotations in id 'annot'  and including all old annotations
+        Add variant annotations for a single variant. Returns a variant with annotations in id 'annot'  and including all old annotations
         """
+        raise NotImplementedError
 
     @abc.abstractmethod
     def get_gene_functional_variant_annotations(self, gene : str,  use_aliases : Optional[bool]):
@@ -283,7 +284,7 @@ class AnnotationDB(object):
                  "id" - variant id chrN:pos:ref:alt
                  "var_data" - a dictionary with variant annotations
         """
-        return
+        raise NotImplementedError
 
 
 class GnomadDB(object):
@@ -1498,14 +1499,14 @@ class TabixAnnotationDao(AnnotationDB):
                 "No annotation datatype configuration found. Data will be stored as is."
             )
 
-    def get_single_variant_annotations(self, variant: Variant, cpra) -> Optional[Variant]:
-        res = self.get_variant_annotations([variant], cpra)
+    def  add_single_variant_annotations(self, variant: Variant, cpra) -> Optional[Variant]:
+        res = self.add_variant_annotations([variant], cpra)
         for r in res:
             if r == variant:
                 return r
         return None
 
-    def get_variant_annotations(self, variants: List[Variant], cpra):
+    def add_variant_annotations(self, variants: List[Variant], cpra):
 
         annotations = []
         t = time.time()
