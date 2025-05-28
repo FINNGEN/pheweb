@@ -905,6 +905,51 @@ class TabixResultCommonDao:
 
         return (variant_pheno_results[0], phenolist)
 
+    def get_common_variant_results_range(self, chrom, start, end, matrix_path, header, header_offset, columns, phenos):
+        chrom = "23" if chrom == "X" else chrom
+        try:
+            tabix_iter = pysam.TabixFile(matrix_path, parser=None).fetch(
+                chrom, start - 1, end)
+        except ValueError:
+            print(
+                "No variants in the given range. {}:{}-{}".format(chrom, start - 1, end)
+            )
+            return []
+
+        ind = [i for i,e in enumerate(header) if 'chr' in e][0]
+        result = {}
+        for variant_row in tabix_iter:
+            split = variant_row.split("\t")
+            chrom = (
+                split[ind]
+                .replace("chr", "")
+                .replace("X", "23")
+                .replace("Y", "24")
+                .replace("MT", "25")
+            )
+            v = Variant(chrom, split[ind+1], split[ind+2], split[ind+3])
+            for pheno in phenos:
+                # get the common variant columns
+                phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval = (
+                    self.get_variant_common_columns(
+                        split, pheno, header_offset, columns
+                    )
+                )
+                if mlogp is not None and mlogp is not "" and mlogp != "NA":
+                    if pval is None:
+                        pval = str(math.pow(10, -1 * float(mlogp)))
+                if pval is not None and not pval == "" and not pval == "NA":
+                    pr = self.get_common_pheno_results(
+                        phenotype, pval, beta, sebeta, maf, maf_case, maf_control, mlogp
+                    )
+                    pr = extend_pheno_result(pr,pheno[1],header_offset,split)
+                    if v in result:
+                        result[v].append(pr)
+                    else:
+                        result[v] = [pr]
+
+        return result.items()
+
 class TabixResultDao(ResultDB):
     def __init__(self, phenos, matrix_path, columns):
 
@@ -932,50 +977,10 @@ class TabixResultDao(ResultDB):
         self.tabix_common_dao = TabixResultCommonDao(self.pheno_map)
 
     def get_variant_results_range(self, chrom, start, end):
-
-        chrom = "23" if chrom == "X" else chrom
-        try:
-            tabix_iter = pysam.TabixFile(self.matrix_path, parser=None).fetch(
-                chrom, start - 1, end)
-        except ValueError:
-            print(
-                "No variants in the given range. {}:{}-{}".format(chrom, start - 1, end)
-            )
-            return []
-
-        ind = [i for i,e in enumerate(self.header) if 'chr' in e][0]
-        result = {}
-        for variant_row in tabix_iter:
-            split = variant_row.split("\t")
-            chrom = (
-                split[ind]
-                .replace("chr", "")
-                .replace("X", "23")
-                .replace("Y", "24")
-                .replace("MT", "25")
-            )
-            v = Variant(chrom, split[ind+1], split[ind+2], split[ind+3])
-            for pheno in self.phenos:
-                # get the common variant columns
-                phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval = (
-                    self.tabix_common_dao.get_variant_common_columns(
-                        split, pheno, self.header_offset, self.columns
-                    )
-                )
-                if mlogp is not None and mlogp is not "" and mlogp != "NA":
-                    if pval is None:
-                        pval = str(math.pow(10, -1 * float(mlogp)))
-                if pval is not None and not pval == "" and not pval == "NA":
-                    pr = self.tabix_common_dao.get_common_pheno_results(
-                        phenotype, pval, beta, sebeta, maf, maf_case, maf_control, mlogp
-                    )
-                    pr = extend_pheno_result(pr,pheno[1],self.header_offset,split)
-                    if v in result:
-                        result[v].append(pr)
-                    else:
-                        result[v] = [pr]
-
-        return result.items()
+        variant_results = self.tabix_common_dao.get_common_variant_results_range(
+            chrom, start, end, self.matrix_path, self.header, self.header_offset, self.columns, self.phenos
+        )
+        return variant_results
 
     def get_single_variant_results(
         self, variant: Variant
@@ -1027,50 +1032,10 @@ class TabixResultFiltDao(ResultDB):
         self.tabix_common_dao = TabixResultCommonDao(self.pheno_map)
 
     def get_variant_results_range(self, chrom, start, end):
-
-        chrom = "23" if chrom == "X" else chrom
-        try:
-            tabix_iter = pysam.TabixFile(self.matrix_path, parser=None).fetch(
-                chrom, start - 1, end)
-        except ValueError:
-            print(
-                "No variants in the given range. {}:{}-{}".format(chrom, start - 1, end)
-            )
-            return []
-
-        ind = [i for i,e in enumerate(self.header) if 'chr' in e][0]
-        result = {}
-        for variant_row in tabix_iter:
-            split = variant_row.split("\t")
-            chrom = (
-                split[ind]
-                .replace("chr", "")
-                .replace("X", "23")
-                .replace("Y", "24")
-                .replace("MT", "25")
-            )
-            v = Variant(chrom, split[ind+1], split[ind+2], split[ind+3])
-            for pheno in self.phenos:
-                # get the common variant columns
-                phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval = (
-                    self.tabix_common_dao.get_variant_common_columns(
-                        split, pheno, self.header_offset, self.columns
-                    )
-                )
-                if mlogp is not None and mlogp is not "" and mlogp != "NA":
-                    if pval is None:
-                        pval = str(math.pow(10, -1 * float(mlogp)))
-                if pval is not None and not pval == "" and not pval == "NA":
-                    pr = self.tabix_common_dao.get_common_pheno_results(
-                        phenotype, pval, beta, sebeta, maf, maf_case, maf_control, mlogp
-                    )
-                    pr = extend_pheno_result(pr,pheno[1],self.header_offset,split)
-                    if v in result:
-                        result[v].append(pr)
-                    else:
-                        result[v] = [pr]
-
-        return result.items()
+        variant_results = self.tabix_common_dao.get_common_variant_results_range(
+            chrom, start, end, self.matrix_path, self.header, self.header_offset, self.columns, self.phenos
+        )
+        return variant_results
 
     def get_single_variant_results(
         self, variant: Variant
