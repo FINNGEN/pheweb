@@ -894,6 +894,16 @@ class TabixResultCommonDao:
 
         return pheno_results
 
+    def append_common_filter_pheno_results(self, variant_pheno_results, pheno_map):
+        phenolist = variant_pheno_results[1]
+        var_phenocodes = [r.phenocode for r in phenolist]
+
+        for phenotype in pheno_map:
+            if phenotype not in var_phenocodes:
+                pr = self.get_common_pheno_results(phenotype, 'NA', None, None, None, None, None, 'NA')
+                phenolist.append(pr)
+
+        return (variant_pheno_results[0], phenolist)
 
 class TabixResultDao(ResultDB):
     def __init__(self, phenos, matrix_path, columns):
@@ -997,20 +1007,13 @@ class TabixResultDao(ResultDB):
         return pheno_results
 
     def append_filt_phenos(
-        self, varaint_phenores: Tuple[Variant, PhenoResult]
+        self, variant_phenores: Tuple[Variant, PhenoResult]
     ) -> Tuple[Variant, PhenoResult]:
         '''For a single variant append phenotypes filtered in longformat matrix.
            Populates missing summary stats with none'''
 
-        phenolist = varaint_phenores[1]
-        var_phenocodes = [r.phenocode for r in phenolist]
-
-        for phenotype in self.pheno_map:
-            if phenotype not in var_phenocodes:
-                pr = self.tabix_common_dao.get_common_pheno_results(phenotype, 'NA', None, None, None, None, None, 'NA')
-                phenolist.append(pr)
-
-        return (varaint_phenores[0], phenolist)
+        variant_pheno_result, phenolist = self.tabix_common_dao.append_common_filter_pheno_results(variant_phenores, self.pheno_map)
+        return (variant_pheno_result, phenolist)
 
 class TabixResultFiltDao(ResultDB):
     def __init__(self, phenos, matrix_path, columns):
@@ -1106,15 +1109,8 @@ class TabixResultFiltDao(ResultDB):
         '''For a single variant append phenotypes filtered in longformat matrix.
            Populates missing summary stats with none'''
 
-        phenolist = variant_phenores[1]
-        var_phenocodes = [r.phenocode for r in phenolist]
-
-        for phenotype in self.pheno_map:
-            if phenotype not in var_phenocodes:
-                pr = self.tabix_common_dao.get_common_pheno_results(phenotype, 'NA', None, None, None, None, None, 'NA')
-                phenolist.append(pr)
-
-        return (variant_phenores[0], phenolist)
+        variant_pheno_result, phenolist = self.tabix_common_dao.append_common_filter_pheno_results(variant_phenores, self.pheno_map)
+        return (variant_pheno_result, phenolist)
 
 class ExternalMatrixResultDao(ExternalResultDB):
     def __init__(self, matrix, metadatafile):
