@@ -1,3 +1,6 @@
+.region-spacer { padding: 0px 10px 0px 0px; font-weight: bold; }
+.region-range { padding: 0px 10px 0px 0px; font-weight: bold; }
+.region-variant { padding: 0px 5px 0px 0px; }
 .lz-dashboard.lz-plot-dashboard { text-align: center; padding-bottom: 0; }
 .lz-dashboard-left, .lz-dashboard-right { display: inline-block; }
 .lz-dashboard-group-start, .lz-dashboard-group-middle, .lz-dashboard-group-end { float: none !important; }

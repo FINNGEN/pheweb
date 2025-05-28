@@ -43,6 +43,7 @@ export namespace Gene {
   export interface GeneColocalizationsConfiguration {
     banner?: string
     tableColumns? : TableColumnConfiguration<GeneColocalizations.Row>
+    subTableColumns? : TableColumnConfiguration<GeneColocalizationsDetail.Row>
   }
 
   export interface TableOfContentsTitlesConfiguration {
@@ -335,4 +336,42 @@ export namespace GeneColocalizations {
     n_colocs: number
     disease_colocalizations: Colocalization[]
   }
+}
+
+export namespace GeneColocalizationsDetail {
+  export interface Detail {
+    description: string
+    disease_colocalizations: DiseaseColocalization[]
+    n_colocs: number
+    phenotype: string
+  }
+
+  export interface DiseaseColocalization {
+    beta1: number
+    beta2: number
+    clpa: number
+    clpp: number
+    len_cs1: number
+    len_cs2: number
+    len_inter: number
+    locus_id1_alt: string
+    locus_id1_chromosome: number
+    locus_id1_distance?: number
+    locus_id1_position: number
+    locus_id1_ref: string
+    locus_id2_alt: string
+    locus_id2_chromosome: number
+    locus_id2_distance?: number
+    locus_id2_position: number
+    locus_id2_ref: string
+    phenotype1: string
+    phenotype1_description: string
+    phenotype2: string
+    phenotype2_description: string
+    pval1: number
+    pval2: number
+    source2: string
+    source2_displayname: string
+  }
+  export type Row = DiseaseColocalization;
 }

@@ -25,13 +25,15 @@ import {
   FG_LDDataSource,
   GWASCatSource,
 } from "./RegionCustomLocuszooms";
-import { Region } from "../RegionModel";
+import { Summary} from "../regionModel";
+
 import { resolveURL } from "../../Configuration/configurationModel";
 import { isFinngenServer } from "../../Finngen/finngenUtilities";
 
 declare let window: ConfigurationWindow;
 const application = window?.config?.application;
 const config = window?.config?.userInterface?.region;
+import {regionTypes} from "../regionUtilities";
 
 TransformationFunctions.set<number, number>("neglog10_or_100", (x: number) =>
   x === 0 ? 100 : -Math.log(x) / Math.LN10
@@ -132,6 +134,14 @@ export function add_dashboard_button(
     return this;
   });
 }
+
+const addPanel = (plot: Plot, layout : Layout) => {
+  if(!(layout.id in plot.panels)){
+    plot.addPanel(layout);
+  }
+}
+
+
 interface ConditionalParams {
   dataIndex: number;
   allData: { conditioned_on: boolean; data: any; type: any }[];
@@ -184,16 +194,18 @@ const default_configuration = {
   },
 };
 
-export const init_locus_zoom = (region: Region): LocusZoomContext => {
+export const init_locus_zoom = (region : Summary.Region): LocusZoomContext => {
+  const showClinvar : boolean = !(config?.lz_configuration?.showClinvar === false);
+
   // Define LocusZoom Data Sources object
   const localBase: string = resolveURL(
-    `/api/region/${region.pheno.phenocode}/lz-`
+    `/api/region/${region.phenotype.phenocode}/lz-`
   );
   const localCondBase: string = resolveURL(
-    `/api/conditional_region/${region.pheno.phenocode}/lz-`
+    `/api/conditional_region/${region.phenotype.phenocode}/lz-`
   );
   const localFMBase: string = resolveURL(
-    `/api/finemapped_region/${region.pheno.phenocode}/lz-`
+    `/api/finemapped_region/${region.phenotype.phenocode}/lz-`
   );
   const remoteBase: string = "https://portaldev.sph.umich.edu/api/v1/";
   const dataSources: DataSources = new DataSources();
@@ -207,6 +219,7 @@ export const init_locus_zoom = (region: Region): LocusZoomContext => {
     "AssociationLZ",
     { url: localBase, params: { source: 3 } },
   ]);
+
   dataSources.add("conditional", [
     "ConditionalLZ",
     {
@@ -265,13 +278,15 @@ export const init_locus_zoom = (region: Region): LocusZoomContext => {
       params: { id: gwascatSource, pvalue_field: "log_pvalue" },
     })
   );
-  dataSources.add(
+
+  showClinvar && dataSources.add(
     "clinvar",
     new ClinvarDataSource({
       url: "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/",
       params: { region: region, id: [1, 4], pvalue_field: "log_pvalue" },
     })
   );
+
   if (isFinngenServer(application?.ld_service)) {
     dataSources.add(
       "ld",
@@ -280,7 +295,7 @@ export const init_locus_zoom = (region: Region): LocusZoomContext => {
         params: {
           id: [1, 4],
 
-          region: { region, ...default_configuration, ...application },
+          region: { region: region, ...default_configuration, ...application },
           pvalue_field: "association:pvalue",
           var_id_field: "association:id",
         },
@@ -293,7 +308,7 @@ export const init_locus_zoom = (region: Region): LocusZoomContext => {
         url: "https://rest.ensembl.org/ld/homo_sapiens/",
         params: {
           id: [1, 4],
-          region: { region, ...default_configuration, ...application },
+          region: { region: region, ...default_configuration, ...application },
           pvalue_field: "association:pvalue",
           var_id_field: "association:rsid",
         },
@@ -375,27 +390,24 @@ export const init_locus_zoom = (region: Region): LocusZoomContext => {
 
   const plot: Plot = populate("#lz-1", dataSources, region_layout(region));
 
-  plot.addPanel(association_layout(region));
-  plot.addPanel(clinvar_layout);
-  plot.addPanel(gwas_cat_layout(region));
-  plot.addPanel(genes_layout(region));
-  plot.addPanel(colocalization_layout(region));
+  addPanel(plot,association_layout(region));
+  showClinvar && addPanel(plot,clinvar_layout);
+  addPanel(plot,gwas_cat_layout(region));
+  addPanel(plot,genes_layout(region));
+  addPanel(plot,colocalization_layout(region));
 
-  region.cond_fm_regions?.forEach((r) => {
-    if (r.type === "susie" || r.type === "finemap") {
-      if (!plot.panels["finemapping"]) {
-        plot.addPanel(finemapping_layout(region));
-      }
+  regionTypes(region).forEach(t => {
+    if (t === "susie" || t === "finemap") {
+      addPanel(plot, finemapping_layout(region));
     } else {
-      const layout: ((region: Region) => Layout) | undefined =
-        panel_layouts[r.type];
+      const layout: ((region: Summary.Region) => Layout) | undefined = panel_layouts[t];
       console.assert(
-        typeof layout != undefined,
-        `${r.type} missing layout for type`
+          typeof layout != undefined,
+          `missing layout for type '${t}'`
       );
-      layout && plot.addPanel(layout(region));
+      layout && addPanel(plot,layout(region));
     }
-  });
+  })
 
   return { plot, dataSources };
 };

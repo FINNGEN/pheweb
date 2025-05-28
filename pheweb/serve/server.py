@@ -327,21 +327,32 @@ def ukbb_ns(phenocode):
 def api_region_page(phenocode, region):
     if phenocode not in use_phenos:
         abort(404)
-    pheno = phenos[phenocode]
-    chr_se = region.split(':')
-    chrom = chr_se[0]
-    chrom = 23 if str(chrom) == 'X' else int(chrom)
-    start_end = jeeves.get_max_finemapped_region(phenocode, chrom, chr_se[1].split('-')[0], chr_se[1].split('-')[1])
+    phenotype = phenos[phenocode]
+    chromosome, startstop = region.split(':')
+    chromosome = 23 if str(chromosome) == 'X' else int(chromosome)
+
+    region_start, region_stop = map(int, startstop.split('-'))
+    start_end = jeeves.get_max_finemapped_region(phenocode,
+                                                 chromosome,
+                                                 region_start,
+                                                 region_stop)
     if start_end is not None:
-        cond_fm_regions = jeeves.get_finemapped_region_boundaries_for_pheno('all', phenocode, chrom, int(chr_se[1].split('-')[0]), int(chr_se[1].split('-')[1]))
+        region_summary = jeeves.get_finemapped_region_variant_summary(phenocode,
+                                                                      chromosome,
+                                                                      region_start,
+                                                                      region_stop,
+                                                                      prob_threshold=conf.locuszoom_conf['prob_threshold'])
     else:
-        cond_fm_regions = []
-    print(cond_fm_regions)
-    pheno['phenocode'] = phenocode
-    data = { 'pheno' : pheno ,
-             'region' : region,
-             'cond_fm_regions' : cond_fm_regions }
-    return jsonify(data)
+        region_summary = []
+
+    region_range  = { 'chromosome' : chromosome ,
+                      'start' : region_start,
+                      'stop' : region_stop }
+    region_variants = []
+    region_data = { 'phenotype' : phenotype ,
+                    'region' : region_range ,
+                    'region_summary' : region_summary }
+    return jsonify(region_data)
 
 @app.route('/api/region/<phenocode>/lz-results/') # This API is easier on the LZ side.
 def api_region(phenocode : str,filter_param = None):

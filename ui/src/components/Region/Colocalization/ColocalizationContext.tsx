@@ -2,7 +2,9 @@ import React, { createContext, useEffect, useState } from "react";
 import { CasualVariant, Colocalization, Locus } from "../../../common/commonModel";
 import { LocusZoomData, SearchSummary } from "./ColocalizationModel";
 import { getLocusZoomData, getSearchResults, getSummary } from "./ColocalizationAPI";
-import { createParameter,Region, RegionParams, CondFMRegions } from "../RegionModel";
+import { createParameter,Summary, RegionParams } from "../regionModel";
+import Region = Summary.Region;
+
 import { getRegion } from "../RegionAPI";
 
 interface Props {
@@ -34,7 +36,7 @@ const ColocalizationContextProvider = ({ params , children} :  Props) => {
     const [selectedColocalization, setSelectedColocalization] = useState<Colocalization | undefined>(undefined);
     const [searchSummary, setSearchSummary] = useState<SearchSummary | undefined>(undefined);
     const [casualVariant, selectedCasualVariant] = useState<CasualVariant | undefined>(undefined);
-    const [region, setRegion] = useState<Region| undefined>(undefined); 
+    const [region, setRegion] = useState<Region| undefined>(undefined);
     
     useEffect(() => {
         const parameter : RegionParams<Locus>| undefined = createParameter(params)
@@ -42,9 +44,8 @@ const ColocalizationContextProvider = ({ params , children} :  Props) => {
 
     useEffect(() => {
         const parameter : RegionParams<Locus>| undefined = createParameter(params);
-        const finemapRegion : CondFMRegions | undefined = (region?.cond_fm_regions || []).find(element => element.type === 'finemap' || element.type === 'susie');
-        finemapRegion && getSearchResults(
-            {locus: { ...finemapRegion, chromosome: finemapRegion.chr, stop: finemapRegion.end}, 
+        region && region.region && getSearchResults(
+            {locus: region.region,
             phenotype: params?.phenotype}, setColocalization);
         getLocusZoomData(parameter, setLocusZoomData);
         getSummary(parameter, setSearchSummary);

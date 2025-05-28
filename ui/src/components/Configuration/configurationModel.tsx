@@ -8,7 +8,7 @@ import { VariantConfiguration } from "../Variant/variantModel";
 import { TopHitsConfiguration } from "../TopHits/topHitsModel";
 import { Gene } from "../Gene/geneModel";
 import { LOFConfiguration } from "../LOF/lofModel";
-import { RegionModel } from '../Region/RegionModel';
+import { RegionModel } from '../Region/regionModel';
 
 export interface VisConfiguration {
   readonly info_tooltip_threshold: number;

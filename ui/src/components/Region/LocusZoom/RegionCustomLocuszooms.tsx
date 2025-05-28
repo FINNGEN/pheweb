@@ -387,7 +387,6 @@ ConditionalSource.prototype.getURL = function(state: { [key: string]: (object | 
 
 
 ConditionalSource.prototype.parseResponse = function(resp: string, chain: ChainResponse, fields: string[], outnames: string[], trans: any) {
-
   this.params.allData = JSON.parse(resp);
   this.params.dataIndex = this.params.dataIndex || 0;
   this.params.fields = fields;

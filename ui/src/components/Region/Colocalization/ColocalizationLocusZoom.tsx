@@ -1,7 +1,7 @@
 import { Colocalization } from "../../../common/commonModel";
 import { CasualVariantVector, EMPTY, filterCasualVariantVector, LocusZoomData } from "./ColocalizationModel";
 import { Panel } from "locuszoom";
-import { LocusZoomContext } from "../LocusZoom/RegionLocus";
+import { LocusZoomContext } from "../LocusZoom/regionLocusZoomHook";
 import { updateMousehandler } from "../LocusZoom/MouseHandler";
 
 type colocalization_data_layers = { colocalization_pip1 : { data : any , render : () => void } ,
