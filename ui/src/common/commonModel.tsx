@@ -20,11 +20,17 @@ export interface CasualVariant {
   readonly membership_cs : number;
 }
 
-export interface Colocalization {
-  readonly colocalization_id : number,
 
+export interface Colocalization {
+  readonly dataset2: string,
+  readonly colocalization_id : number,
+  
   readonly source1 : string,
   readonly source2 : string,
+  readonly phenotype?: string,
+  readonly trait1?: string,
+  readonly trait2?: string,
+  
   readonly phenotype1 : string,
   readonly phenotype1_description : string,
   readonly phenotype2 : string,

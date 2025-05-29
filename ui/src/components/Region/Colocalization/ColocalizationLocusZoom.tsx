@@ -12,7 +12,7 @@ export const refreshLocusZoom = (setSelectedPosition : (position : number | unde
                           locusZoomData : LocusZoomData,
                           locusZoomContext : LocusZoomContext) => {
     const { dataSources ,  plot } = locusZoomContext;
-    const title: string = colocalization?`Credible Set : ${colocalization.phenotype2_description ?? 'NA'} : ${colocalization.tissue2 ?? 'NA'}`:"Credible Set : Colocalization";
+    const title: string = colocalization?`Credible Set : ${(colocalization.phenotype2_description || colocalization.phenotype) ?? 'NA'} : ${(colocalization.tissue2 || colocalization.trait2) ?? 'NA'}`:"Credible Set : Colocalization";
     const panel : Panel = plot.panels.colocalization;
 
     panel.setTitle(title);

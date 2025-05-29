@@ -2,7 +2,7 @@ import typing
 from sqlalchemy import Table, MetaData, create_engine, Column, Integer, String, Float, Text, ForeignKey, Index
 from sqlalchemy.orm import sessionmaker
 
-from pheweb.serve.components.colocalization.finngen_common_data_model.genomics import Variant, Locus
+from pheweb.serve.components.colocalization.finngen_common_data_model.genomics import Variant, Locus as Region
 from pheweb.serve.components.colocalization.finngen_common_data_model.colocalization import Model
 from pheweb.serve.components.colocalization.model import CausalVariantVector, SearchSummary, SearchResults, PhenotypeList, ColocalizationDB
 from pheweb.serve.components.colocalization.model_mapper import ColocalizationMapping
@@ -60,7 +60,9 @@ class ColocalizationDAO(ColocalizationDB):
             password = getattr(auth_module, 'mysql')['password']
             host = getattr(auth_module, 'mysql')['host']
             db = getattr(auth_module, 'mysql')['db']
-            return 'mysql://{}:{}@{}/{}'.format(user,password,host,db)
+            port = int(getattr(auth_module, 'mysql').get('port','3306'))
+            url = 'mysql://{}:{}@{}:{}/{}'.format(user,password,host,port,db)
+            return url
         else:
             return path
 
@@ -173,17 +175,17 @@ class ColocalizationDAO(ColocalizationDB):
 
     def locus_query(self,
                     phenotype: str,
-                    locus: Locus,
+                    region: Region,
                     flags: typing.Dict[str, typing.Any]={},
                     projection = None):
         if projection is None:
             projection=[self.model.Colocalization]
-        locus_id = self.model.Colocalization.variants.any(and_(self.model.CausalVariant.variant_chromosome == locus.chromosome,
-                                                               self.model.CausalVariant.variant_position >= locus.start,
-                                                               self.model.CausalVariant.variant_position <= locus.stop))
+        locus_id = self.model.Colocalization.variants.any(and_(self.model.CausalVariant.variant_chromosome == region.chromosome,
+                                                               self.model.CausalVariant.variant_position >= region.start,
+                                                               self.model.CausalVariant.variant_position <= region.stop))
 
         colocalization_filter = and_(self.model.Colocalization.phenotype1 == phenotype,
-                                     self.model.Colocalization.chromosome == locus.chromosome,
+                                     self.model.Colocalization.chromosome == region.chromosome,
                                      self.model.Colocalization.len_cs2 < ColocalizationDAO.CREDIBLE_SET_LENGTH_THRESHOLD)
         phenotype1 = self.model.Colocalization.phenotype1 == phenotype
         session = self.Session()
@@ -196,7 +198,7 @@ class ColocalizationDAO(ColocalizationDB):
 
     def get_locus(self,
                   phenotype: str,
-                  locus: Locus,
+                  region: Region,
                   flags: typing.Dict[str, typing.Any]={}) -> SearchResults:
         """
         Search for colocalization that match
@@ -208,7 +210,7 @@ class ColocalizationDAO(ColocalizationDB):
 
         :return: matching colocalizations
         """
-        [session,query] = self.locus_query(phenotype, locus, flags)
+        [session,query] = self.locus_query(phenotype, region, flags)
         matches = query.all()
         matches = [ refine_colocalization(self.model, x) for x in matches]
         return SearchResults(colocalizations=matches,
@@ -216,7 +218,7 @@ class ColocalizationDAO(ColocalizationDB):
 
     def get_locuszoom(self,
                         phenotype: str,
-                        locus: Locus,
+                        region: Region,
                         flags: typing.Dict[str, typing.Any]={}) -> typing.Dict[str, CausalVariantVector]   :
         """
         Search for colocalization that match
@@ -228,7 +230,7 @@ class ColocalizationDAO(ColocalizationDB):
 
         :return: matching colocalizations
         """
-        [session,query] = self.locus_query(phenotype, locus, flags)
+        [session,query] = self.locus_query(phenotype, region, flags)
         session.expire_all()
         rows = {}
         for r in query.all():
@@ -294,12 +296,12 @@ class ColocalizationDAO(ColocalizationDB):
 
     def get_locus_summary(self,
                           phenotype: str,
-                          locus: Locus,
+                          region: Region,
                           flags: typing.Dict[str, typing.Any] = {}) -> SearchSummary:
         aggregates =  [func.count('*'),
                        func.count(distinct('colocalization.phenotype2')),
                        func.count(distinct('colocalization.tissue2'))]
-        [session,query] = self.locus_query(phenotype, locus, flags, aggregates)
+        [session,query] = self.locus_query(phenotype, region, flags, aggregates)
         session.expire_all()
         count, unique_phenotype2, unique_tissue2 = query.all()[0]
         return SearchSummary(count=count,

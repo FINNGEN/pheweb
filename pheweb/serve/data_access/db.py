@@ -31,7 +31,8 @@ import os
 import subprocess
 import sys
 import glob
-from pheweb.serve.components.colocalization.model_db import ColocalizationDAO
+from pheweb.serve.components.colocalization.model_orm_db import ColocalizationDAO
+from pheweb.serve.components.colocalization.model_sql_db import ColocalizationV2DAO
 from .variant_phenotype import  VariantPhenotypeDao
 from ..components.chip.fs_storage import FileChipDAO
 from ..components.coding.fs_storage import FileCodingDAO
