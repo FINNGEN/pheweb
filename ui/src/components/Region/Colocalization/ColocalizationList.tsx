@@ -4,24 +4,22 @@ import ReactTable, { Cell, Column, Row } from "react-table-v6";
 import { ColocalizationContext, ColocalizationState } from "./ColocalizationContext";
 import selectTableHOC from "react-table/lib/hoc/selectTable";
 import { CSVLink } from "react-csv";
-import { cellNumber, cellText, variantLink } from "../../../common/commonFormatter";
-import { compose } from "../../../common/commonUtilities";
 import { refreshLocusZoom } from "./ColocalizationLocusZoom";
 import { RegionContext, RegionState } from "../RegionContext";
 import ColocalizationSourcesSummary from './ColocalizationSourcesSummary';
 import {colocTypesSummaryData as summaryData} from '../../../common/commonModel'
 
 import './Colocalization.css'
+import { colocalizationTable, colocalizationSubtable, createTableColumns } from '../../../common/commonTableColumn';
+import { ConfigurationWindow } from '../../Configuration/configurationModel';
+
+declare let window: ConfigurationWindow;
+
+const configuration = window?.config?.userInterface?.region?.colocalization;
 
 
 const SelectTable = selectTableHOC(ReactTable);
 SelectTable.prototype.headSelector = () => null;
-
-export const cell_locus_id1 = (row : Row<Colocalization>) => row.original.locus_id1
-export const cell_locus_id2 = (row : Row<Colocalization>) => row.original.locus_id2
-export const cell_variant = (row : Row<CasualVariant>) => row.original.variant
-export const cell_quant1 = (row : Row<Colocalization>) => row.original.quant1
-
 
 interface Metadata { accessor: string
                      label: string
@@ -33,42 +31,9 @@ interface Metadata { accessor: string
                      flexBasis? : string }
 
 
-const listMetadata : Metadata[] = [
-    { title: "source" , accessor: "source2_displayname" , label:"Source", flexBasis: "max-content" },
-    { title: "locus id 1", accessor: "locus_id1" , label:"Locus ID 1",
-      Cell: compose(cell_locus_id1,variantLink) },
-    { title: "locus id 2", accessor: "locus_id1" , label:"Locus ID 2",
-        Cell: compose(cell_locus_id2,variantLink) },
-    { title: "code", accessor: "phenotype2", label: "Code" },
-    { title: "description", accessor: "phenotype2_description", label: "Description" },
-    { title: "tissue", accessor: "tissue2",
-        Cell: cellText,
-        label: "Tissue" },
-    { title: "cell_quant2", accessor: "quant2",
-        Cell: cellText,
-        label: "Quant" },
-    { title: "clpp", accessor: "clpp",
-        Cell: cellNumber,
-        label: "CLPP",
-        width: 80 },
-    { title: "clpa", accessor: "clpa" ,
-        Cell: cellNumber,
-        label: "CLPA",
-        width: 80 },
-    { title: "cs_size_1", accessor: "cs_size_1", label: "CS Size 1", width: 80 },
-    { title: "cs_size_2", accessor: "cs_size_2", label: "CS Size 2", width: 80 },
-    { title: "beta1", accessor: "beta1", label: "beta cs1", width: 100,  Cell: cellNumber}, 
-    { title: "beta2", accessor: "beta2", label: "beta cs2", width: 100,  Cell: cellNumber},
-    { title: "pval1", accessor: "pval1", label: "p-value cs1", width: 100,  Cell: cellNumber}, 
-    { title: "pval2", accessor: "pval2", label: "p-value cs2", width: 100,  Cell: cellNumber},
-    { title: "pp_h4_abf", accessor: "pp_h4_abf", label: "PP.H4.abf", width: 100,  Cell: cellNumber} 
-];
-
-const subComponentMetadata = [ { title: "Variant" , accessor: "varid1" , label: "Variant" , Cell : compose(cell_variant,variantLink) },
-                               { title: "pip1" , accessor: "pip1" , label:"PIP 1" , Cell : cellNumber },
-                               { title: "beta1" , accessor: "beta1" , label:"Beta 1" , Cell : cellNumber },
-                               { title: "pip2" , accessor: "pip2" , label:"PIP 2"  , Cell : cellNumber },
-                               { title: "beta2" , accessor: "beta2" , label:"Beta 2"  , Cell : cellNumber } ]
+const listMetadata : Column[] = createTableColumns(configuration?.tableColumns) || colocalizationTable;
+const subComponentMetadata : Column[] = createTableColumns(configuration?.subtableColumns) || colocalizationSubtable;
+const dataset2_label_column : string = configuration?.dataset2_label_column || 'source2_displayname';
 
 const columns = (metadata : Metadata[]) => metadata.map(c => ({ ...c , Header: () => (<span title={ c.title} style={{textDecoration: 'underline'}}>{ c.label }</span>) }))
 const headers = (metadata : Metadata[]) => columns(metadata).map(c => ({ ...c , key: c.accessor }))
@@ -134,13 +99,13 @@ const ColocalizationList = (props : Props) => {
 
     useEffect(() => {
         if (colocalization){
-            const arr = colocalization?.map(element => {return element.source2_displayname}); 
+            const arr = colocalization?.map(element => {return element[dataset2_label_column]}); 
             const src = arr?.filter((item,index) => arr.indexOf(item) === index);
             setInitialSources(src);
             setSelectedSources(src);
             setColocFiltBySource;   
             setSourceSummaryData(colocalization?.map(
-                element => { return {source: element['source2_displayname'], beta: element['beta2'], sourceKey:  element['source2'] }}).sort()
+                element => { return {source: element[dataset2_label_column], beta: element['beta2'], sourceKey:  element['source2'] }}).sort()
             );
 
         }  
@@ -148,7 +113,7 @@ const ColocalizationList = (props : Props) => {
 
     useEffect(() => {
         if (colocalization){
-            setColocFiltBySource(colocalization.filter(element => selectedSources.indexOf(element.source2_displayname) > -1));
+            setColocFiltBySource(colocalization.filter(element => selectedSources.indexOf(element[dataset2_label_column]) > -1));
             selectedSources.length == initialSources.length ? setAllChecked(true) : setAllChecked(false);
             selectedSources.length == initialSources.length ? setSelectorText("All Selected") : setSelectorText(selectedSources.length + " Selected");
         }  

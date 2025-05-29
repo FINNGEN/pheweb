@@ -1,4 +1,5 @@
 import { CasualVariant, Colocalization, Variant, variantFromStr } from "../../../common/commonModel";
+import { TableColumnConfiguration } from '../../../common/commonTableColumn';
 
 export interface CasualVariantVector {
     causal_variant_id : number[]
@@ -157,8 +158,8 @@ const hydrateCasualVariant = (c : ResponseCasualVariant) : CasualVariant => {
 
 const hydrateColocalization = (c : ResponseColocalization) : Colocalization => {
     return { ...c,
-             locus_id1 : c.locus_id1 && c.locus_id1 != null ?variantFromStr(c.locus_id1 as string): undefined,
-             locus_id2 : c.locus_id2 && c.locus_id2 != null ?variantFromStr(c.locus_id2 as string): undefined,
+             locus_id1 : c.locus_id1 && c.locus_id1 !== null ?variantFromStr(c.locus_id1 as string): undefined,
+             locus_id2 : c.locus_id2 && c.locus_id2 !== null ?variantFromStr(c.locus_id2 as string): undefined,
              variants : c.variants.map(hydrateCasualVariant) } as Colocalization }
 
 export const searchResultsColocalization = (c : SearchResults) : Colocalization [] => c.colocalizations.map(hydrateColocalization)
@@ -176,5 +177,8 @@ export interface ColocalizationSourceType {
 }
 
 export interface ColocalizationConfiguration {
+    dataset2_label_column? : string
     colocalizationSourceTypes? : Array<ColocalizationSourceType>
+    tableColumns? : TableColumnConfiguration<any>
+    subtableColumns? : TableColumnConfiguration<any>
 }
