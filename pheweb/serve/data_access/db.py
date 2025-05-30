@@ -393,14 +393,6 @@ class ResultDB(object):
         """
         raise NotImplementedError
 
-    def append_filt_phenos(
-        self, varaint_phenores: Tuple[Variant, List[PhenoResult]]
-    ) -> Tuple[Variant, List[PhenoResult]]:
-        """For a single variant appends phenotypes filtered in longformat matrix.
-           Populates missing summary stats with none.
-        """
-        raise NotImplementedError
-
 
 
 class CodingDB(object):
@@ -793,6 +785,17 @@ class TabixResultCommonDao:
             else None
         )
         return phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval
+    
+    def get_variant_common_filter_columns(self, split, columns):
+        phenotype = split[columns.index('#pheno')]
+        beta = split[columns.index('beta')]
+        sebeta = split[columns.index('sebeta')] if "sebeta" in columns else None
+        maf = split[columns.index('maf')] if "maf" in columns else None
+        maf_case = split[columns.index('maf_cases')] if "maf_cases" in columns else None
+        maf_control = split[columns.index('maf_cases')] if "maf_controls" in columns else None
+        mlogp = split[columns.index('mlogp')] if "mlogp" in columns else None
+        pval = split[columns.index('pval')] if "pval" in columns else None
+        return phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval
 
     def get_common_pheno_results(self, phenotype, pval, beta, sebeta, maf, maf_case, maf_control, mlogp):
         pr = PhenoResult(
@@ -851,7 +854,7 @@ class TabixResultCommonDao:
                 phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval = (
                     self.get_variant_common_columns(
                         split, pheno, header_offset, columns
-                    )
+                    ) if header_offset is not None else self.get_variant_common_filter_columns(split, header)
                 )
                 # Pick the smaller of values.  First try using mlog which
                 # maybe absent in earlier releases.  In this case fall back
@@ -905,7 +908,7 @@ class TabixResultCommonDao:
 
         return (variant_pheno_results[0], phenolist)
 
-    def get_common_variant_results_range(self, chrom, start, end, matrix_path, header, header_offset, columns, phenos):
+    def get_common_variant_results_range(self, chrom, start, end, matrix_path, header, columns, header_offset, phenos):
         chrom = "23" if chrom == "X" else chrom
         try:
             tabix_iter = pysam.TabixFile(matrix_path, parser=None).fetch(
@@ -933,7 +936,7 @@ class TabixResultCommonDao:
                 phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval = (
                     self.get_variant_common_columns(
                         split, pheno, header_offset, columns
-                    )
+                    ) if header_offset is not None else self.get_variant_common_filter_columns(split, header)
                 )
                 if mlogp is not None and mlogp is not "" and mlogp != "NA":
                     if pval is None:
@@ -942,7 +945,8 @@ class TabixResultCommonDao:
                     pr = self.get_common_pheno_results(
                         phenotype, pval, beta, sebeta, maf, maf_case, maf_control, mlogp
                     )
-                    pr = extend_pheno_result(pr,pheno[1],header_offset,split)
+                    if header_offset is not None:
+                        pr = extend_pheno_result(pr,pheno[1],header_offset,split)
                     if v in result:
                         result[v].append(pr)
                     else:
@@ -1011,31 +1015,18 @@ class TabixResultDao(ResultDB):
         pheno_results = self.tabix_result_common_dao.get_common_top_per_pheno_variant(chrom, start, end, self.columns, self.header, self.header_offset, self.phenos)
         return pheno_results
 
-    def append_filt_phenos(
-        self, variant_phenores: Tuple[Variant, PhenoResult]
-    ) -> Tuple[Variant, PhenoResult]:
-        '''For a single variant append phenotypes filtered in longformat matrix.
-           Populates missing summary stats with none'''
-
-        variant_pheno_result, phenolist = self.tabix_result_common_dao.append_common_filter_pheno_results(
-            variant_phenores, self.pheno_map
-        )
-        return (variant_pheno_result, phenolist)
-
 class TabixResultFiltDao(ResultDB):
     def __init__(self, phenos, matrix_path, columns):
         self.matrix_path = matrix_path
         self.columns = columns
         self.header = gzip.open(self.matrix_path,'rt').readline().split("\t")
-        self.header_offset = {item.split('\n')[0]: i for i, item in enumerate(self.header)}
-        self.phenos = [(None, 0)]
         self.pheno_map = phenos(0)
         self.longformat = True
         self.tabix_result_common_dao = TabixResultCommonDao(self.pheno_map)
 
     def get_variant_results_range(self, chrom, start, end):
         variant_results = self.tabix_result_common_dao.get_common_variant_results_range(
-            chrom, start, end, self.matrix_path, self.header, self.header_offset, self.columns, self.phenos
+            chrom, start, end, self.matrix_path, self.header, self.columns, None, [(None, 0)]
         )
         return variant_results
 
@@ -1066,18 +1057,14 @@ class TabixResultFiltDao(ResultDB):
                     results.append(r)
         return results
 
-    def get_top_per_pheno_variant_results_range(self, chrom, start, end):
-        pheno_results = self.tabix_result_common_dao.get_common_top_per_pheno_variant(chrom, start, end, self.columns, self.header, self.header_offset, self.phenos)
-        return pheno_results
-
     def append_filt_phenos(
-        self, variant_phenores: Tuple[Variant, PhenoResult]
+        self, variant_phenoresult: Tuple[Variant, PhenoResult]
     ) -> Tuple[Variant, PhenoResult]:
         '''For a single variant append phenotypes filtered in longformat matrix.
            Populates missing summary stats with none'''
 
         variant_pheno_result, phenolist = self.tabix_result_common_dao.append_common_filter_pheno_results(
-            variant_phenores, self.pheno_map
+            variant_phenoresult, self.pheno_map
         )
         return (variant_pheno_result, phenolist)
 
