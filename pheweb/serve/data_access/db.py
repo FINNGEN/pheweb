@@ -797,6 +797,17 @@ class TabixResultCommonDao:
             else None
         )
         return phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval
+    
+    def get_variant_common_filter_columns(self, split, columns):
+        phenotype = split[columns.index('#pheno')]
+        beta = split[columns.index('beta')]
+        sebeta = split[columns.index('sebeta')] if "sebeta" in columns else None
+        maf = split[columns.index('maf')] if "maf" in columns else None
+        maf_case = split[columns.index('maf_cases')] if "maf_cases" in columns else None
+        maf_control = split[columns.index('maf_cases')] if "maf_controls" in columns else None
+        mlogp = split[columns.index('mlogp')] if "mlogp" in columns else None
+        pval = split[columns.index('pval')] if "pval" in columns else None
+        return phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval
 
     def get_variant_common_columns(self, split, pheno, header_offset, columns, header):
         """Return the list of common columns phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval
