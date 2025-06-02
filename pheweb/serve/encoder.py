@@ -1,14 +1,14 @@
-from flask.json import JSONEncoder
+from flask.json.provider import DefaultJSONProvider # type: ignore
 
-class FGJSONEncoder(JSONEncoder):
+class FGJSONEncoder(DefaultJSONProvider):
     def __init__(self, *args, **kwargs):
         super().__init__(*args,**kwargs)
 
-    def default(self,o):
+    def default(self, o):
         try:
             rep =o.json_rep()
         except Exception as e:
             pass
         else:
             return rep
-        return JSONEncoder.default(self, o)
+        return DefaultJSONProvider.default(o)
