@@ -256,14 +256,14 @@ class ExternalResultDB(object):
 
 class AnnotationDB(object):
     @abc.abstractmethod
-    def get_variant_annotations(self, variants: List[Variant], cpra) -> List[Variant]:
+    def add_variant_annotations(self, variants: List[Variant], cpra) -> List[Variant]:
         """Retrieve variant annotations given a list of Variants.
         Returns a list of Variant objects with new annotations with id 'annot' and with all annotations that existed in the search Variant
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_variant_annotations_range(self, chrom, start, end):
+    def add_variant_annotations_range(self, chrom, start, end):
         """Retrieve variant annotations given a range.
         Returns a list of Variant objects with new annotations with id 'annot'
         """
@@ -481,7 +481,7 @@ class ElasticAnnotationDao(AnnotationDB):
         if not self.elastic.indices.exists(index=variant_index):
             raise ValueError("Elasticsearch index does not exist:" + variant_index)
 
-    def get_variant_annotations(self, variant_list):
+    def add_variant_annotations(self, variant_list):
         annotation = self.elastic.search(
             index=self.index,
             body={
@@ -498,10 +498,10 @@ class ElasticAnnotationDao(AnnotationDB):
         )
 
         print(
-            "ELASTIC FINNGEN get_variant_annotations hits "
+            "ELASTIC FINNGEN add_variant_annotations hits "
             + str(annotation["hits"]["total"])
         )
-        print("ELASTIC FINNGEN get_variant_annotations took " + str(annotation["took"]))
+        print("ELASTIC FINNGEN add_variant_annotations took " + str(annotation["took"]))
         return [
             {
                 "id": anno["_id"],
@@ -1554,7 +1554,7 @@ class TabixAnnotationDao(AnnotationDB):
         )
         return annotations
 
-    def get_variant_annotations_range(self, chrom, start, end, cpra):
+    def add_variant_annotations_range(self, chrom, start, end, cpra):
 
         chrom = "23" if chrom == "X" else chrom
         try:
