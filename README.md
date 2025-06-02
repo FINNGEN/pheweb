@@ -17,21 +17,21 @@ The gene file needs to be bed file with build 38 coordinates where there are no 
 
 ```
 curl https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_39/gencode.v39.annotation.gff3.gz | zcat |  awk '
-BEGIN{FS=OFS="\t"} 
-    $3=="gene"{ 
-        gsub("chr","",$1); 
-        gsub("M","MT",$1); 
-        split($9, row ,";"); 
-        for(e in row) { 
+BEGIN{FS=OFS="\t"}
+    $3=="gene"{
+        gsub("chr","",$1);
+        gsub("M","MT",$1);
+        split($9, row ,";");
+        for(e in row) {
             split(row[e],b,"=");
-            elems[b[1]]=b[2] }; 
+            elems[b[1]]=b[2] };
             split(elems["gene_id"], gid ,".")
-            print $1,$4,$5,$7,elems["gene_name"],gid[1]; 
+            print $1,$4,$5,$7,elems["gene_name"],gid[1];
         }
 ' | awk '!seen[$4]++' > genes-b38-v39.bed
 ```
 
-Run import worfkfow using prepared bed file as input `import_pheweb.bed_file` to the workflow. The following files genereated by pheweb should be updated once the workflow is finished: 
+Run import worfkfow using prepared bed file as input `import_pheweb.bed_file` to the workflow. The following files genereated by pheweb should be updated once the workflow is finished:
 ```
 cache/genes-b38-v39.bed
 generated-by-pheweb/resources/gene_aliases.sqlite3
@@ -214,7 +214,7 @@ gsutil ls ${PIPELINE_OUTPUT_ROOT}/conditional_analysis/cromwell-results/pheweb/*
 gsutil ls ${PIPELINE_OUTPUT_ROOT}/conditional_analysis/cromwell-results/pheweb/munge/* > /dev/null 2> /dev/null && echo finemapping okay || echo finemapping failed
 ```
 
-Copy files 
+Copy files
 Local the files should be in finemap/snp/*.snp.filter.tsv and finemap/snp/*.SUSIE.cred.summary.tsv
 
 ```
@@ -580,3 +580,4 @@ If it doesn't, follow the directions for [hosting a PheWeb and accessing it from
 To use Apache2 or Nginx (for performance), see instructions [here](etc/detailed-webserver-instructions.md#using-apache2-or-nginx).
 To require login via OAuth, see instructions [here](etc/detailed-webserver-instructions.md#using-oauth).
 To track page views with Google Analytics, see instructions [here](etc/detailed-webserver-instructions.md#using-google-analytics).
+For colocalizatoin, see instructions [here] (serve/components/colocalization/README.md).
