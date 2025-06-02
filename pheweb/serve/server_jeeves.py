@@ -30,7 +30,7 @@ def annotate_manhattan(*,
 
         vars = [ Variant( d['chrom'].replace("chr","").replace("X","23").replace("Y","24").replace("MT","25"), d['pos'], d['ref'], d['alt'] ) for d in variants['unbinned_variants'] if 'peak' in d ]
 
-        f_annotations = threadpool.submit( annotation_dao.get_variant_annotations,
+        f_annotations = threadpool.submit( annotation_dao.add_variant_annotations,
                                            vars,
                                            anno_cpra)
         f_gnomad = threadpool.submit( gnomad_dao.get_variant_annotations,
@@ -100,7 +100,7 @@ class ServerJeeves(object):
         results = self.result_dao.get_variant_results_range( chrom, start, end )
 
         # add rsids
-        vars_anno = self.annotation_dao.get_variant_annotations_range(chrom, start, end, self.conf.anno_cpra)
+        vars_anno = self.annotation_dao.add_variant_annotations_range(chrom, start, end, self.conf.anno_cpra)
         rsids = { v : v.annotation['annot']['rsid'] for v in vars_anno }
         for r in results:
             if r[0] in rsids:
@@ -158,7 +158,7 @@ class ServerJeeves(object):
         results = self.result_dao.get_top_per_pheno_variant_results_range(chrom, start, end)
 
         # add rsids
-        vars_anno = self.annotation_dao.get_variant_annotations_range(chrom, start, end, self.conf.anno_cpra)
+        vars_anno = self.annotation_dao.add_variant_annotations_range(chrom, start, end, self.conf.anno_cpra)
         rsids = {v : v.annotation['annot']['rsid'] for v in vars_anno }
         for r in results:
             if r.variant in rsids:
@@ -312,10 +312,10 @@ class ServerJeeves(object):
         t = time.time()
         # TODO tabix fetch takes forever, combine FG and gnomAD annotations and use relevant columns only, or get annotations on the fly for individual variant
         print(f'getting annotation for region {chr} {start} {end}')
-        annotations = self.annotation_dao.get_variant_annotations_range(chr, start, end, self.conf.anno_cpra)
+        annotations = self.annotation_dao.add_variant_annotations_range(chr, start, end, self.conf.anno_cpra)
         annot_hash = { anno.varid: anno.get_annotations() for anno in annotations }
 
-        check = self.annotation_dao.get_variant_annotations_range(chr, 112756070, 112756070, self.conf.anno_cpra)
+        check = self.annotation_dao.add_variant_annotations_range(chr, 112756070, 112756070, self.conf.anno_cpra)
        ## 10:112756070:A:G
         print(f'this is it {check}')
         print(f'annot keys {list(annot_hash.keys())[0:4]}')
@@ -611,7 +611,7 @@ class ServerJeeves(object):
                 v=variant.replace("chr","").split("_")
                 c = int(v[0].replace("X","23").replace("Y","24").replace("MT","25").replace("M","25"))
                 list_of_vars.append(Variant(c,v[1],v[2],v[3]))
-            fg_data = self.annotation_dao.get_variant_annotations(list_of_vars,True)
+            fg_data = self.annotation_dao.add_variant_annotations(list_of_vars,True)
             # flatten
             fg_data = {a.varid:a.get_annotations()["annot"]["INFO"] for a in fg_data}
             #fill info back
