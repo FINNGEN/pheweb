@@ -28,8 +28,6 @@ import subprocess
 import time
 import io
 import os
-import importlib.util
-import importlib.machinery
 import subprocess
 import sys
 import glob
@@ -47,16 +45,6 @@ from pheweb.serve.data_access.file import FilePathResultDao, ManhattanFileResult
 
 from .pqtl_colocalization import PqtlColocalisationDao
 from ...load_source.load_source import load_source
-
-def load_source(modname, filename):
-     loader = importlib.machinery.SourceFileLoader(modname, filename)
-     spec = importlib.util.spec_from_file_location(modname, filename, loader=loader)
-     module = importlib.util.module_from_spec(spec)
-     # The module is always executed and not cached in sys.modules.
-     # Uncomment the following line to cache the module.
-     # sys.modules[module.__name__] = module
-     loader.exec_module(module)
-     return module
 
 class JSONifiable(object):
     @abc.abstractmethod

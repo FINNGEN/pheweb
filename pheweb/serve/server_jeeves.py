@@ -280,15 +280,12 @@ class ServerJeeves(object):
             else:
                 variant_result = variant_annotated
             # add rsids from variant annotation if wasn't available in the merged sumstat matrix
-            if self.result_dao.longformat and var.rsids is None:
-                var.add_annotation("rsids", var.annotation['annot']['rsid'])
+            if variant_result.rsids is None:
+                variant_result.add_annotation("rsids", variant_result.annotation['annot']['rsid'])
 
-            gnomad = self.gnomad_dao.get_variant_annotations([var])
+            gnomad = self.gnomad_dao.get_variant_annotations([variant_result])
             if len(gnomad) == 1:
-                var.add_annotation('gnomad', gnomad[0]['var_data'])
-
-            phenos = [ p.phenocode for p in r[1]]
-            ukb = self.ukbb_matrixdao.get_multiphenoresults( {variant:phenos} )
+                variant_result.add_annotation('gnomad', gnomad[0]['var_data'])
 
             phenos = [ p.phenocode for p in pheno_results]
             uk_biobank = self.ukbb_matrixdao.get_multiphenoresults( {variant:phenos} )
@@ -301,7 +298,7 @@ class ServerJeeves(object):
                 ukb_idx = { u:u for u in uk_biobank[variant_result] }
                 for res in pheno_results:
                     if res.phenocode in ukb_idx:
-                        res.add_matching_result('ukbb',ukb[var][res.phenocode])
+                        res.add_matching_result('ukbb',uk_biobank[variant_result][res.phenocode])
 
             return variant_result,pheno_results
         else:
