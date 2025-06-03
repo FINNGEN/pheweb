@@ -558,14 +558,13 @@ EOF
 
 ## Step 7: Update PheWeb Configuration for Colocalization V2
 
-To enable the updated colocalization tables in your PheWeb deployment,
-update the configuration to include the `ColocalizationV2DAO` stanza.
+To enable the updated colocalization tables in your PheWeb deployment, update the configuration to include the `ColocalizationV2DAO` stanza.
 
 ### Configuration Snippet
 
-Modify your PheWeb configuration (e.g., `config.json` or `pheweb.json`) to include the following, with paths and table names adjusted to match your environment:
+Modify your PheWeb backend configuration (`config.py`) to include the following, with paths and table names adjusted to match your environment:
 
-```json
+```python
 {
   "ColocalizationV2DAO": {
     "authentication_file": "/etc/gcp/mysql.conf",
@@ -582,3 +581,6 @@ Modify your PheWeb configuration (e.g., `config.json` or `pheweb.json`) to inclu
     }
   }
 }
+
+
+
