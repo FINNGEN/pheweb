@@ -262,8 +262,6 @@ e.g.
 
 ## Conditional
 
-
-
 The path of the merged sql should be `conditional_analysis/cromwell-results/pheweb/*_sql.merged.txt`
 Copy the merged sql to your bucket using the path ${CONDITIONAL_SQL}
 `
@@ -276,13 +274,20 @@ Copy `conditional_analysis/cromwell-results/pheweb/munge` to `${PHEWEB_ROOT}/con
 In the finemapping portion of pheweb configuration point the `conditional` property in the `base_paths` object to `${PHEWEB_ROOT}/conditional`
 
 ## PIP
-+
-Local the pip files should be in finemap/snp/*.snp.filter.tsv
-`
+
+The local pip files should be in finemap/snp/*.snp.filter.tsv
+```
 export PIP_PATH=
 export PIP_SQL=${BUCKET_ROOT}/sql/pip.sql.txt
 gsutil cat ${PIP_PATH}/*.snp.filter.tsv | grep --color=auto -v '^trait' | cut -f1,5,6,7,8,9 | tr '\t' ',' | sed s/chr//g |  gsutil cp - ${PIP_SQL}
-`
+```
+
+## Colocalization
+
+To load colocalization in Pheweb, two input files are required: a colocalization file and a credible set file.
+Instructions for loading these files are available [here](pheweb/serve/components/colocalization/README.v2.md).
+
+Details on how to load previous colocalization files can be found [here](pheweb/serve/components/colocalization/README.md).
 
 # Deploying PheWeb in Google Cloud using Kubernetes
 
@@ -525,7 +530,7 @@ There are four ways to make a `pheno-list.json`:
    ear-length,/home/watman/ear-length.all.epacts.gz
    ```
 
-2. If you have one association file per phenotype, you can use a shell-glob and a regex to get assoc-files and phenocodes for them. Suppose that your assocation files are at paths like:
+2. If you have one association file per phenotype, you can use a shell-glob and a regex to get assoc-files and phenocodes for them. Suppose that your association files are at paths like:
 
    - `/home/watman/eats-kimchi.epacts.gz`
    - `/home/watman/ear-length.epacts.gz`
@@ -580,4 +585,3 @@ If it doesn't, follow the directions for [hosting a PheWeb and accessing it from
 To use Apache2 or Nginx (for performance), see instructions [here](etc/detailed-webserver-instructions.md#using-apache2-or-nginx).
 To require login via OAuth, see instructions [here](etc/detailed-webserver-instructions.md#using-oauth).
 To track page views with Google Analytics, see instructions [here](etc/detailed-webserver-instructions.md#using-google-analytics).
-For colocalizatoin, see instructions [here] (serve/components/colocalization/README.md).
