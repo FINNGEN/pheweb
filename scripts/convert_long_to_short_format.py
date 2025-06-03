@@ -16,28 +16,26 @@ def run(input_file, output_file):
     if os.path.exists(output_file):
         os.remove(output_file)  # Overwrite the file with an empty DataFrame
         print(f"File '{output_file}' is already exist, so it is cleared first to remove the old contents")
-
     # read in the files
     try:
         # Read the first line (header)
         with gzip.open(input_file, 'rt') as f:
+            match_dict = {}
             header = f.readline().strip().split('\t')
-            # print("Header columns:", header)
-            final_header_list = []
             for column in header:
-                pattern = re.compile(fr'^{column}_')
-                matching_columns = [col for col in header if pattern.match(col)]
-                if (len(matching_columns) > 0):
-                    header_list = []
-                    header_list.append(header[0])
-                    header_list.append(column)
-                    header_list.extend(matching_columns)
-                    final_header_list.append(header_list)
-                    print('.', end='', flush=True)
+                if column ==  'FINNGENID':
+                    continue
+                else:
+                    pattern = re.compile(fr'^{column}_')
+                    match_dict = {name: idx for idx, name in enumerate(header) if pattern.match(name) and name != 'FINNGENID'}
+                    if (len(match_dict) > 0):
+                        match_dict[header[0]] = 0
+                        print('.', end='', flush=True)
+                        print(match_dict)
             # print(final_header_list)
-            for line in f:
-                row = line.strip().split('\t')  # split by tab to get columns
-                print(row)
+            # for line in f:
+            #     row = line.strip().split('\t')  # split by tab to get columns
+            #     print(row)
 
     except Exception as e:  # Catch any exception
         print(f"An error occurred: {e}")
