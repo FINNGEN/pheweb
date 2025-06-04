@@ -6,8 +6,8 @@ pipeline {
 		script {    sh(script:"""printenv""")
 		            sh(script:"""sed -i "s/COMMIT_SHA/PHEWEB VERSION : \$(git log -n 1 --format=format:"%H")/" ui/src/common/commonConstants.tsx""")
 		            c = docker.build("europe-west1-docker.pkg.dev/phewas-development/fg-phewas-registry/pheweb:ci-${env.$GIT_COMMIT}", "-f deploy/Dockerfile ./")
-		  	    docker.withRegistry('https://europe-west1-docker.pkg.dev/phewas-development/fg-phewas-registry', 'gcr:phewas-development') { c.push("ci-${env.GIT_COMMIT}") }
-			    docker.withRegistry('https://europe-west1-docker.pkg.dev/phewas-development/fg-phewas-registry', 'gcr:phewas-development') { c.push("ci-latest") }
+		  	    docker.withRegistry('https://europe-west1-docker.pkg.dev/phewas-development/fg-phewas-registry', 'phewas-development') { c.push("ci-${env.GIT_COMMIT}") }
+			    docker.withRegistry('https://europe-west1-docker.pkg.dev/phewas-development/fg-phewas-registry', 'phewas-development') { c.push("ci-latest") }
 		}
 
 	    }
