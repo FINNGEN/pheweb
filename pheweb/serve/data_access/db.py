@@ -371,6 +371,7 @@ class ResultDB(object):
         """
         Returns all results and annotations for given variant list. Returns empty list if no results found
         """
+        raise NotImplementedError
 
     def get_single_variant_results(
         self, variant: Variant
