@@ -70,7 +70,7 @@ task preprocess {
         bootDiskSizeGb: 30
         disks: "local-disk 10 HDD"
         zones: "europe-west1-b"
-        preemptible: 0
+        preemptible: 2
     }
 }
 
@@ -309,7 +309,7 @@ task pheno {
         bootDiskSizeGb: 30
         disks: "local-disk 70 HDD"
         zones: "europe-west1-b"
-        preemptible: 0
+        preemptible: 2
     }
 }
 
@@ -656,9 +656,9 @@ task filter_sumstat {
         memory: "2 GB"
         cpu: "1"
         bootDiskSizeGb: 30
-        disks: "local-disk ${disk_size} SSD"
+        disks: "local-disk ${disk_size} HDD"
         zones: "europe-west1-b"
-        preemptible: 0
+        preemptible: 2
     }
 
 }
