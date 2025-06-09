@@ -1,59 +1,51 @@
-import os
+import sys
 import argparse
 import gzip
-import re
 
-COLUMN= 'COLUMN';
-VALUE= 'VALUE';
+FINNGENID = 'FINNGENID'
+COLUMN = 'COLUMN';
+VALUE = 'VALUE';
 
-def map_row_with_header_index(row, header_index, output_file):
-    for header_row in header_index:
-        new_row_dict = {
-            key: row[idx] if isinstance(idx, int) and 0 <= idx < len(row) else idx
-            for key, idx in header_row.items()
-        }
-        output_file.write("\t".join(str(v) for v in new_row_dict.values()) + "\n")
+def print_progress_bar(iteration, total, prefix='', suffix='', length=50):
+    percent = f"{100 * (iteration / float(total)):.1f}"
+    filled_length = int(length * iteration // total)
+    bar = '█' * filled_length + '-' * (length - filled_length)
+    sys.stdout.write(f'\r{prefix} |{bar}| {percent}% {suffix}')
+    sys.stdout.flush()
+    if iteration == total:
+        print()  # Newline at the end
 
-def run(input_file, output_file, custom_columns):
-    # write the array of objects to a csv file
-    if os.path.exists(output_file):
-        os.remove(output_file)  # Overwrite the file with an empty DataFrame
-        print(f"File '{output_file}' is already exist, so it is cleared first to remove the old contents")
-    # read in the files
+
+def run(input_file, output_file, columns):
     try:
         with gzip.open(output_file,"wt",encoding="utf-8") as output:
             # Read the first line (header)
-            print('start indexing')
-            with gzip.open(input_file, 'rt') as input:
-                match_dict = {}
-                resulted_index_header = []
-                header = input.readline().strip().split('\t')
-                for column in header:
-                    if column ==  'FINNGENID':
-                        continue
-                    else:
-                        pattern = fr"^{column}_({custom_columns})?$"
-                        default_dict = {}
-                        default_dict[header[0]] = 0
-                        default_dict[COLUMN] = column
-                        default_dict[VALUE] = header.index(column)
-                        match_dict = {name: idx for idx, name in enumerate(header) if re.match(pattern, name)}
-                        if (len(match_dict) > 0):
-                            combined_dict = {**default_dict, **match_dict}
-                            print('.', end='', flush=True)
-                            new_data = {key.replace(f"{column}_", ''): value for key, value in combined_dict.items()}
-                            resulted_index_header.append(new_data)
-                print('Finished indexing and reading row data!')
-                first_keys = resulted_index_header[0].keys()
-                is_header_index_matched = all(set(d.keys()) == set(first_keys) for d in resulted_index_header)
-                if is_header_index_matched:
-                    output_file_header = f"\t".join(first_keys)+"\n"
-                    output.write(output_file_header)
-                    # read rows in the input data
-                    for line in input:
-                        row = line.strip().split('\t')
-                        print('.', end='', flush=True)
-                        map_row_with_header_index(row, resulted_index_header, output)
+            print('start reading rows')
+            with gzip.open(input_file, 'rt') as file:
+                header = file.readline().strip().split('\t')
+                provided_columns = columns.replace("|", "\t")
+                output_file_header = f"{FINNGENID}\t{COLUMN}\t{VALUE}\t{provided_columns}\n"
+                output.write(output_file_header)
+                sufficies = columns.split('|')
+                # reading input file line
+                for line in file:
+                    row = line.strip().split('\t')
+                    for head in header:
+                        resulted_row = []
+                        if header.index(head) == 0:
+                            finn_gen_id = row[header.index(head)]
+                            continue
+                        else:
+                            resulted_row.append(finn_gen_id)
+                            resulted_row.append(f"{head}")
+                            resulted_row.append(row[header.index(head)])
+                            for suffix in sufficies:
+                                prefix_column = f"{head}_{suffix}"
+                                if prefix_column in header:
+                                    resulted_row.append(row[header.index(prefix_column)])
+                        if (len(resulted_row) == len(output_file_header.split('\t'))):
+                           output.write(f"\t".join(resulted_row)+"\n")
+                        print_progress_bar(header.index(head), len(header) + 1, prefix='Progress', suffix=f"FINNGENID {row[0]} Complete", length=40)
         print('\nFinished successfully!')
     except Exception as e:  # Catch any exception
         print(f"An error occurred: {e}")
@@ -67,8 +59,4 @@ parser.add_argument('filter_columns', type=str)
 
 args = parser.parse_args()
 
-if f"/{args.input_file_path}".endswith('.tsv.gz'):
-    run(args.input_file_path, args.output_file_name, args.filter_columns)
-else:
-    print("Sorry, output file name should be tsv.gx. e-g string.tsv.gz")
-    exit(1)
+run(args.input_file_path, args.output_file_name, args.filter_columns)
