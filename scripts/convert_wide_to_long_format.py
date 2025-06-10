@@ -1,3 +1,4 @@
+import re
 import sys
 import argparse
 import gzip
@@ -15,37 +16,38 @@ def print_progress_bar(iteration, total, prefix='', suffix='', length=50):
     if iteration == total:
         print()  # Newline at the end
 
-
 def run(input_file, output_file, columns):
     try:
+        # total number of rows
+        with gzip.open(input_file, 'r') as f:
+            total_lines = sum(1 for _ in f)
+        matched_header = '_' + columns.replace('|','|_')
+        pattern = re.compile(fr'{matched_header}')
+        sufficies = matched_header.split('|')
+        provided_columns = columns.replace("|", "\t")
+        # Read the entire TSV gzip file into a DataFrame
         with gzip.open(output_file,"wt",encoding="utf-8") as output:
-            # Read the first line (header)
-            print('start reading rows')
             with gzip.open(input_file, 'rt') as file:
+                # read the header line                
                 header_line = file.readline().strip().split('\t')
-                provided_columns = columns.replace("|", "\t")
+                header_dict = {name: idx for idx, name in enumerate(header_line)}
+                # Filter out matching keys and FINNGENID
+                filtered_header_data = {k: v for k, v in header_dict.items() if not pattern.search(k) and k != FINNGENID}
                 output_file_header = f"{FINNGENID}\t{COLUMN}\t{VALUE}\t{provided_columns}\n"
                 output.write(output_file_header)
-                sufficies = columns.split('|')
-                # reading input file line
-                for line in file:
+                for index, line in enumerate(file, start=0):
                     row = line.strip().split('\t')
-                    for header_key in header_line:
+                    for key, value in filtered_header_data.items():
                         resulted_row = []
-                        if header_line.index(header_key) == 0:
-                            finn_gen_id = row[header_line.index(header_key)]
-                            continue
-                        else:
-                            resulted_row.append(finn_gen_id)
-                            resulted_row.append(f"{header_key}")
-                            resulted_row.append(row[header_line.index(header_key)])
-                            for suffix in sufficies:
-                                prefix_column = f"{header_key}_{suffix}"
-                                if prefix_column in header_line:
-                                    resulted_row.append(row[header_line.index(prefix_column)])
-                        if (len(resulted_row) == len(output_file_header.split('\t'))):
-                           output.write(f"\t".join(resulted_row)+"\n")
-                        print_progress_bar(header_line.index(header_key), len(header_line) + 1, prefix='Progress', suffix=f"FINNGENID {row[0]} Complete", length=40)
+                        resulted_row.append(row[0])
+                        resulted_row.append(key)
+                        resulted_row.append(row[value])
+                        for suffix in sufficies:
+                            prefix_column = f"{key}{suffix}"
+                            resulted_row.append(row[header_dict[prefix_column]])
+                        if len(resulted_row) == len(output_file_header.split('\t')):
+                            output.write(f'\t'.join(resulted_row)+'\n')
+                    print_progress_bar(index, total_lines-1, prefix='Progress', suffix=f"{index + 1}/{total_lines-1}", length=40)
         print('\nFinished successfully!')
     except Exception as e:  # Catch any exception
         print(f"An error occurred: {e}")
