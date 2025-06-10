@@ -16,19 +16,18 @@ def print_progress_bar(iteration, total, prefix='', suffix='', length=50):
     if iteration == total:
         print()  # Newline at the end
 
-def run(input_file, output_file, columns):
+def run(input_file, output_file, output_suffix_columns):
     try:
-        # total number of rows
-        with gzip.open(input_file, 'r') as f:
-            total_lines = sum(1 for _ in f)
-        matched_header = '_' + columns.replace('|','|_')
+        matched_header = '_' + output_suffix_columns.replace('|','|_')
         pattern = re.compile(fr'{matched_header}')
         sufficies = matched_header.split('|')
-        provided_columns = columns.replace("|", "\t")
-        # Read the entire TSV gzip file into a DataFrame
+        provided_columns = output_suffix_columns.replace("|", "\t")
+        start = 1
+        end = 100
+        # Read the entire TSV gzip file into a
         with gzip.open(output_file,"wt",encoding="utf-8") as output:
             with gzip.open(input_file, 'rt') as file:
-                # read the header line                
+                # read the header line             
                 header_line = file.readline().strip().split('\t')
                 header_dict = {name: idx for idx, name in enumerate(header_line)}
                 # Filter out matching keys and FINNGENID
@@ -36,10 +35,10 @@ def run(input_file, output_file, columns):
                 output_file_header = f"{FINNGENID}\t{COLUMN}\t{VALUE}\t{provided_columns}\n"
                 output.write(output_file_header)
                 for index, line in enumerate(file, start=0):
-                    row = line.strip().split('\t')
+                    row = line.strip().split('\t')                    
                     for key, value in filtered_header_data.items():
                         resulted_row = []
-                        resulted_row.append(row[0])
+                        resulted_row.append(row[header_dict[FINNGENID]])
                         resulted_row.append(key)
                         resulted_row.append(row[value])
                         for suffix in sufficies:
@@ -47,7 +46,11 @@ def run(input_file, output_file, columns):
                             resulted_row.append(row[header_dict[prefix_column]])
                         if len(resulted_row) == len(output_file_header.split('\t')):
                             output.write(f'\t'.join(resulted_row)+'\n')
-                    print_progress_bar(index, total_lines-1, prefix='Progress', suffix=f"{index + 1}/{total_lines-1}", length=40)
+                    # add progress bar start and end run for each 100 rows
+                    start = 1 if index % 100 == 0 else start + 1
+                    end = 100 if index % 100 == 0 else end
+                    progress_bar_suffix = f"first {end}" if index < 100 else f"upto {index + 1}"
+                    print_progress_bar(start, end, prefix='Progress', suffix=progress_bar_suffix, length=40)
         print('\nFinished successfully!')
     except Exception as e:  # Catch any exception
         print(f"An error occurred: {e}")
@@ -55,9 +58,9 @@ def run(input_file, output_file, columns):
 
 # check the argument 
 parser = argparse.ArgumentParser(description="Convert the wide format into long format!")
-parser.add_argument('input_file_path', type=str)
-parser.add_argument('output_file_name', type=str)
-parser.add_argument('filter_columns', type=str)
+parser.add_argument('input_file_path', type=str, help="The input file in gx wide format e-g: path/to/input.tsv.gz")
+parser.add_argument('output_file_name', type=str, help="The output file in gx format e-g: path/to/output.tsv.gz")
+parser.add_argument('filter_columns', type=str, help="The list of suffixes e-g: SUFFIX1|SUFFIX2|SUFFIX3")
 
 args = parser.parse_args()
 
