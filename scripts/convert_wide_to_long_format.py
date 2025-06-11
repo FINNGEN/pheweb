@@ -18,12 +18,12 @@ def print_progress_bar(iteration, total, prefix='', suffix='', length=50):
 
 def run(input_file, output_file, output_suffix_columns):
     try:
+        with gzip.open(input_file, 'r') as f:
+            total_lines = sum(1 for _ in f)
         matched_header = '_' + output_suffix_columns.replace('|','|_')
         pattern = re.compile(fr'{matched_header}')
         sufficies = matched_header.split('|')
         provided_columns = output_suffix_columns.replace("|", "\t")
-        start = 1
-        end = 100
         # Read the entire TSV gzip file into a
         with gzip.open(output_file,"wt",encoding="utf-8") as output:
             with gzip.open(input_file, 'rt') as file:
@@ -46,11 +46,9 @@ def run(input_file, output_file, output_suffix_columns):
                             resulted_row.append(row[header_dict[prefix_column]])
                         if len(resulted_row) == len(output_file_header.split('\t')):
                             output.write(f'\t'.join(resulted_row)+'\n')
-                    # add progress bar start and end run for each 100 rows
-                    start = 1 if index % 100 == 0 else start + 1
-                    end = 100 if index % 100 == 0 else end
-                    progress_bar_suffix = f"first {end}" if index < 100 else f"upto {index + 1}"
-                    print_progress_bar(start, end, prefix='Progress', suffix=progress_bar_suffix, length=40)
+                    # add progress bar each 100 rows
+                    if (index + 1) % 100 == 0 or index + 1 == total_lines:
+                        print_progress_bar(index, total_lines-1, prefix='Progress', suffix=f"{index + 1}/{total_lines-1}", length=40)
         print('\nFinished successfully!')
     except Exception as e:  # Catch any exception
         print(f"An error occurred: {e}")
