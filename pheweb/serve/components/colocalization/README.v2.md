@@ -17,6 +17,7 @@ Assuming you're using Linux and using the mysql client:
    - Edit (or create) your `~/.my.cnf` file.
    - Add a section called `[clientprod]` with your MySQL credentials. For example:
 ```ini
+# place in ~/.my.cnf
      [clientprod]
      user = your_mysql_user
      password = your_mysql_password
@@ -29,11 +30,12 @@ Assuming you're using Linux and using the mysql client:
    Set the following environment variables using your credentials:
 
 ```bash
-#   export MYSQL_USER=your_mysql_user
-#   export MYSQL_PASSWORD=your_mysql_password
-#   export MYSQL_HOST=your_mysql_host
-#   export MYSQL_PORT=your_mysql_port
-#   export MYSQL_DATABASE=your_mysql_database
+# update to reflect your environment
+   export MYSQL_USER=your mysql user
+   export MYSQL_PASSWORD=your mysql password
+   export MYSQL_HOST=your mysql host
+   export MYSQL_PORT=your mysql port
+   export MYSQL_DATABASE=your mysql database
 ```
 ## Input Files
 
@@ -52,7 +54,6 @@ export CREDSET_DATA_PATH="/tmp/2025_04_14/coloc.credsets.tsv.gz"
 Define the environment variables:
 
 ```bash
-
 export DB_PATH="/tmp/colocalization.dev.db"
 export DUCKDB_CMD="env COLOC_DATA_PATH=${COLOC_DATA_PATH} CREDSET_DATA_PATH=${CREDSET_DATA_PATH} duckdb $DB_PATH"
 export CONNECTION_STRING="user=${MYSQL_USER} port=${MYSQL_PORT} database=${MYSQL_DATABASE} password=${MYSQL_PASSWORD} host=${MYSQL_HOST}"
@@ -61,8 +62,6 @@ export CONNECTION_STRING="user=${MYSQL_USER} port=${MYSQL_PORT} database=${MYSQL
 Check duckdb setup
 
 ```bash
-
-
 $DUCKDB_CMD <<EOF
 ATTACH '${CONNECTION_STRING}' AS mysqldb (TYPE mysql);
 SELECT 1 FROM mysqldb.information_schema.tables LIMIT 1;
@@ -99,7 +98,6 @@ CREATE TABLE colocalization AS
             trait2,
 
 	    region1,
-	    -- regexp_extract(region1, 'chr(\w+):(\d+)-(\d+)',  ['chromsome', 'start', 'stop']) as region1_parsed,
 
             CASE WHEN regexp_extract(region1, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'X' THEN 23
                 WHEN regexp_extract(region1, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'Y' THEN 24
@@ -111,7 +109,6 @@ CREATE TABLE colocalization AS
             CAST(regexp_extract(region1, 'chr(\w+):-?(\d+)-(\d+)', 3) AS BIGINT) AS region1_end,
 
 	    region2,
-	    -- regexp_extract(region1, 'chr(\w+):(\d+)-(\d+)',  ['chromsome', 'start', 'stop']) as region2_parsed,
 
             CASE WHEN regexp_extract(region2, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'X' THEN 23
                 WHEN regexp_extract(region2, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'Y' THEN 24
@@ -298,10 +295,8 @@ INSERT INTO mysqldb.colocalization_${TABLE_VERSION}
 SELECT
   colocalization_id,
 
-  dataset1,
-  dataset1_label,
-  dataset2,
-  dataset2_label,
+  dataset1, dataset1_label,
+  dataset2, dataset2_label,
 
   trait1,
   trait2,
@@ -322,15 +317,8 @@ SELECT
     ELSE NULL
   END AS region_end,
 
-  region1,
-  region1_chromosome,
-  region1_start,
-  region1_end,
-
-  region2,
-  region2_chromosome,
-  region2_start,
-  region2_end,
+  region1, region1_chromosome, region1_start, region1_end,
+  region2, region2_chromosome, region2_start, region2_end,
 
   cs1,
   cs2,
@@ -517,17 +505,16 @@ CREATE INDEX idx_colocalization_variants_${TABLE_VERSION}
     ON colocalization_variants_${TABLE_VERSION}(region_chromosome, region_start, region_end, dataset, trait, cs);
 
 CREATE INDEX idx_colocalization_region1_${TABLE_VERSION}
-    ON colocalization_${TABLE_VERSION}(region1_chromosome, region1_start, region1_end, dataset1, trait1);
+    ON colocalization_${TABLE_VERSION}(region1_chromosome, region1_start, region1_end, dataset1, trait1, cs1);
 
 CREATE INDEX idx_colocalization_region2_${TABLE_VERSION}
-    ON colocalization_${TABLE_VERSION}(region2_chromosome, region2_start, region2_end, dataset2, trait2);
+    ON colocalization_${TABLE_VERSION}(region2_chromosome, region2_start, region2_end, dataset2, trait2, cs2);
 EOF
 ```
 
-### Indexes
+### Views
 
 Create the views for pheweb to query:
-
 
 ```
 mysql --defaults-group-suffix=prod <<EOF
@@ -588,29 +575,48 @@ EOF
 
 ## Step 7: Update PheWeb Configuration for Colocalization V2
 
-To enable the updated colocalization tables in your PheWeb deployment, update the configuration to include the `ColocalizationV2DAO` stanza.
+To enable the updated colocalization tables in your PheWeb deployment,
+update the configuration to include the `ColocalizationV2DAO` stanza.
 
 ### Configuration Snippet
 
-Modify your PheWeb backend configuration (`config.py`) to include the following, with paths and table names adjusted to match your environment:
+Modify your PheWeb backend configuration (`config.py`) to include the
+following, with the table names adjusted to match your environment:
 
 ```python
-{
-  "ColocalizationV2DAO": {
-    "authentication_file": "/etc/gcp/mysql.conf",
-    "parameters": {
-      "phenotype_table": "colocalization_phenotype_${TABLE_VERSION}",
-      "region_table": "colocalization_region_${TABLE_VERSION}",
-      "region_summary_table": "colocalization_region_${TABLE_VERSION}",
-      "colocalization_table": "colocalization_region_${TABLE_VERSION}",
-      "region_summary_columns": {
-        "count": "count(*)",
-        "unique_phenotype2": "count(distinct trait2)",
-        "unique_tissue2": "count(distinct null)"
+# place in config.pyconfig.py
+database_conf = (
+{ "colocalization": {
+    "ColocalizationV2DAO": {
+      "authentication_file": "/etc/gcp/mysql.conf",
+      "parameters": {
+        "phenotype_table": "colocalization_phenotype_${TABLE_VERSION}",
+        "region_table": "colocalization_region_${TABLE_VERSION}",
+        "region_summary_table": "colocalization_region_${TABLE_VERSION}",
+        "colocalization_table": "colocalization_region_${TABLE_VERSION}",
+        "region_summary_columns": {
+          "count": "count(*)",
+          "unique_phenotype2": "count(distinct trait2)",
+          "unique_tissue2": "count(distinct null)"
+        }
       }
     }
   }
-}
+},)
+```
 
 
+### Tearing down
 
+To clean up the resources, first reconfigure the PheWeb instances to
+stop using the colocalization tables. Then run the following SQL to
+drop the related tables and views.
+
+```
+mysql --defaults-group-suffix=prod <<EOF
+drop table if exists colocalization_${TABLE_VERSION};
+drop table if exists colocalization_variants_${TABLE_VERSION};
+drop view  if exists colocalization_phenotype_${TABLE_VERSION};
+drop view  if exists colocalization_region_${TABLE_VERSION};
+EOF
+```
