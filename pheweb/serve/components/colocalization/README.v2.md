@@ -16,42 +16,64 @@ Assuming you're using Linux and using the mysql client:
 1. **Configure your MySQL credentials:**
    - Edit (or create) your `~/.my.cnf` file.
    - Add a section called `[clientprod]` with your MySQL credentials. For example:
-     ```ini
+```ini
      [clientprod]
      user = your_mysql_user
      password = your_mysql_password
      host = your_mysql_host
      port = your_mysql_port
      database = your_mysql_database
-     ```
+ ```
 
 2. **Export MySQL settings as environment variables:**
    Set the following environment variables using your credentials:
-   ```bash
-   export MYSQL_USER=your_mysql_user
-   export MYSQL_PASSWORD=your_mysql_password
-   export MYSQL_HOST=your_mysql_host
-   export MYSQL_PORT=your_mysql_port
-   export MYSQL_DATABASE=your_mysql_database
 
-
+```bash
+#   export MYSQL_USER=your_mysql_user
+#   export MYSQL_PASSWORD=your_mysql_password
+#   export MYSQL_HOST=your_mysql_host
+#   export MYSQL_PORT=your_mysql_port
+#   export MYSQL_DATABASE=your_mysql_database
+```
 ## Input Files
 
 - `colocQC.filtered_h4_0_8_lbf_0_9_minpm_0_9.tsv.gz` – colocalization results
 - `coloc.credsets.filtered.tsv.gz` – credible sets file
+
+```bash
+export TABLE_VERSION=v2_2025_04_14
+export COLOC_DATA_PATH="/tmp/2025_04_14/colocQC.filtered_h4_0_8_lbf_0_9_probmass_0_9.tsv.gz"
+export CREDSET_DATA_PATH="/tmp/2025_04_14/coloc.credsets.tsv.gz"
+```
+
 
 ## Setup
 
 Define the environment variables:
 
 ```bash
- export DATA_PATH="/tmp/colocQC.filtered_h4_0_8_lbf_0_9_minpm_0_9.tsv.gz"
- export CREDSET_DATA_PATH="/tmp/coloc.credsets.filtered.tsv.gz"
- export DB_PATH="/tmp/colocalization.db"
- export DUCKDB_CMD="duckdb $DB_PATH"
+
+export DB_PATH="/tmp/colocalization.dev.db"
+export DUCKDB_CMD="env COLOC_DATA_PATH=${COLOC_DATA_PATH} CREDSET_DATA_PATH=${CREDSET_DATA_PATH} duckdb $DB_PATH"
+export CONNECTION_STRING="user=${MYSQL_USER} port=${MYSQL_PORT} database=${MYSQL_DATABASE} password=${MYSQL_PASSWORD} host=${MYSQL_HOST}"
 ```
 
+Check duckdb setup
 
+```bash
+
+
+$DUCKDB_CMD <<EOF
+ATTACH '${CONNECTION_STRING}' AS mysqldb (TYPE mysql);
+SELECT 1 FROM mysqldb.information_schema.tables LIMIT 1;
+EOF
+```
+Check mysql setup
+```bash
+mysql --defaults-group-suffix=prod <<EOF
+select 1
+EOF
+```
 ## Import Data into DuckDB
 
 This command creates a table colocalization from the compressed TSV
@@ -65,7 +87,7 @@ DROP TABLE IF EXISTS colocalization;
 
 CREATE TABLE colocalization AS
         SELECT
-            colocalization_id,
+            row_number() OVER () AS colocalization_id,
 
             dataset1,
 	    REPLACE(list_extract(split(dataset1, '--'), 1), '_', ' ') AS dataset1_label,
@@ -161,7 +183,7 @@ CREATE TABLE colocalization AS
 	    colocRes
 
         FROM read_csv(
-            '${DATA_PATH}',
+            getenv('COLOC_DATA_PATH'),
             delim='\t',
             sample_size=-1
         );
@@ -176,9 +198,9 @@ Run the following command:
 
 ```bash
 mysql --defaults-group-suffix=prod <<EOF
-DROP TABLE IF EXISTS colocalization;
+DROP TABLE IF EXISTS colocalization_${TABLE_VERSION};
 
-CREATE TABLE colocalization (
+CREATE TABLE colocalization_${TABLE_VERSION} (
   colocalization_id             INTEGER,
 
   dataset1           VARCHAR(100)  NULL,
@@ -253,6 +275,7 @@ CREATE TABLE colocalization (
 );
 EOF
 ```
+
 ## Step 3: Export Data from DuckDB to MySQL
 
 This step transfers the processed colocalization data from the DuckDB database to the MySQL `colocalization` table created earlier.
@@ -269,9 +292,9 @@ Check the environment variables for MySQL access are set.
 
 ```bash
 $DUCKDB_CMD <<EOF
-INSTALL mysql; ATTACH 'user=${MYSQL_USER} port=${MYSQL_PORT} database=${MYSQL_DATABASE} password=${MYSQL_PASSWORD} host=${MYSQL_HOST}' AS mysqldb (TYPE mysql);
+ATTACH '${CONNECTION_STRING}' AS mysqldb (TYPE mysql);
 
-INSERT INTO mysqldb.colocalization
+INSERT INTO mysqldb.colocalization_${TABLE_VERSION}
 SELECT
   colocalization_id,
 
@@ -393,16 +416,16 @@ SELECT
     END AS region_chromosome,
 
     -- Parse start and end coordinates
-    CAST(regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 2) AS INTEGER) AS region_start,
-    CAST(regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 3) AS INTEGER) AS region_end,
+    CAST(regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 2) AS BIGINT) AS region_start,
+    CAST(regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 3) AS BIGINT) AS region_end,
 
     dataset,
     trait,
-
+	cs::TINYINT AS cs,
     -- Aggregate variant-level data into a JSON array
     to_json(ARRAY_AGG(JSON_OBJECT(
         'rsid', rsid,
-        'position', CAST(REGEXP_EXTRACT(rsid, 'chr(\w+)_([0-9]+)', 2) AS INTEGER),
+        'position', CAST(REGEXP_EXTRACT(rsid, 'chr(\w+)_([0-9]+)', 2) AS UBIGINT),
         'cs', cs,
         'low_purity',
             CASE WHEN low_purity = 0 THEN FALSE
@@ -419,7 +442,7 @@ FROM read_csv('${CREDSET_DATA_PATH}',
               delim='\t',
               sample_size=-1)
 
-GROUP BY dataset, region, trait;
+GROUP BY dataset, region, trait, cs;
 EOF
 ```
 
@@ -434,12 +457,13 @@ Run the following command to create the table:
 
 ```bash
 mysql --defaults-group-suffix=prod <<EOF
-DROP TABLE IF EXISTS colocalization_variants;
+DROP TABLE IF EXISTS colocalization_variants_${TABLE_VERSION};
 
-CREATE TABLE colocalization_variants (
+CREATE TABLE colocalization_variants_${TABLE_VERSION} (
     region_chromosome TINYINT NOT NULL,
-    region_start INTEGER NOT NULL,
-    region_end INTEGER NOT NULL,
+    cs TINYINT NOT NULL,	
+    region_start BIGINT NOT NULL,
+    region_end BIGINT NOT NULL,
     dataset VARCHAR(255) NOT NULL,
     trait VARCHAR(255) NOT NULL,
     variants JSON NOT NULL
@@ -457,65 +481,68 @@ to support fast region-based lookups.
 
 Run the following:
 
-```bash
-DB_PATH=/tmp/colocalization.db
-DUCKDB_CMD="/home/mwm1/.bin/duckdb $DB_PATH"
 
+```bash
 $DUCKDB_CMD <<EOF
 INSTALL mysql;
 
 -- Connect to the MySQL database using credentials
-ATTACH 'user=${MYSQL_USER} port=${MYSQL_PORT} database=${MYSQL_DATABASE} password=${MYSQL_PASSWORD} host=${MYSQL_HOST}' AS mysqldb (TYPE mysql);
+ATTACH '${CONNECTION_STRING}' AS mysqldb (TYPE mysql);
 
 -- Export the variants table from DuckDB to MySQL
-INSERT INTO mysqldb.colocalization_variants
-SELECT * FROM colocalization.colocalization_variants;
-
--- Create indexes on region1 and region2 for fast overlap lookups in DuckDB
-CREATE INDEX idx_colocalization_region1
-    ON colocalization(region1_chromosome, region1_start, region1_end, dataset1, trait1);
-
-CREATE INDEX idx_colocalization_region2
-    ON colocalization(region2_chromosome, region2_start, region2_end, dataset2, trait2);
-EOF
-
-# Create index in MySQL for region-based lookups
-mysql --defaults-group-suffix=prod <<EOF
-CREATE INDEX idx_colocalization_variants
-    ON colocalization_variants(region_chromosome, region_start, region_end, dataset, trait);
+INSERT INTO mysqldb.colocalization_variants_${TABLE_VERSION}
+SELECT
+region_chromosome, cs, region_start, region_end, dataset, trait, variants
+FROM colocalization.colocalization_variants;
 EOF
 ```
+
+
 
 ## Step 7: Create Index and Materialized Views in MySQL
 
 This step improves query performance on colocalization data and
-defines useful SQL views pheweb. It includes the
-creation of an index on `region1` and multiple views for phenotypes,
-regions, and enriched variant joins.
+defines useful SQL views pheweb. It includes the creation of an
+indexes for region queries and multiple views for phenotypes, regions,
+and enriched variant joins.
 
-### Command
+### Indexes
 
-Run the following:
+
+Create the indexes for the mysql database for region-based lookups
+
+```bash
+mysql --defaults-group-suffix=prod <<EOF
+CREATE INDEX idx_colocalization_variants_${TABLE_VERSION}
+    ON colocalization_variants_${TABLE_VERSION}(region_chromosome, region_start, region_end, dataset, trait, cs);
+
+CREATE INDEX idx_colocalization_region1_${TABLE_VERSION}
+    ON colocalization_${TABLE_VERSION}(region1_chromosome, region1_start, region1_end, dataset1, trait1);
+
+CREATE INDEX idx_colocalization_region2_${TABLE_VERSION}
+    ON colocalization_${TABLE_VERSION}(region2_chromosome, region2_start, region2_end, dataset2, trait2);
+EOF
+```
+
+### Indexes
+
+Create the views for pheweb to query:
 
 
 ```
 mysql --defaults-group-suffix=prod <<EOF
-DROP INDEX IF exists idx_colocalization_region1 ON colocalization;
-CREATE INDEX idx_colocalization_region1
-    ON colocalization(region1_chromosome, region1_start, region1_end, dataset1, trait1);
+drop view if exists colocalization_phenotype_${TABLE_VERSION};
+create view colocalization_phenotype_${TABLE_VERSION} as
+select distinct trait1 as phenotype from colocalization_${TABLE_VERSION};
 
-drop view if exists colocalization_phenotype;
-create view colocalization_phenotype as
-select distinct trait1 as phenotype from colocalization;
-
-drop view if exists colocalization_region;
-create view colocalization_region as
+drop view if exists colocalization_region_${TABLE_VERSION};
+create view colocalization_region_${TABLE_VERSION} as
 select *,
        trait1 as phenotype
- from colocalization;
+ from colocalization_${TABLE_VERSION};
 
-drop view if exists colocalization_region;
-create view colocalization_region as
+drop view if exists colocalization_region_${TABLE_VERSION};
+create view colocalization_region_${TABLE_VERSION} as
 SELECT c.dataset1_label AS dataset1,
        c.dataset2_label AS dataset2,
        c.region_chromosome,
@@ -538,19 +565,22 @@ SELECT c.dataset1_label AS dataset1,
        c.trait1 as phenotype,
        v1.variants AS variant1 ,
        v2.variants AS variant2
-FROM colocalization AS c
-LEFT JOIN colocalization_variants AS v1
+FROM colocalization_${TABLE_VERSION} AS c
+LEFT JOIN colocalization_variants_${TABLE_VERSION} AS v1
     ON c.region1_chromosome = v1.region_chromosome
    AND c.region1_start = v1.region_start
    AND c.region1_end = v1.region_end
    AND c.dataset1 = v1.dataset
    AND c.trait1 = v1.trait
-LEFT JOIN colocalization_variants AS v2
+   AND c.cs1 = v1.cs
+LEFT JOIN colocalization_variants_${TABLE_VERSION} AS v2
     ON c.region2_chromosome = v2.region_chromosome
    AND c.region2_start = v2.region_start
    AND c.region2_end = v2.region_end
    AND c.dataset2 = v2.dataset
-   AND c.trait2 = v2.trait;
+   AND c.trait2 = v2.trait
+   AND c.cs2 = v1.cs
+   ;
 
 EOF
 ```
@@ -569,10 +599,10 @@ Modify your PheWeb backend configuration (`config.py`) to include the following,
   "ColocalizationV2DAO": {
     "authentication_file": "/etc/gcp/mysql.conf",
     "parameters": {
-      "phenotype_table": "colocalization_phenotype",
-      "region_table": "colocalization_region",
-      "region_summary_table": "colocalization_region",
-      "colocalization_table": "colocalization_region",
+      "phenotype_table": "colocalization_phenotype_${TABLE_VERSION}",
+      "region_table": "colocalization_region_${TABLE_VERSION}",
+      "region_summary_table": "colocalization_region_${TABLE_VERSION}",
+      "colocalization_table": "colocalization_region_${TABLE_VERSION}",
       "region_summary_columns": {
         "count": "count(*)",
         "unique_phenotype2": "count(distinct trait2)",
