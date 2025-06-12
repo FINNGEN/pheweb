@@ -579,7 +579,7 @@ LEFT JOIN colocalization_variants_${TABLE_VERSION} AS v2
    AND c.region2_end = v2.region_end
    AND c.dataset2 = v2.dataset
    AND c.trait2 = v2.trait
-   AND c.cs2 = v1.cs
+   AND c.cs2 = v2.cs
    ;
 
 EOF
