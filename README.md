@@ -285,7 +285,7 @@ gsutil cat ${PIP_PATH}/*.snp.filter.tsv | grep --color=auto -v '^trait' | cut -f
 ## Colocalization
 
 To load colocalization in Pheweb, two input files are required: a colocalization file and a credible set file.
-Instructions for loading these files are available [here](pheweb/serve/components/colocalization/README.v2.md).
+Instructions for loading these files are available [here](pheweb/serve/components/colocalization/README.md).
 
 Details on how to load previous colocalization files can be found [here](pheweb/serve/components/colocalization/README.md).
 
