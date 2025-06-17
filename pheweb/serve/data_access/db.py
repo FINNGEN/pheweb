@@ -829,86 +829,6 @@ class TabixResultCommonDao:
         )
         return pr
 
-    def get_common_top_per_pheno_variant(self, chrom, start, end, columns, header, header_offset, phenos):
-        """Return the common pheno top per pheno variant
-        """
-        chrom = "23" if chrom == "X" else chrom
-        try:
-            tabix_iter = pysam.TabixFile(self.matrix_path, parser=None).fetch(
-                chrom, start - 1, end
-            )
-
-        except ValueError:
-            print(
-                "No variants in the given range. {}:{}-{}".format(chrom, start - 1, end)
-            )
-            return []
-        top = defaultdict(lambda: defaultdict(dict))
-
-        n_vars = 0
-        ind = [i for i,e in enumerate(header) if 'chr' in e][0]
-        for variant_row in tabix_iter:
-            n_vars = n_vars + 1
-            split = variant_row.split("\t")
-            for pheno in phenos:
-                # get the common variant columns
-                phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval = self.get_variant_common_columns(
-                    split, pheno, header_offset, columns, header
-                )
-                # Pick the smaller of values.  First try using mlog which
-                # maybe absent in earlier releases.  In this case fall back
-                # to using pval to order.
-                if mlogp is not None and mlogp is not "" and mlogp != "NA":
-                    if pval is None:
-                        pval = str(math.pow(10, -1 * float(mlogp)))
-                    # have mlogp compare mlog
-                    is_less_than = (
-                        phenotype not in top or (float(mlogp)) > top[phenotype][1].mlogp
-                    )
-                else:
-                    # we don't have mlogp use pval
-                    is_less_than = (
-                        pval is not ""
-                        and pval != "NA"
-                        and (
-                            phenotype not in top or (float(pval)) < top[phenotype][1].pval
-                        )
-                    )
-                if is_less_than:
-                    pr = self.get_common_pheno_results(
-                        phenotype, pval, beta, sebeta, maf, maf_case, maf_control, mlogp
-                    )
-                    v = Variant(chrom, split[ind+1], split[ind+2], split[ind+3])
-                    top[phenotype] = (v, pr)
-
-        print(str(n_vars) + " variants iterated")
-
-        pheno_results = [
-            PhenoResults(pheno=self.pheno_map[pheno], assoc=dat, variant=v)
-            for pheno, (v, dat) in top.items()
-        ]
-
-        # A hack to handle missing mlogp
-        # as sort is stable it should return
-        # with the the pval order.
-        pheno_results.sort(key=lambda pheno: pheno.assoc.pval)
-        pheno_results.sort(key=lambda pheno: pheno.assoc.mlogp, reverse=True)
-
-        return pheno_results
-
-    def append_common_filter_pheno_results(self, variant_pheno_results, pheno_map):
-        """Return the list of PhenoResult
-        """
-        phenolist = variant_pheno_results[1]
-        var_phenocodes = [r.phenocode for r in phenolist]
-
-        for phenotype in pheno_map:
-            if phenotype not in var_phenocodes:
-                pr = self.get_common_pheno_results(phenotype, 'NA', None, None, None, None, None, 'NA')
-                phenolist.append(pr)
-
-        return (variant_pheno_results[0], phenolist)
-
     def get_common_variant_results_range(self, chrom, start, end, matrix_path, header, columns, header_offset, phenos):
         chrom = "23" if chrom == "X" else chrom
         try:
@@ -1007,8 +927,75 @@ class TabixResultDao(ResultDB):
                     results.append(r)
         return results
 
+    def get_top_per_pheno_variant(self, chrom, start, end):
+        """Return the common pheno top per pheno variant
+        """
+        chrom = "23" if chrom == "X" else chrom
+        try:
+            tabix_iter = pysam.TabixFile(self.matrix_path, parser=None).fetch(
+                chrom, start - 1, end
+            )
+
+        except ValueError:
+            print(
+                "No variants in the given range. {}:{}-{}".format(chrom, start - 1, end)
+            )
+            return []
+        top = defaultdict(lambda: defaultdict(dict))
+
+        n_vars = 0
+        ind = [i for i,e in enumerate(self.header) if 'chr' in e][0]
+        for variant_row in tabix_iter:
+            n_vars = n_vars + 1
+            split = variant_row.split("\t")
+            for pheno in self.phenos:
+                # get the common variant columns
+                phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval = self.tabix_result_common_dao.get_variant_common_columns(
+                    split, pheno, self.header_offset, self.columns, self.header
+                )
+                # Pick the smaller of values.  First try using mlog which
+                # maybe absent in earlier releases.  In this case fall back
+                # to using pval to order.
+                if mlogp is not None and mlogp is not "" and mlogp != "NA":
+                    if pval is None:
+                        pval = str(math.pow(10, -1 * float(mlogp)))
+                    # have mlogp compare mlog
+                    is_less_than = (
+                        phenotype not in top or (float(mlogp)) > top[phenotype][1].mlogp
+                    )
+                else:
+                    # we don't have mlogp use pval
+                    is_less_than = (
+                        pval is not ""
+                        and pval != "NA"
+                        and (
+                            phenotype not in top or (float(pval)) < top[phenotype][1].pval
+                        )
+                    )
+                if is_less_than:
+                    pr = self.get_common_pheno_results(
+                        phenotype, pval, beta, sebeta, maf, maf_case, maf_control, mlogp
+                    )
+                    v = Variant(chrom, split[ind+1], split[ind+2], split[ind+3])
+                    top[phenotype] = (v, pr)
+
+        print(str(n_vars) + " variants iterated")
+
+        pheno_results = [
+            PhenoResults(pheno=self.pheno_map[pheno], assoc=dat, variant=v)
+            for pheno, (v, dat) in top.items()
+        ]
+
+        # A hack to handle missing mlogp
+        # as sort is stable it should return
+        # with the the pval order.
+        pheno_results.sort(key=lambda pheno: pheno.assoc.pval)
+        pheno_results.sort(key=lambda pheno: pheno.assoc.mlogp, reverse=True)
+
+        return pheno_results
+
     def get_top_per_pheno_variant_results_range(self, chrom, start, end):
-        pheno_results = self.tabix_result_common_dao.get_common_top_per_pheno_variant(chrom, start, end, self.columns, self.header, self.header_offset, self.phenos)
+        pheno_results = self.get_top_per_pheno_variant(chrom, start, end)
         return pheno_results
 
 class TabixResultFiltDao(ResultDB):
@@ -1058,10 +1045,15 @@ class TabixResultFiltDao(ResultDB):
         '''For a single variant append phenotypes filtered in longformat matrix.
            Populates missing summary stats with none'''
 
-        variant_pheno_result, phenolist = self.tabix_result_common_dao.append_common_filter_pheno_results(
-            variant_phenoresult, self.pheno_map
-        )
-        return (variant_pheno_result, phenolist)
+        phenolist = variant_phenoresult[1]
+        var_phenocodes = [r.phenocode for r in phenolist]
+
+        for phenotype in self.pheno_map:
+            if phenotype not in var_phenocodes:
+                pr = self.tabix_result_common_dao.get_common_pheno_results(phenotype, 'NA', None, None, None, None, None, 'NA')
+                phenolist.append(pr)
+
+        return (variant_phenoresult[0], phenolist)
 
 class ExternalMatrixResultDao(ExternalResultDB):
     def __init__(self, matrix, metadatafile):
