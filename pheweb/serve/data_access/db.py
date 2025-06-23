@@ -1071,7 +1071,7 @@ class TabixResultFiltDao(ResultDB):
             print(
                 "No variants in the given range. {}:{}-{}".format(chrom, start - 1, end)
             )
-        hdi = {a:i for i,a in enumerate(header)}
+        hdi = {a:i for i,a in enumerate(self.header)}
         result_dict = {}
         for variant_row in tabix_iter:
             cols = variant_row.split("\t")
