@@ -1055,6 +1055,98 @@ class TabixResultFiltDao(ResultDB):
 
         return (variant_phenoresult[0], phenolist)
 
+
+    def get_top_per_pheno_variant_results_range(
+        self, chrom, start, end
+    ) -> List[PhenoResults]:
+        """Retrieves top variant for each phenotype in a given range
+        Returns: A list of PhenoResults "pheno" which contains a phenotype dict, and "assoc" containing PhenoResult object, 'variant' contains Variant object. The list is sorted by p-value.
+        """
+
+        chrom = "23" if chrom == "X" else chrom
+        try:
+            tabix_iter = pysam.TabixFile(self.matrix_path,parser=None).fetch(
+                chrom, start - 1, end)
+        except:
+            print(
+                "No variants in the given range. {}:{}-{}".format(chrom, start - 1, end)
+            )
+        hdi = {a:i for i,a in enumerate(self.header)}
+        result_dict = {}
+        for variant_row in tabix_iter:
+            cols = variant_row.split("\t")
+            phenotype = cols[hdi["#pheno"]]
+            mlogp = cols[hdi["mlogp"]] if "mlogp" in hdi else None
+            pval = cols[hdi["pval"]] if "pval" in hdi else None
+            beta = cols[hdi["beta"]] if "beta" in hdi else None
+            sebeta = cols[hdi["sebeta"]] if "sebeta" in hdi else None
+            maf = cols[hdi["af_alt"]] if "af_alt" in hdi else None
+            maf_cases = cols[hdi["af_alt_cases"]] if "af_alt_cases" in hdi else None
+            maf_controls = cols[hdi["af_alt_controls"]] if "af_alt_controls" in hdi else None 
+            if mlogp is not None and mlogp is not "" and mlogp != "NA":
+                if pval is None:
+                    pval = str(math.pow(10, -1 * float(mlogp)))
+            else:
+                #convert pval to mlogp
+                try:
+                    mlogp = str(-math.log10(float(pval)))
+                except:
+                    continue
+            pr = PhenoResult(
+                phenotype,
+                self.pheno_map[phenotype]["phenostring"],
+                self.pheno_map[phenotype]["category"],
+                self.pheno_map[phenotype]["category_index"]
+                if "category_index" in self.pheno_map[phenotype]
+                else None,
+                pval,
+                beta,
+                sebeta,
+                maf,
+                maf_cases,
+                maf_controls,
+                self.pheno_map[phenotype]["num_cases"]
+                if "num_cases" in self.pheno_map[phenotype]
+                else 0,
+                self.pheno_map[phenotype]["num_controls"]
+                if "num_controls" in self.pheno_map[phenotype]
+                else 0,
+                mlogp,
+                self.pheno_map[phenotype]["num_samples"]
+                if "num_samples" in self.pheno_map[phenotype]
+                else "NA",
+            )
+            v = Variant(chrom,cols[hdi["pos"]],cols[hdi["ref"]],cols[hdi["alt"]])
+            #determine whether to save this in the result dict
+            if phenotype in result_dict:
+                #use mlogp
+                #all mlogps and pvals are guaranteed to be available, since values with neither are filtered out,
+                #and mlogp is calculated from pval and pval calculated from mlogp if one was missing
+                if not (mlogp is None or mlogp =="" or mlogp == "NA"):
+                    if float(mlogp) > result_dict[phenotype][1].mlogp:
+                        result_dict[phenotype] = (v,pr)
+                #pval
+                elif not (pval is None or pval =="" or pval =="NA"):
+                    if float(pval) < result_dict[phenotype][1].pval:
+                        result_dict[phenotype] = (v,pr)
+                #else: we can't compare, so nothing to do
+            else:
+                result_dict[phenotype] = (v,pr)
+            
+
+
+        #now we have data for each pheno in the data, then just order
+        pheno_results = [
+            PhenoResults(pheno=self.pheno_map[pheno], assoc=dat, variant=v)
+            for pheno, (v, dat) in result_dict.items()
+        ]
+
+        pheno_results.sort(key=lambda pheno: pheno.assoc.pval)
+        pheno_results.sort(key=lambda pheno: pheno.assoc.mlogp, reverse=True)
+
+        return pheno_results
+
+
 class ExternalMatrixResultDao(ExternalResultDB):
     def __init__(self, matrix, metadatafile):
         self.matrix = matrix
