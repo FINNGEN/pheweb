@@ -1103,8 +1103,8 @@ class TabixResultFiltDao(ResultDB):
                 beta,
                 sebeta,
                 maf,
-                maf_case,
-                maf_control,
+                maf_cases,
+                maf_controls,
                 self.pheno_map[phenotype]["num_cases"]
                 if "num_cases" in self.pheno_map[phenotype]
                 else 0,
@@ -1123,11 +1123,11 @@ class TabixResultFiltDao(ResultDB):
                 #all mlogps and pvals are guaranteed to be available, since values with neither are filtered out,
                 #and mlogp is calculated from pval and pval calculated from mlogp if one was missing
                 if not (mlogp is None or mlogp =="" or mlogp == "NA"):
-                    if float(mlogp) > result_dict[phenotype].mlogp:
+                    if float(mlogp) > result_dict[phenotype][1].mlogp:
                         result_dict[phenotype] = (v,pr)
                 #pval
                 elif not (pval is None or pval =="" or pval =="NA"):
-                    if float(pval) < result_dict[phenotype].pval:
+                    if float(pval) < result_dict[phenotype][1].pval:
                         result_dict[phenotype] = (v,pr)
                 #else: we can't compare, so nothing to do
             else:
