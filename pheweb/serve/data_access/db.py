@@ -1146,12 +1146,6 @@ class TabixResultFiltDao(ResultDB):
 
         return pheno_results
 
-        for phenotype in self.pheno_map:
-            if phenotype not in var_phenocodes:
-                pr = self.tabix_common_dao.get_common_pheno_results(phenotype, 'NA', None, None, None, None, None, 'NA')
-                phenolist.append(pr)
-
-        return (variant_phenores[0], phenolist)
 
 class ExternalMatrixResultDao(ExternalResultDB):
     def __init__(self, matrix, metadatafile):
