@@ -72,21 +72,21 @@ class TestTabixResultFiltDao(unittest.TestCase):
         self.split_query=re.split('-|:|/|_', test_variant)
         self.variant = Variant( self.split_query[0],  self.split_query[1],  self.split_query[2],  self.split_query[3])
 
-    def test_get_single_variant_results(self):
+    def test_should_return_get_single_variant_results(self):
         # check get_single_variant_results
         tabix_results = TabixResultFiltDao(self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns)
         results = tabix_results.get_single_variant_results(self.variant)
         self.assertTrue(len(results) > 0)
         self.assertTrue(isinstance(results, (list, tuple)))
     
-    def should_have_called_get_variants_results(self):
+    def test_should_have_called_get_variants_results(self):
         # check get_variants_results
         tabix_results = TabixResultDao(self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns)
         tabix_results.get_variants_results = unittest.mock.MagicMock()
         tabix_results.get_single_variant_results(self.variant)
         tabix_results.get_variants_results.assert_called_once()
     
-    def should_have_called_get_variant_results_range(self):
+    def test_should_have_called_get_variant_results_range(self):
         # check get_variant_results_range
         tabix_results = TabixResultDao(self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns)
         tabix_results.get_variant_results_range = unittest.mock.MagicMock()
@@ -110,19 +110,19 @@ class TestTabixResultCommonDao(unittest.TestCase):
         ]
         self.split_query=re.split('-|:|/|_', test_variant)
     
-    def test_get_variant_common_columns(self):
+    def test_should_return_variant_common_columns(self):
         # check get_variant_common_columns
         tabix_result_common = TabixResultCommonDao(self.mocked_pheno_list_data)
         results = tabix_result_common.get_variant_common_columns(self.split, self.phenos, None, test_mocked_columns, self.header)
         self.assertEqual(len(results), 8)
     
-    def test_get_variant_columns_using_header(self):
+    def test_should_return_variant_columns_using_header(self):
         # check get_variant_columns_using_header
         tabix_result_common = TabixResultCommonDao(self.mocked_pheno_list_data)
         results = tabix_result_common.get_variant_columns_using_header(self.split, self.header)
         self.assertEqual(len(results), 8)
     
-    def test_get_common_pheno_results(self):
+    def test_should_return_common_pheno_results(self):
         # check get_common_pheno_results
         tabix_result_common = TabixResultCommonDao(self.mocked_pheno_list_data)
         phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval = tabix_result_common.get_variant_columns_using_header(self.split, self.header)
@@ -130,7 +130,7 @@ class TestTabixResultCommonDao(unittest.TestCase):
         common_phenoresults = tabix_result_common.get_common_pheno_results(phenotype, pval, beta, sebeta, maf, maf_case, maf_control, mlogp)
         self.assertIsNotNone(common_phenoresults)
 
-    def test_get_common_variant_results_range(self):
+    def test_should_return_common_variant_results_range(self):
         # check get_common_variant_results_range
         tabix_result_common = TabixResultCommonDao(self.mocked_pheno_list_data)
         variant_results_range = tabix_result_common.get_common_variant_results_range(self.split_query[0], int(self.split_query[1]), int(self.split_query[1]), test_data_file_path, self.header, test_mocked_columns, None, self.phenos)
