@@ -3,9 +3,9 @@
         "AB1_ASPERGILLOSIS": {
             "phenocode": "AB1_ACTINOMYCOSIS",
             "gc_lambda": {
-                "0.5": 0.2145,
-                "0.1": 0.9874545,
-                "0.01": 0.54898,
+                "0.5": 0.236578,
+                "0.1": 0.987454585,
+                "0.01": 0.54898896,
                 "0.001": 0.545498789
             },
             "num_gw_significant": 0,
@@ -13,14 +13,14 @@
             "category_index": 1,
             "phenostring": "Actinomycosis",
             "num_cases": 124,
-            "num_controls": 439048
+            "num_controls": 4393453048
         },
         "AB1_DIBTHERIA": {
             "phenocode": "AB1_DIBTHERIA",
             "gc_lambda": {
-                "0.5": 0.2145,
-                "0.1": 0.9874545,
-                "0.01": 0.54898,
+                "0.5": 0.236578,
+                "0.1": 0.987454585,
+                "0.01": 0.54898896,
                 "0.001": 0.545498789
             },
             "num_gw_significant": 0,
@@ -28,14 +28,14 @@
             "category_index": 1,
             "phenostring": "Actinomycosis",
             "num_cases": 124,
-            "num_controls": 439048
+            "num_controls": 439044448
         },
         "CAMPYLOENTERITIS": {
             "phenocode": "CAMPYLOENTERITIS",
             "gc_lambda": {
-                "0.5": 0.2145,
-                "0.1": 0.9874545,
-                "0.01": 0.54898,
+                "0.5": 0.236578,
+                "0.1": 0.987454585,
+                "0.01": 0.54898896,
                 "0.001": 0.545498789
             },
             "num_gw_significant": 0,
@@ -43,14 +43,14 @@
             "category_index": 1,
             "phenostring": "Actinomycosis",
             "num_cases": 124,
-            "num_controls": 439048
+            "num_controls": 439444048
         },
         "CD2_BENIGN_ANUS_ANAL_CANAL": {
             "phenocode": "CD2_BENIGN_ANUS_ANAL_CANAL",
             "gc_lambda": {
-                "0.5": 0.2145,
-                "0.1": 0.9874545,
-                "0.01": 0.54898,
+                "0.5": 0.236578,
+                "0.1": 0.987454585,
+                "0.01": 0.54898896,
                 "0.001": 0.545498789
             },
             "num_gw_significant": 0,
@@ -58,7 +58,7 @@
             "category_index": 1,
             "phenostring": "Actinomycosis",
             "num_cases": 124,
-            "num_controls": 439048
+            "num_controls": 43934048
         }
     }
 ]
