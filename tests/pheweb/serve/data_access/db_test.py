@@ -158,9 +158,9 @@ class TestTabixResultFiltDao(unittest.TestCase):
     def setUp(self):
         # Load resources
         with open(test_pheno_list_path, "r") as f:
-            self.mocked_pheno_list_data = json.load(f)
+            self.pheno_list_data = json.load(f)
         self.mocked_pheno_list_data = unittest.mock.MagicMock(
-            return_value=self.mocked_pheno_list_data[0]
+            return_value=self.pheno_list_data[0]
         )
         self.split_query = re.split("-|:|/|_", test_variant)
         self.variant = Variant(
@@ -178,24 +178,11 @@ class TestTabixResultFiltDao(unittest.TestCase):
         results = tabix_results.get_single_variant_results(self.variant)
         self.assertTrue(len(results) > 0)
         self.assertTrue(isinstance(results, (list, tuple)))
-
-    def test_should_have_called_get_variants_results(self):
-        # check get_variants_results
-        tabix_results = TabixResultDao(
-            self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns
-        )
-        tabix_results.get_variants_results = unittest.mock.MagicMock()
-        tabix_results.get_single_variant_results(self.variant)
-        tabix_results.get_variants_results.assert_called_once()
-
-    def test_should_have_called_get_variant_results_range(self):
-        # check get_variant_results_range
-        tabix_results = TabixResultDao(
-            self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns
-        )
-        tabix_results.get_variant_results_range = unittest.mock.MagicMock()
-        tabix_results.get_single_variant_results(self.variant)
-        tabix_results.get_variant_results_range.assert_called_once()
+        self.assertEqual(str(results[0]), test_variant)
+        variant_results = [obj.__dict__ for obj in results[1]]
+        self.assertEqual(len(variant_results), len(self.pheno_list_data[0]))
+        self.assertIsNotNone(self.pheno_list_data[0][variant_results[0]['phenocode']])
+        self.assertTrue(len(self.pheno_list_data[0][variant_results[0]['phenocode']]) > 0)
 
 
 class TestTabixResultCommonDao(unittest.TestCase):
