@@ -2,17 +2,16 @@ import gzip
 import json
 import os
 import re
-from pheweb.serve.data_access.db import Variant, optional_float
-from pheweb.serve.data_access.db import AnnotationDB, ResultDB, TabixResultDao, TabixResultFiltDao, TabixResultCommonDao
+from pheweb.serve.data_access.db import Variant, optional_float, AnnotationDB, ResultDB, TabixResultDao, TabixResultFiltDao, TabixResultCommonDao
 
 # results_db_test.py
 import unittest
 from unittest.mock import MagicMock
 
-mock_data_file_path =  os.getcwd()+ '/tests/mocked-data/mocked.tsv.gz'
-mock_pheno_list_path =  os.getcwd()+ '/tests/mocked-data/mocked-pheno-list.json'
-mocked_columns = {'pheno': '#pheno', 'mlogp': 'mlogp', 'beta': 'beta', 'sebeta': 'sebeta', 'maf': 'af_alt', 'maf_cases': 'af_alt_cases', 'maf_controls': 'af_alt_controls'}
-mocked_variant = '1:13668:G:A'
+test_data_file_path =  os.getcwd()+ '/tests/mocked-data/mocked.tsv.gz'
+test_pheno_list_path =  os.getcwd()+ '/tests/mocked-data/mocked-pheno-list.json'
+test_mocked_columns = {'pheno': '#pheno', 'mlogp': 'mlogp', 'beta': 'beta', 'sebeta': 'sebeta', 'maf': 'af_alt', 'maf_cases': 'af_alt_cases', 'maf_controls': 'af_alt_controls'}
+test_variant = '1:13668:G:A'
 
 def test_optional_float() -> None:
     """Test optional float.
@@ -67,33 +66,29 @@ class TestDBValidatedInterfacesImplemented(unittest.TestCase):
 class TestTabixResultFiltDao(unittest.TestCase):
     def setUp(self):
         # Load resources
-        with gzip.open(mock_data_file_path, 'r') as f:
-            self.data = f.read().splitlines()
-        self.columns = mocked_columns
-        self.header = gzip.open(mock_data_file_path,'rt').readline().split("\t")
-        with open(mock_pheno_list_path, 'r') as f:
+        with open(test_pheno_list_path, 'r') as f:
             self.mocked_pheno_list_data = json.load(f)
         self.mocked_pheno_list_data = unittest.mock.MagicMock(return_value=self.mocked_pheno_list_data[0])
-        self.split_query=re.split('-|:|/|_', mocked_variant)
+        self.split_query=re.split('-|:|/|_', test_variant)
         self.variant = Variant( self.split_query[0],  self.split_query[1],  self.split_query[2],  self.split_query[3])
 
     def test_get_single_variant_results(self):
         # check get_single_variant_results
-        tabix_results = TabixResultFiltDao(self.mocked_pheno_list_data, mock_data_file_path, self.columns)
+        tabix_results = TabixResultFiltDao(self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns)
         results = tabix_results.get_single_variant_results(self.variant)
         self.assertTrue(len(results) > 0)
         self.assertTrue(isinstance(results, (list, tuple)))
     
     def should_have_called_get_variants_results(self):
         # check get_variants_results
-        tabix_results = TabixResultDao(self.mocked_pheno_list_data, mock_data_file_path, mocked_columns)
+        tabix_results = TabixResultDao(self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns)
         tabix_results.get_variants_results = unittest.mock.MagicMock()
         tabix_results.get_single_variant_results(self.variant)
         tabix_results.get_variants_results.assert_called_once()
     
     def should_have_called_get_variant_results_range(self):
         # check get_variant_results_range
-        tabix_results = TabixResultDao(self.mocked_pheno_list_data, mock_data_file_path, mocked_columns)
+        tabix_results = TabixResultDao(self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns)
         tabix_results.get_variant_results_range = unittest.mock.MagicMock()
         tabix_results.get_single_variant_results(self.variant)
         tabix_results.get_variant_results_range.assert_called_once()
@@ -101,10 +96,10 @@ class TestTabixResultFiltDao(unittest.TestCase):
 class TestTabixResultCommonDao(unittest.TestCase):
     def setUp(self):
         # Load resources
-        with gzip.open(mock_data_file_path, 'r') as f:
+        with gzip.open(test_data_file_path, 'r') as f:
             self.data = f.read().splitlines()
         self.header = self.data[0].decode('utf-8').split('\t')
-        with open(mock_pheno_list_path, 'r') as f:
+        with open(test_pheno_list_path, 'r') as f:
             self.mocked_pheno_list_data = json.load(f)
         self.mocked_pheno_list_data = unittest.mock.MagicMock(return_value=self.mocked_pheno_list_data[0])
         self.split = self.data[1]
@@ -113,12 +108,12 @@ class TestTabixResultCommonDao(unittest.TestCase):
             for p_col_idx, h in enumerate(self.header)
             if h.startswith("pval")
         ]
-        self.split_query=re.split('-|:|/|_', mocked_variant)
+        self.split_query=re.split('-|:|/|_', test_variant)
     
     def test_get_variant_common_columns(self):
         # check get_variant_common_columns
         tabix_result_common = TabixResultCommonDao(self.mocked_pheno_list_data)
-        results = tabix_result_common.get_variant_common_columns(self.split, self.phenos, None, mocked_columns, self.header)
+        results = tabix_result_common.get_variant_common_columns(self.split, self.phenos, None, test_mocked_columns, self.header)
         self.assertEqual(len(results), 8)
     
     def test_get_variant_columns_using_header(self):
@@ -138,7 +133,7 @@ class TestTabixResultCommonDao(unittest.TestCase):
     def test_get_common_variant_results_range(self):
         # check get_common_variant_results_range
         tabix_result_common = TabixResultCommonDao(self.mocked_pheno_list_data)
-        variant_results_range = tabix_result_common.get_common_variant_results_range(self.split_query[0], int(self.split_query[1]), int(self.split_query[1]), mock_data_file_path, self.header, mocked_columns, None, self.phenos)
+        variant_results_range = tabix_result_common.get_common_variant_results_range(self.split_query[0], int(self.split_query[1]), int(self.split_query[1]), test_data_file_path, self.header, test_mocked_columns, None, self.phenos)
         self.assertIsNotNone(variant_results_range)
 
 
