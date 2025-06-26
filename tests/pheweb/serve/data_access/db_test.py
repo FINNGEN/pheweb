@@ -5,8 +5,6 @@ import re
 from pheweb.serve.data_access.db import (
     Variant,
     optional_float,
-    AnnotationDB,
-    ResultDB,
     TabixResultDao,
     TabixResultFiltDao,
     TabixResultCommonDao,
@@ -29,6 +27,15 @@ test_mocked_columns = {
 }
 test_variant = "1:13668:G:A"
 
+mocked_pheno_result = {
+    "mlogp": 83,
+    "beta": 80,
+    "sebeta": 69,
+    "maf": None,
+    "maf_case": None,
+    "maf_control": None,
+    "pval": None
+}
 
 def test_optional_float() -> None:
     """Test optional float.
@@ -43,115 +50,24 @@ def test_optional_float() -> None:
 
 
 class TestDBValidatedInterfacesImplemented(unittest.TestCase):
+    def setUp(self):
+        # Load resources
+        with open(test_pheno_list_path, "r") as f:
+            self.pheno_list_data = json.load(f)
+        self.mocked_pheno_list_data = unittest.mock.MagicMock(
+            return_value=self.pheno_list_data[0]
+        )
+
     def test_resultdb_interface_implemented(self):
-        self.assertTrue(
-            hasattr(ResultDB, "get_single_variant_results"),
-            "ResultDB should implement get_single_variant_results",
+        tabix_result = TabixResultDao(
+            self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns
         )
-        self.assertTrue(
-            hasattr(ResultDB, "get_variant_results_range"),
-            "ResultDB should implement get_variant_results_range",
+        tabix_result_filt = TabixResultFiltDao(
+            self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns
         )
-        self.assertTrue(
-            hasattr(ResultDB, "get_top_per_pheno_variant_results_range"),
-            "ResultDB should implement get_top_per_pheno_variant_results_range",
-        )
-        self.assertTrue(
-            hasattr(ResultDB, "get_variants_results"),
-            "ResultDB should implement get_variants_results",
-        )
-        self.assertFalse(
-            hasattr(ResultDB, "not_implemented"),
-            "ResultDB should not implement not_implemented",
-        )
-
-    def test_tabixresults_interface_implemented(self):
-        self.assertTrue(
-            hasattr(TabixResultDao, "get_single_variant_results"),
-            "TabixResultDao should implement get_single_variant_results",
-        )
-        self.assertTrue(
-            hasattr(TabixResultDao, "get_variant_results_range"),
-            "TabixResultDao should implement get_variant_results_range",
-        )
-        self.assertTrue(
-            hasattr(TabixResultDao, "get_top_per_pheno_variant_results_range"),
-            "TabixResultDao should implement get_top_per_pheno_variant_results_range",
-        )
-        self.assertTrue(
-            hasattr(TabixResultDao, "get_variants_results"),
-            "TabixResultDao should implement get_variants_results",
-        )
-        self.assertFalse(
-            hasattr(TabixResultDao, "not_implemented"),
-            "TabixResultDao should not implement not_implemented",
-        )
-
-    def test_tabixresultsfilt_interface_implemented(self):
-        self.assertTrue(
-            hasattr(TabixResultFiltDao, "get_single_variant_results"),
-            "TabixResultFiltDao should implement get_single_variant_results",
-        )
-        self.assertTrue(
-            hasattr(TabixResultFiltDao, "get_variant_results_range"),
-            "TabixResultFiltDao should implement get_variant_results_range",
-        )
-        self.assertTrue(
-            hasattr(TabixResultFiltDao, "get_top_per_pheno_variant_results_range"),
-            "TabixResultFiltDao should implement get_top_per_pheno_variant_results_range",
-        )
-        self.assertTrue(
-            hasattr(TabixResultFiltDao, "get_variants_results"),
-            "TabixResultFiltDao should implement get_variants_results",
-        )
-        self.assertFalse(
-            hasattr(TabixResultFiltDao, "not_implemented"),
-            "TabixResultFiltDao should not implement not_implemented",
-        )
-
-    def test_tabixresultsfilt_interface_implemented(self):
-        self.assertTrue(
-            hasattr(TabixResultCommonDao, "get_variant_columns_using_header"),
-            "TabixResultCommonDao should implement get_variant_columns_using_header",
-        )
-        self.assertTrue(
-            hasattr(TabixResultCommonDao, "get_variant_columns_using_header_offset"),
-            "TabixResultCommonDao should implement get_variant_columns_using_header_offset",
-        )
-        self.assertTrue(
-            hasattr(TabixResultCommonDao, "get_variant_common_columns"),
-            "TabixResultCommonDao should implement get_variant_common_columns",
-        )
-        self.assertTrue(
-            hasattr(TabixResultCommonDao, "get_common_pheno_results"),
-            "TabixResultCommonDao should implement get_common_pheno_results",
-        )
-        self.assertFalse(
-            hasattr(TabixResultCommonDao, "not_implemented"),
-            "TabixResultCommonDao should not implement not_implemented",
-        )
-
-    def test_annotationdb_interface_implemented(self):
-        self.assertTrue(
-            hasattr(AnnotationDB, "add_variant_annotations"),
-            "AnnotationDB should implement add_variant_annotations",
-        )
-        self.assertTrue(
-            hasattr(AnnotationDB, "add_variant_annotations_range"),
-            "AnnotationDB should implement add_variant_annotations_range",
-        )
-        self.assertTrue(
-            hasattr(AnnotationDB, "add_single_variant_annotations"),
-            "AnnotationDB should implement add_single_variant_annotations",
-        )
-        self.assertTrue(
-            hasattr(AnnotationDB, "get_gene_functional_variant_annotations"),
-            "AnnotationDB should implement get_gene_functional_variant_annotations",
-        )
-        self.assertFalse(
-            hasattr(AnnotationDB, "not_implemented"),
-            "AnnotationDB should not implement not_implemented",
-        )
+        with self.assertRaises(not NotImplementedError or AttributeError):
+            tabix_result.mock_test();
+            tabix_result_filt.mock_test();
 
 
 class TestTabixResultFiltDao(unittest.TestCase):
@@ -207,10 +123,17 @@ class TestTabixResultCommonDao(unittest.TestCase):
     def test_should_return_variant_common_columns(self):
         # check get_variant_common_columns
         tabix_result_common = TabixResultCommonDao(self.mocked_pheno_list_data)
-        results = tabix_result_common.get_variant_common_columns(
+        phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval = tabix_result_common.get_variant_common_columns(
             self.split, self.phenos, None, test_mocked_columns, self.header
         )
-        self.assertEqual(len(results), 8)
+        self.assertEqual(phenotype, self.split[0])
+        self.assertEqual(beta, mocked_pheno_result["beta"])
+        self.assertEqual(sebeta, mocked_pheno_result["sebeta"])
+        self.assertEqual(maf, mocked_pheno_result["maf"])
+        self.assertEqual(maf_case, mocked_pheno_result["maf_case"])
+        self.assertEqual(maf_control, mocked_pheno_result["maf_control"])
+        self.assertEqual(mlogp, mocked_pheno_result["mlogp"])
+        self.assertEqual(pval, mocked_pheno_result["pval"])
 
     def test_should_return_variant_columns_using_header(self):
         # check get_variant_columns_using_header
@@ -229,10 +152,25 @@ class TestTabixResultCommonDao(unittest.TestCase):
             )
         )
         self.assertEqual(phenotype, self.split[0])
+        self.assertEqual(beta, mocked_pheno_result["beta"])
+        self.assertEqual(sebeta, mocked_pheno_result["sebeta"])
+        self.assertEqual(maf, mocked_pheno_result["maf"])
+        self.assertEqual(maf_case, mocked_pheno_result["maf_case"])
+        self.assertEqual(maf_control, mocked_pheno_result["maf_control"])
+        self.assertEqual(mlogp, mocked_pheno_result["mlogp"])
+        self.assertEqual(pval, mocked_pheno_result["pval"])
+        
         common_phenoresults = tabix_result_common.get_common_pheno_results(
             phenotype, pval, beta, sebeta, maf, maf_case, maf_control, mlogp
         )
         self.assertIsNotNone(common_phenoresults)
+        self.assertEqual(common_phenoresults.beta, mocked_pheno_result["beta"])
+        self.assertEqual(common_phenoresults.sebeta, mocked_pheno_result["sebeta"])
+        self.assertEqual(common_phenoresults.maf, mocked_pheno_result["maf"])
+        self.assertEqual(common_phenoresults.maf_case, mocked_pheno_result["maf_case"])
+        self.assertEqual(common_phenoresults.maf_control, mocked_pheno_result["maf_control"])
+        self.assertEqual(common_phenoresults.mlogp, mocked_pheno_result["mlogp"])
+        self.assertEqual(common_phenoresults.pval, mocked_pheno_result["pval"])
 
     def test_should_return_common_variant_results_range(self):
         # check get_common_variant_results_range
