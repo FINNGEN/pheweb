@@ -346,7 +346,8 @@ class KnownHitsDB(object):
         """
 
 
-class ResultDB(object):
+class ResultDB(metaclass=abc.ABCMeta):
+
     @abc.abstractmethod
     def get_variant_results_range(
         self, chrom, start, end
@@ -365,6 +366,7 @@ class ResultDB(object):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
     def get_variants_results(
         self, variants: List[Variant]
     ) -> List[Tuple[Variant, List[PhenoResult]]]:
@@ -373,6 +375,7 @@ class ResultDB(object):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
     def get_single_variant_results(
         self, variant: Variant
     ) -> Optional[Tuple[Variant, List[PhenoResult]]]:
