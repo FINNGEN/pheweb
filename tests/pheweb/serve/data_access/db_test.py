@@ -34,8 +34,9 @@ mocked_pheno_result = {
     "maf": None,
     "maf_case": None,
     "maf_control": None,
-    "pval": None
+    "pval": None,
 }
+
 
 def test_optional_float() -> None:
     """Test optional float.
@@ -66,8 +67,8 @@ class TestDBValidatedInterfacesImplemented(unittest.TestCase):
             self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns
         )
         with self.assertRaises(not NotImplementedError or AttributeError):
-            tabix_result.mock_test();
-            tabix_result_filt.mock_test();
+            tabix_result.mock_test()
+            tabix_result_filt.mock_test()
 
 
 class TestTabixResultFiltDao(unittest.TestCase):
@@ -97,8 +98,23 @@ class TestTabixResultFiltDao(unittest.TestCase):
         self.assertEqual(str(results[0]), test_variant)
         variant_results = [obj.__dict__ for obj in results[1]]
         self.assertEqual(len(variant_results), len(self.pheno_list_data[0]))
-        self.assertIsNotNone(self.pheno_list_data[0][variant_results[0]['phenocode']])
-        self.assertTrue(len(self.pheno_list_data[0][variant_results[0]['phenocode']]) > 0)
+        phenolist_values = [list(d.values())[0] for d in self.pheno_list_data]
+        self.assertTrue(
+            len(self.pheno_list_data[0][variant_results[0]["phenocode"]]) > 0
+        )
+        self.assertEqual(
+            variant_results[0]["phenostring"], str(phenolist_values[0]["phenostring"])
+        )
+        self.assertEqual(
+            variant_results[0]["category"], phenolist_values[0]["category"]
+        )
+        self.assertEqual(
+            variant_results[0]["category_index"], phenolist_values[0]["category_index"]
+        )
+        self.assertEqual(variant_results[0]["n_case"], phenolist_values[0]["num_cases"])
+        self.assertEqual(
+            variant_results[0]["n_control"], phenolist_values[0]["num_controls"]
+        )
 
 
 class TestTabixResultCommonDao(unittest.TestCase):
@@ -123,8 +139,10 @@ class TestTabixResultCommonDao(unittest.TestCase):
     def test_should_return_variant_common_columns(self):
         # check get_variant_common_columns
         tabix_result_common = TabixResultCommonDao(self.mocked_pheno_list_data)
-        phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval = tabix_result_common.get_variant_common_columns(
-            self.split, self.phenos, None, test_mocked_columns, self.header
+        phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval = (
+            tabix_result_common.get_variant_common_columns(
+                self.split, self.phenos, None, test_mocked_columns, self.header
+            )
         )
         self.assertEqual(phenotype, self.split[0])
         self.assertEqual(beta, mocked_pheno_result["beta"])
@@ -159,7 +177,7 @@ class TestTabixResultCommonDao(unittest.TestCase):
         self.assertEqual(maf_control, mocked_pheno_result["maf_control"])
         self.assertEqual(mlogp, mocked_pheno_result["mlogp"])
         self.assertEqual(pval, mocked_pheno_result["pval"])
-        
+        # check common phenoresults
         common_phenoresults = tabix_result_common.get_common_pheno_results(
             phenotype, pval, beta, sebeta, maf, maf_case, maf_control, mlogp
         )
@@ -168,7 +186,9 @@ class TestTabixResultCommonDao(unittest.TestCase):
         self.assertEqual(common_phenoresults.sebeta, mocked_pheno_result["sebeta"])
         self.assertEqual(common_phenoresults.maf, mocked_pheno_result["maf"])
         self.assertEqual(common_phenoresults.maf_case, mocked_pheno_result["maf_case"])
-        self.assertEqual(common_phenoresults.maf_control, mocked_pheno_result["maf_control"])
+        self.assertEqual(
+            common_phenoresults.maf_control, mocked_pheno_result["maf_control"]
+        )
         self.assertEqual(common_phenoresults.mlogp, mocked_pheno_result["mlogp"])
         self.assertEqual(common_phenoresults.pval, mocked_pheno_result["pval"])
 
@@ -186,6 +206,7 @@ class TestTabixResultCommonDao(unittest.TestCase):
             self.phenos,
         )
         self.assertIsNotNone(variant_results_range)
+        self.assertEqual(list(variant_results_range), [])
 
 
 if __name__ == "__main__":
