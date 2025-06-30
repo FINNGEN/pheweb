@@ -9,8 +9,6 @@ from pheweb.serve.data_access.db import (
     TabixResultFiltDao,
     TabixResultCommonDao,
 )
-
-# results_db_test.py
 import unittest
 from unittest.mock import MagicMock
 
