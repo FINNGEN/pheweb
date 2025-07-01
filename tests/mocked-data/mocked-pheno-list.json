@@ -1,7 +1,7 @@
 [
     {
         "AB1_ASPERGILLOSIS": {
-            "phenocode": "AB1_ACTINOMYCOSIS",
+            "phenocode": "AB1_ASPERGILLOSIS",
             "gc_lambda": {
                 "0.5": 0.236578,
                 "0.1": 0.987454585,

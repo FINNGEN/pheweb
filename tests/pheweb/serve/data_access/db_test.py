@@ -13,6 +13,7 @@ import unittest
 from unittest.mock import MagicMock
 
 test_data_file_path = os.getcwd() + "/tests/mocked-data/mocked.tsv.gz"
+test_wide_data_file_path = os.getcwd() + "/tests/mocked-data/mocked-wide.tsv.gz"
 test_pheno_list_path = os.getcwd() + "/tests/mocked-data/mocked-pheno-list.json"
 test_mocked_columns = {
     "pheno": "#pheno",
@@ -23,6 +24,7 @@ test_mocked_columns = {
     "maf_cases": "af_alt_cases",
     "maf_controls": "af_alt_controls",
 }
+test_phenocode = "AB1_ASPERGILLOSIS"
 test_variant = "1:13668:G:A"
 
 mocked_pheno_result = {
@@ -67,6 +69,37 @@ class TestDBValidatedInterfacesImplemented(unittest.TestCase):
         with self.assertRaises(not NotImplementedError or AttributeError):
             tabix_result.mock_test()
             tabix_result_filt.mock_test()
+
+
+class TestTabixResultDao(unittest.TestCase):
+    def setUp(self):
+        # Load resources
+        with open(test_pheno_list_path, "r") as f:
+            self.pheno_list_data = json.load(f)
+        self.mocked_pheno_list_data = unittest.mock.MagicMock(
+            return_value=self.pheno_list_data
+        )
+        self.split_query = re.split("-|:|/|_", test_variant)
+        self.variant = Variant(
+            self.split_query[0],
+            self.split_query[1],
+            self.split_query[2],
+            self.split_query[3],
+        )
+
+    def test_should_return_get_single_variant_results_tabix_result(self):
+        # check get_single_variant_results
+        tabix_results = TabixResultDao(
+            self.mocked_pheno_list_data, test_wide_data_file_path, test_mocked_columns
+        )
+        results = tabix_results.get_single_variant_results(self.variant)
+        self.assertTrue(len(results) > 0)
+        self.assertTrue(isinstance(results, (list, tuple)))
+        self.assertEqual(str(results[0]), test_variant)
+        variant_results = [obj.__dict__ for obj in results[1]]
+        result_phenotype = next((i for i, d in enumerate(variant_results) if d.get('phenocode') == test_phenocode), None)
+        self.assertIsNotNone(variant_results[result_phenotype]['phenocode'])
+        self.assertEqual(variant_results[result_phenotype]['phenocode'], test_phenocode)
 
 
 class TestTabixResultFiltDao(unittest.TestCase):

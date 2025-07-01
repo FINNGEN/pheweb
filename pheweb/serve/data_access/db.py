@@ -346,7 +346,7 @@ class KnownHitsDB(object):
         """
 
 
-class ResultDB(object):
+class ResultDB(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def get_variant_results_range(
         self, chrom, start, end
@@ -381,7 +381,6 @@ class ResultDB(object):
         Returns None if variant does not exist.
         """
         raise NotImplementedError
-
 
 
 class CodingDB(object):
@@ -799,10 +798,14 @@ class TabixResultCommonDao:
         """
         pr = PhenoResult(
             phenotype,
-            self.pheno_map[phenotype]["phenostring"],
-            self.pheno_map[phenotype]["category"],
+            self.pheno_map[phenotype]["phenostring"]
+            if phenotype in self.pheno_map and "phenostring" in self.pheno_map[phenotype]
+            else None,
+            self.pheno_map[phenotype]["category"]
+            if phenotype in self.pheno_map and "category" in self.pheno_map[phenotype]
+            else None,
             self.pheno_map[phenotype]["category_index"]
-            if "category_index" in self.pheno_map[phenotype]
+            if phenotype in self.pheno_map and "category_index" in self.pheno_map[phenotype]
             else None,
             pval,
             beta,
@@ -812,18 +815,18 @@ class TabixResultCommonDao:
             maf_control,
             (
                 self.pheno_map[phenotype]["num_cases"]
-                if "num_cases" in self.pheno_map[phenotype]
+                 if phenotype in self.pheno_map and "num_cases" in self.pheno_map[phenotype]
                 else 0
             ),
             (
                 self.pheno_map[phenotype]["num_controls"]
-                if "num_controls" in self.pheno_map[phenotype]
+                if phenotype in self.pheno_map and "num_controls" in self.pheno_map[phenotype]
                 else 0
             ),
             mlogp,
             (
                 self.pheno_map[phenotype]["num_samples"]
-                if "num_samples" in self.pheno_map[phenotype]
+                if phenotype in self.pheno_map and "num_samples" in self.pheno_map[phenotype]
                 else "NA"
             ),
         )
@@ -900,7 +903,7 @@ class TabixResultDao(ResultDB):
 
     def get_variant_results_range(self, chrom, start, end):
         variant_results = self.tabix_result_common_dao.get_common_variant_results_range(
-            chrom, start, end, self.matrix_path, self.header, self.header_offset, self.columns, self.phenos
+            chrom, start, end, self.matrix_path, self.header, self.columns, self.header_offset, self.phenos
         )
         return variant_results
 
