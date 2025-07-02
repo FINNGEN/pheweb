@@ -88,7 +88,7 @@ class TestTabixResultDao(unittest.TestCase):
         )
 
     def test_should_return_get_single_variant_results_tabix_result(self):
-        # check get_single_variant_results
+        # check get_single_variant_results for TestTabixResultDao
         tabix_results = TabixResultDao(
             self.mocked_pheno_list_data, test_wide_data_file_path, test_mocked_columns
         )
