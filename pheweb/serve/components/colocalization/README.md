@@ -46,9 +46,21 @@ Assuming you're using Linux and using the mysql client:
 - `coloc.credsets.filtered.tsv.gz` – credible sets file
 
 ```bash
-export TABLE_VERSION=your table version
-export COLOC_DATA_PATH=your coloc path
-export CREDSET_DATA_PATH=your credible set path
+# update to reflect your environment
+export TABLE_VERSION=test
+export GROUP_SUFFIX=prod
+export COLOC_DATA_PATH=/tmp/coloc_r13/release/colocQC.tsv.gz
+export CREDSET_DATA_PATH=/tmp/coloc_r13/release/coloc.credsets.tsv.gz
+```
+
+## Cloud settings
+
+If you are working in a GCP environment set these variables to reflect
+your environment.
+
+```bash
+export GS_PATH="gs://r13-data-green/pheweb/coloc_susie"
+export INSTANCE_NAME="production-releases-pheweb-database"
 ```
 
 
@@ -57,9 +69,13 @@ export CREDSET_DATA_PATH=your credible set path
 Define the environment variables:
 
 ```bash
-export DB_PATH="/tmp/colocalization.dev.db"
+export WORK_DIR="/tmp/${TABLE_VERSION}"
+mkdir -p ${WORK_DIR}
+export DB_PATH="/tmp/${TABLE_VERSION}/colocalization.db"
 export DUCKDB_CMD="env COLOC_DATA_PATH=${COLOC_DATA_PATH} CREDSET_DATA_PATH=${CREDSET_DATA_PATH} duckdb $DB_PATH"
 export CONNECTION_STRING="user=${MYSQL_USER} port=${MYSQL_PORT} database=${MYSQL_DATABASE} password=${MYSQL_PASSWORD} host=${MYSQL_HOST}"
+echo $CONNECTION_STRING
+echo $GROUP_SUFFIX
 ```
 
 Make sure the DuckDB database has the MySQL extension installed.
@@ -80,7 +96,7 @@ EOF
 ```
 Check mysql setup
 ```bash
-mysql --defaults-group-suffix=prod <<EOF
+mysql --defaults-group-suffix=${GROUP_SUFFIX} <<EOF
 select 1
 EOF
 ```
@@ -91,7 +107,6 @@ file with additional cleaned columns.
 
 
 ```bash
-DB_PATH=/tmp/colocalization.db
 $DUCKDB_CMD <<EOF
 DROP TABLE IF EXISTS colocalization;
 
@@ -157,7 +172,7 @@ CREATE TABLE colocalization AS
 	    "PP.H1.abf" AS PPH1abf,
 	    "PP.H2.abf" AS PPH2abf,
 	    "PP.H3.abf" AS PPH3abf,
-            "PP.H4.abf" AS PPH4abf,
+        "PP.H4.abf" AS PPH4abf,
 
 	    low_purity1,
             low_purity2,
@@ -198,17 +213,201 @@ CREATE TABLE colocalization AS
 EOF
 ```
 
-## Step 2: Create MySQL Table
+Parse and aggregates variant-level information from credible set data
+into a structured JSON array per `(dataset, region, trait, cs)`
+combination. It creates a new DuckDB table named
+`colocalization_variants`.
+
+```bash
+$DUCKDB_CMD <<EOF
+DROP TABLE IF EXISTS colocalization_variants;
+
+CREATE TABLE colocalization_variants AS
+SELECT
+    -- Parse chromosome from region string
+    CASE WHEN regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'X' THEN 23
+         WHEN regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'Y' THEN 24
+         WHEN regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'MT' THEN 25
+         ELSE CAST(regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 1) AS TINYINT)
+    END AS region_chromosome,
+
+    -- Parse start and end coordinates
+    CAST(regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 2) AS BIGINT) AS region_start,
+    CAST(regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 3) AS BIGINT) AS region_end,
+
+    dataset,
+    trait,
+	cs::TINYINT AS cs,
+    -- Aggregate variant-level data into a JSON array
+    to_json(ARRAY_AGG(JSON_OBJECT(
+        'rsid', rsid,
+        'position', CAST(REGEXP_EXTRACT(rsid, 'chr(\w+)_([0-9]+)', 2) AS UBIGINT),
+        'cs', CAST(cs AS TINYINT),
+        'low_purity',
+            CASE WHEN low_purity = 0 THEN FALSE
+                 WHEN low_purity = 1 THEN TRUE
+                 ELSE ERROR('Invalid value in col: must be 0 or 1')
+            END,
+        'p',    CASE WHEN p == 'NA'    THEN null ELSE CAST(p    AS FLOAT) END,
+        'beta', CASE WHEN beta == 'NA' THEN null ELSE CAST(beta AS FLOAT) END,
+        'se',   CASE WHEN se == 'NA'   THEN null ELSE CAST(se   AS FLOAT) END,
+        'cs_specific_prob', CAST(cs_specific_prob AS FLOAT)
+    ))) AS variants
+
+FROM read_csv('${CREDSET_DATA_PATH}',
+              delim='\t',
+              sample_size=-1)
+
+GROUP BY dataset, region, trait, cs;
+EOF
+```
+
+## Step 3: Export Data from DuckDB to files
+
+Transfer the processed colocalization data from the DuckDB database to
+a tsv file.
+
+
+
+```bash
+$DUCKDB_CMD <<EOF
+CREATE TABLE colocalization.colocalization_stage AS
+SELECT
+  colocalization_id,
+  dataset1, dataset1_label,
+  dataset2, dataset2_label,
+  trait1,
+  trait2,
+  CASE WHEN region1_chromosome != region2_chromosome THEN NULL
+       ELSE region1_chromosome
+  END AS region_chromosome,
+  CASE
+    WHEN region1_chromosome = region2_chromosome AND region1_end >= region2_start AND region2_end >= region1_start
+      THEN LEAST(region1_start, region2_start)
+    ELSE NULL
+  END AS region_start,
+  CASE
+    WHEN region1_chromosome = region2_chromosome AND region1_end >= region2_start AND region2_end >= region1_start
+      THEN GREATEST(region1_end, region2_end)
+    ELSE NULL
+  END AS region_end,
+  region1, region1_chromosome, region1_start, region1_end,
+  region2, region2_chromosome, region2_start, region2_end,
+  cs1,
+  cs2,
+  nsnps,
+  hit1,
+  hit2,
+  PPH0abf,
+  PPH1abf,
+  PPH2abf,
+  PPH3abf,
+  PPH4abf,
+  low_purity1,
+  low_purity2,
+  nsnps1,
+  nsnps2,
+  CASE
+    WHEN cs1_log10bf = 'inf'::DOUBLE OR cs1_log10bf = '-inf'::DOUBLE THEN NULL
+    ELSE cs1_log10bf
+  END AS cs1_log10bf,
+  (cs1_log10bf = 'inf'::DOUBLE OR cs1_log10bf = '-inf'::DOUBLE) AS cs1_log10bf_is_infinite,
+  CASE
+    WHEN cs2_log10bf = 'inf'::DOUBLE OR cs2_log10bf = '-inf'::DOUBLE THEN NULL
+    ELSE cs2_log10bf
+  END AS cs2_log10bf,
+  (cs2_log10bf = 'inf'::DOUBLE OR cs2_log10bf = '-inf'::DOUBLE) AS cs2_log10bf_is_infinite,
+  clpp,
+  clpa,
+  cs1_size,
+  cs2_size,
+  cs_overlap,
+  topInOverlap,
+  probmass_1,
+  probmass_2,
+  hit1_info,
+  hit2_info,
+  hit1_beta,
+  hit1_pvalue,
+  hit2_beta,
+  hit2_pvalue,
+  colocRes
+FROM colocalization.colocalization;
+
+COPY(SELECT 
+  colocalization_id,
+  dataset1, dataset1_label,
+  dataset2, dataset2_label,
+  trait1, trait2,
+  region_chromosome, region_start, region_end,
+  region1, region1_chromosome, region1_start, region1_end,
+  region2, region2_chromosome, region2_start, region2_end,
+  cs1, cs2,
+  nsnps,
+  hit1, hit2,
+  PPH0abf, PPH1abf, PPH2abf, PPH3abf, PPH4abf,
+  low_purity1, low_purity2,
+  nsnps1, nsnps2,
+  cs1_log10bf, cs1_log10bf_is_infinite,
+  cs2_log10bf, cs2_log10bf_is_infinite,
+  clpp, clpa,
+  cs1_size, cs2_size,
+  cs_overlap,
+  topInOverlap,
+  probmass_1, probmass_2,
+  hit1_info, hit2_info,
+  hit1_beta, hit1_pvalue,
+  hit2_beta, hit2_pvalue,
+  colocRes
+from colocalization.colocalization_stage) 
+TO '${WORK_DIR}/colocalization_${TABLE_VERSION}.tsv.gz' (FORMAT 'csv', DELIMITER E'\t', HEADER TRUE, COMPRESSION 'gzip');
+EOF
+
+if [ -n "$GS_PATH" ]; then
+  cat "${WORK_DIR}/colocalization_${TABLE_VERSION}.tsv.gz" | zcat | sed '1d' | gzip --best | gsutil cp - "${GS_PATH}/colocalization_${TABLE_VERSION}.tsv.gz"
+fi
+```
+
+This step exports `colocalization_variants` data from DuckDB to tsv.
+
+```bash
+$DUCKDB_CMD <<EOF
+CREATE TABLE colocalization.colocalization_variants_stage AS
+SELECT
+  region_chromosome, region_start, region_end,
+  cs,
+  dataset,
+  trait,
+  variants
+FROM colocalization.colocalization_variants;
+
+COPY(SELECT 
+  region_chromosome, region_start, region_end,
+  cs,
+  dataset,
+  trait,
+  variants
+from colocalization.colocalization_variants_stage) 
+TO '${WORK_DIR}/colocalization_variants_${TABLE_VERSION}.tsv.gz' 
+(FORMAT 'csv', DELIMITER E'\t', HEADER TRUE, COMPRESSION 'gzip');
+EOF
+
+if [ -n "$GS_PATH" ]; then
+  cat "${WORK_DIR}/colocalization_variants_${TABLE_VERSION}.tsv.gz" | zcat | sed '1d' | gzip --best | gsutil cp - "${GS_PATH}/colocalization_variants_${TABLE_VERSION}.tsv.gz"
+fi
+```
+
+## Step 4: Create MySQL Table
 
 This step creates the `colocalization` table in a MySQL database using
-the `prod` configuration group. The table schema is designed to mirror
+the `${GROUP_SUFFIX}` configuration group. The table schema is designed to mirror
 the structure of the DuckDB version, with types adjusted for MySQL
 compatibility.
 
 Run the following command:
 
 ```bash
-mysql --defaults-group-suffix=prod <<EOF
+mysql --defaults-group-suffix=${GROUP_SUFFIX} <<EOF
 DROP TABLE IF EXISTS colocalization_${TABLE_VERSION};
 
 CREATE TABLE colocalization_${TABLE_VERSION} (
@@ -287,181 +486,79 @@ CREATE TABLE colocalization_${TABLE_VERSION} (
 EOF
 ```
 
-## Step 3: Export Data from DuckDB to MySQL
-
-This step transfers the processed colocalization data from the DuckDB
-database to the MySQL `colocalization` table created earlier.
-
-```bash
-$DUCKDB_CMD <<EOF
-ATTACH '${CONNECTION_STRING}' AS mysqldb (TYPE mysql);
-
-INSERT INTO mysqldb.colocalization_${TABLE_VERSION}
-SELECT
-  colocalization_id,
-
-  dataset1, dataset1_label,
-  dataset2, dataset2_label,
-
-  trait1,
-  trait2,
-
-  CASE WHEN region1_chromosome != region2_chromosome THEN null
-  ELSE region1_chromosome
-  END AS region_chromosome,
-
-  CASE
-    WHEN region1_chromosome = region2_chromosome AND region1_end >= region2_start AND region2_end >= region1_start
-      THEN LEAST(region1_start, region2_start)
-    ELSE NULL
-  END AS region_start,
-
-  CASE
-    WHEN region1_chromosome = region2_chromosome AND region1_end >= region2_start AND region2_end >= region1_start
-      THEN GREATEST(region1_end, region2_end)
-    ELSE NULL
-  END AS region_end,
-
-  region1, region1_chromosome, region1_start, region1_end,
-  region2, region2_chromosome, region2_start, region2_end,
-
-  cs1,
-  cs2,
-
-  nsnps,
-
-  hit1,
-  hit2,
-
-  PPH0abf,
-  PPH1abf,
-  PPH2abf,
-  PPH3abf,
-  PPH4abf,
-
-  low_purity1,
-  low_purity2,
-
-  nsnps1,
-  nsnps2,
-
-  CASE
-    WHEN cs1_log10bf = 'inf'::DOUBLE OR cs1_log10bf = '-inf'::DOUBLE THEN NULL
-    ELSE cs1_log10bf
-  END AS cs1_log10bf,
-
-  (cs1_log10bf = 'inf'::DOUBLE OR cs1_log10bf = '-inf'::DOUBLE) AS cs1_log10bf_is_infinite,
-
-
-  CASE
-    WHEN cs2_log10bf = 'inf'::DOUBLE OR cs2_log10bf = '-inf'::DOUBLE THEN NULL
-    ELSE cs2_log10bf
-  END AS cs2_log10bf,
-
-  (cs2_log10bf = 'inf'::DOUBLE OR cs2_log10bf = '-inf'::DOUBLE) AS cs2_log10bf_is_infinite,
-
-  clpp,
-  clpa,
-
-  cs1_size,
-  cs2_size,
-
-  cs_overlap,
-  topInOverlap,
-
-  probmass_1,
-  probmass_2,
-
-  hit1_info,
-  hit2_info,
-
-  hit1_beta,
-  hit1_pvalue,
-
-  hit2_beta,
-  hit2_pvalue,
-
-  colocRes
-FROM colocalization.colocalization;
-EOF
-```
-
-## Step 4: Create `colocalization_variants` Table in DuckDB
-
-This step parses and aggregates variant-level information from
-credible set data into a structured JSON array per `(dataset, region,
-trait, cs)` combination. It creates a new DuckDB table named
-`colocalization_variants`.
-
-Run the following:
-
-```bash
-$DUCKDB_CMD <<EOF
-DROP TABLE IF EXISTS colocalization_variants;
-
-CREATE TABLE colocalization_variants AS
-SELECT
-    -- Parse chromosome from region string
-    CASE WHEN regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'X' THEN 23
-         WHEN regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'Y' THEN 24
-         WHEN regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'MT' THEN 25
-         ELSE CAST(regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 1) AS TINYINT)
-    END AS region_chromosome,
-
-    -- Parse start and end coordinates
-    CAST(regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 2) AS BIGINT) AS region_start,
-    CAST(regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 3) AS BIGINT) AS region_end,
-
-    dataset,
-    trait,
-	cs::TINYINT AS cs,
-    -- Aggregate variant-level data into a JSON array
-    to_json(ARRAY_AGG(JSON_OBJECT(
-        'rsid', rsid,
-        'position', CAST(REGEXP_EXTRACT(rsid, 'chr(\w+)_([0-9]+)', 2) AS UBIGINT),
-        'cs', cs,
-        'low_purity',
-            CASE WHEN low_purity = 0 THEN FALSE
-                 WHEN low_purity = 1 THEN TRUE
-                 ELSE ERROR('Invalid value in col: must be 0 or 1')
-            END,
-        'p', p,
-        'beta', beta,
-        'se', se,
-        'cs_specific_prob', cs_specific_prob
-    ))) AS variants
-
-FROM read_csv('${CREDSET_DATA_PATH}',
-              delim='\t',
-              sample_size=-1)
-
-GROUP BY dataset, region, trait, cs;
-EOF
-```
-
-## Step 5: Create `colocalization_variants` Table in MySQL
-
-This step defines the target schema in MySQL for storing aggregated
-variant-level data as JSON. Each row corresponds to a unique
-`(dataset, region, trait, cs)` combination and includes a JSON array of
-variant details.
+Define the table in MySQL for storing aggregated variant-level data as
+JSON. Each row corresponds to a unique `(dataset, region, trait, cs)`
+combination and includes a JSON array of variant details.
 
 Run the following command to create the table:
 
 ```bash
-mysql --defaults-group-suffix=prod <<EOF
+mysql --defaults-group-suffix=${GROUP_SUFFIX} <<EOF
 DROP TABLE IF EXISTS colocalization_variants_${TABLE_VERSION};
 
 CREATE TABLE colocalization_variants_${TABLE_VERSION} (
     region_chromosome TINYINT NOT NULL,
-    cs TINYINT NOT NULL,
     region_start BIGINT NOT NULL,
     region_end BIGINT NOT NULL,
+    cs TINYINT NOT NULL,
     dataset VARCHAR(255) NOT NULL,
     trait VARCHAR(255) NOT NULL,
     variants JSON NOT NULL
 );
 EOF
+```
+## Step 5: Import data to MySQL
+
+### Import Colocalization Data
+This step transfers the processed colocalization data from the DuckDB
+database to the MySQL `colocalization` table created earlier.
+
+There are three options for the next step: **MySQL LOAD**, **DuckDB import**, and **gcloud SQL import**. Choose based on your setup and data size:
+
+- **DuckDB import**  
+  Use if your dataset is small (~200 MB) and the MySQL connection is fast and stable.
+
+- **gcloud SQL import**  
+  Use for large datasets (>200 MB) on **Google Cloud SQL**.
+
+- **MySQL LOAD**  
+  Use for large datasets (>200 MB) on **non-GCP MySQL** servers.
+
+### Duckdb import
+```bash
+$DUCKDB_CMD <<EOF
+INSTALL mysql;
+-- Connect to the MySQL database using credentials
+ATTACH '${CONNECTION_STRING}' AS mysqldb (TYPE mysql);
+
+-- Export the colocalization table from DuckDB to MySQL
+INSERT INTO mysqldb.${MYSQL_DATABASE}.colocalization_${TABLE_VERSION}
+SELECT * FROM colocalization.colocalization_stage;
+EOF
+```
+
+### MySQL Load
+
+```bash
+gunzip -c ${WORK_DIR}/colocalization_${TABLE_VERSION}.tsv.gz | mysql --defaults-group-suffix=${GROUP_SUFFIX} --local-infile=1  -e "
+      LOAD DATA LOCAL INFILE '/dev/stdin'
+      INTO TABLE colocalization_${TABLE_VERSION}
+      FIELDS TERMINATED BY '\t'
+      OPTIONALLY ENCLOSED BY '\"'
+      LINES TERMINATED BY '\n'
+      IGNORE 1 LINES;
+"
+```
+### Gcloud SQL Import
+
+```bash
+gcloud sql import csv ${INSTANCE_NAME} \
+  "${GS_PATH}/colocalization_${TABLE_VERSION}.tsv.gz" \
+  --database=${MYSQL_DATABASE} \
+  --table="colocalization_${TABLE_VERSION}" \
+  --escape=5C --fields-terminated-by=09  --quote=22 \
+  --async ;
+echo loading "${GS_PATH}/colocalization_${TABLE_VERSION}.tsv.gz" to database "${MYSQL_DATABASE}"
 ```
 
 ## Step 6: Export `colocalization_variants` to MySQL and Create Indexes
@@ -478,19 +575,16 @@ Run the following:
 ```bash
 $DUCKDB_CMD <<EOF
 INSTALL mysql;
-
 -- Connect to the MySQL database using credentials
 ATTACH '${CONNECTION_STRING}' AS mysqldb (TYPE mysql);
 
 -- Export the variants table from DuckDB to MySQL
-INSERT INTO mysqldb.colocalization_variants_${TABLE_VERSION}
-SELECT
-region_chromosome, cs, region_start, region_end, dataset, trait, variants
-FROM colocalization.colocalization_variants;
+INSERT INTO mysqldb.${MYSQL_DATABASE}.colocalization_variants_${TABLE_VERSION}
+SELECT * FROM colocalization.colocalization_variants_stage;
+
+
 EOF
 ```
-
-
 
 ## Step 7: Create Index and Views in MySQL
 
@@ -505,7 +599,7 @@ and enriched variant joins.
 Create the indexes for the mysql database for region-based lookups
 
 ```bash
-mysql --defaults-group-suffix=prod <<EOF
+mysql --defaults-group-suffix=${GROUP_SUFFIX} <<EOF
 CREATE INDEX idx_colocalization_variants_${TABLE_VERSION}
     ON colocalization_variants_${TABLE_VERSION}(region_chromosome, region_start, region_end, dataset, trait, cs);
 
@@ -522,7 +616,7 @@ EOF
 Create the views for pheweb to query:
 
 ```
-mysql --defaults-group-suffix=prod <<EOF
+mysql --defaults-group-suffix=${GROUP_SUFFIX} <<EOF
 drop view if exists colocalization_phenotype_${TABLE_VERSION};
 create view colocalization_phenotype_${TABLE_VERSION} as
 select distinct trait1 as phenotype from colocalization_${TABLE_VERSION};
@@ -548,7 +642,7 @@ SELECT c.dataset1_label AS dataset1,
        cs2_size AS cs_size_2,
        hit1_beta AS beta1,
        hit1_pvalue AS pval1,
-       hit1_beta AS beta2,
+       hit2_beta AS beta2,
        hit2_pvalue AS pval2,
        PPH4abf AS pp_h4_abf,
        c.clpp AS clpp,
@@ -618,10 +712,13 @@ stop using the colocalization tables. Then run the following SQL to
 drop the related tables and views.
 
 ```
-mysql --defaults-group-suffix=prod <<EOF
+mysql --defaults-group-suffix=${GROUP_SUFFIX} <<EOF
 drop table if exists colocalization_${TABLE_VERSION};
 drop table if exists colocalization_variants_${TABLE_VERSION};
 drop view  if exists colocalization_phenotype_${TABLE_VERSION};
 drop view  if exists colocalization_region_${TABLE_VERSION};
 EOF
+
+rm ${DB_PATH}
+
 ```
