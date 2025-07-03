@@ -24,9 +24,26 @@ test_mocked_columns = {
     "maf_cases": "af_alt_cases",
     "maf_controls": "af_alt_controls",
 }
-test_phenocode = "AB1_ASPERGILLOSIS"
+test_phenocode = "AB1_ACTINOMYCOSIS"
 test_variant = "1:13668:G:A"
-
+test_wide_columns = {
+    "pval": "pval",
+    "mlogp": "mlogp",
+    "beta": "beta",
+    "sebeta": "sebeta",
+    "maf": "af_alt",
+    "maf_cases": "af_alt_cases",
+    "maf_controls": "af_alt_controls",
+}
+mocked_offset_header = {
+    "pval": 0,
+    "mlogp": 1,
+    "beta": 2,
+    "sebeta": 3,
+    "af_alt": 4,
+    "af_alt_cases": 5,
+    "af_alt_controls": 6,
+}
 mocked_pheno_result = {
     "mlogp": 83,
     "beta": 80,
@@ -86,20 +103,38 @@ class TestTabixResultDao(unittest.TestCase):
             self.split_query[2],
             self.split_query[3],
         )
+        with gzip.open(test_wide_data_file_path, "r") as f:
+            self.data = f.read().splitlines()
+        self.row = self.data[1].decode("utf-8").split("\t")
 
     def test_should_return_get_single_variant_results_tabix_result(self):
         # check get_single_variant_results for TestTabixResultDao
         tabix_results = TabixResultDao(
-            self.mocked_pheno_list_data, test_wide_data_file_path, test_mocked_columns
+            self.mocked_pheno_list_data, test_wide_data_file_path, test_wide_columns
         )
+        tabix_results.header_offset = mocked_offset_header
         results = tabix_results.get_single_variant_results(self.variant)
         self.assertTrue(len(results) > 0)
         self.assertTrue(isinstance(results, (list, tuple)))
         self.assertEqual(str(results[0]), test_variant)
         variant_results = [obj.__dict__ for obj in results[1]]
-        result_phenotype = next((i for i, d in enumerate(variant_results) if d.get('phenocode') == test_phenocode), None)
-        self.assertIsNotNone(variant_results[result_phenotype]['phenocode'])
-        self.assertEqual(variant_results[result_phenotype]['phenocode'], test_phenocode)
+        result_phenotype = next(
+            (
+                i
+                for i, d in enumerate(variant_results)
+                if d.get("phenocode") == test_phenocode
+            ),
+            None,
+        )
+        self.assertIsNotNone(variant_results[result_phenotype]["phenocode"])
+        self.assertEqual(variant_results[result_phenotype]["phenocode"], test_phenocode)
+        self.assertEqual(str(variant_results[result_phenotype]["pval"]), self.row[6])
+        self.assertEqual(str(variant_results[result_phenotype]["mlogp"]), self.row[7])
+        self.assertEqual(str(variant_results[result_phenotype]["beta"]), self.row[8])
+        self.assertEqual(str(variant_results[result_phenotype]["sebeta"]), self.row[9])
+        self.assertEqual(str(variant_results[result_phenotype]["maf"]), self.row[10])
+        self.assertEqual(str(variant_results[result_phenotype]["af_alt_cases"]), self.row[11])
+        self.assertEqual(str(variant_results[result_phenotype]["af_alt_controls"]), self.row[12])
 
 
 class TestTabixResultFiltDao(unittest.TestCase):
