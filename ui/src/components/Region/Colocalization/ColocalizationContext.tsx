@@ -6,6 +6,7 @@ import { createParameter,Summary, RegionParams } from "../regionModel";
 import Region = Summary.Region;
 
 import { getRegion } from "../RegionAPI";
+import { useRegionContext } from '../RegionContext';
 
 interface Props {
   readonly  children: React.ReactNode
@@ -36,11 +37,7 @@ const ColocalizationContextProvider = ({ params , children} :  Props) => {
     const [selectedColocalization, setSelectedColocalization] = useState<Colocalization | undefined>(undefined);
     const [searchSummary, setSearchSummary] = useState<SearchSummary | undefined>(undefined);
     const [casualVariant, selectedCasualVariant] = useState<CasualVariant | undefined>(undefined);
-    const [region, setRegion] = useState<Region| undefined>(undefined);
-    
-    useEffect(() => {
-        const parameter : RegionParams<Locus>| undefined = createParameter(params)
-        getRegion(parameter,setRegion); }, [params]);
+    const { region } = useRegionContext();
 
     useEffect(() => {
         const parameter : RegionParams<Locus>| undefined = createParameter(params);

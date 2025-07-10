@@ -1,7 +1,7 @@
 import { RegionParams, Summary} from "./regionModel";
-import { get } from "../../common/commonUtilities";
+import { get, Handler } from '../../common/commonUtilities';
 import { resolveURL } from "../Configuration/configurationModel";
-import { Locus } from "../../common/commonModel";
+import { Locus, locusToStr } from '../../common/commonModel';
 import { FinemapData } from "./LocusZoom/RegionModel";
 
 /**
@@ -20,10 +20,15 @@ export const region_url = (parameter : RegionParams<Locus>) : string =>  `/api/r
  * @param parameter to search
  * @param sink
  * @param getURL
+ * @param handler
  */
 export const getRegion = (parameter: RegionParams<Locus> | undefined,
                           sink: (s: Summary.Region) => void,
-                          getURL = get) =>
-    parameter &&  getURL<Summary.Region>(resolveURL(region_url(parameter)),sink)
-
+													setError: (s: string | null) => void,
+                          getURL = get) => {
+	const handler: Handler = (url: string) => (e: Error) => {
+    setError(`for region ${parameter?.locus?locusToStr(parameter?.locus):'is missing'} and phenotype '${parameter?.phenotype}' error ${e.message} occurred at '${url}'`);
+	}
+	parameter && getURL<Summary.Region>(resolveURL(region_url(parameter)), sink, handler)
+}
 
