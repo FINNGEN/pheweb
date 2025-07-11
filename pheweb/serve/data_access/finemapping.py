@@ -56,8 +56,9 @@ def lead_variants(region):
 def region_summary(region):
     if region["type"] == "conditional":
         variants = region["variants"].split(",")
+        n_signals = region["n_signals"]
         region["conditioned_on"] = list(reduce(lambda acc, x: acc + [f"{acc[-1]},{x}" if acc else x], variants, []))
-        region["paths"] = [f'{region["path"]}{variants[0]}_{str(i+1)}.conditional' for i, _ in enumerate(variants)]
+        region["paths"] = [f'{region["path"]}{variants[0]}_{str(n_signals)}.conditional' for i, _ in enumerate(variants)]
     else:
         region["paths"] = [region["path"]]
     region["lead_variants"] = list(chain.from_iterable(map(lead_variants(region), region["paths"])))
