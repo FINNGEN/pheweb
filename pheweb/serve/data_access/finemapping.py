@@ -58,13 +58,13 @@ def region_summary(region):
         variants = region["variants"].split(",")
         n_signals = region["n_signals"]
         region["conditioned_on"] = list(reduce(lambda acc, x: acc + [f"{acc[-1]},{x}" if acc else x], variants, []))
-        region["paths"] = [f'{region["path"]}{variants[0]}_{str(n_signals)}.conditional' for i, _ in enumerate(variants)]
+        region["paths"] = [f'{region["path"]}{variants[0]}_{str(i)}.conditional' for i in range(1,n_signals+1)]
     else:
         region["paths"] = [region["path"]]
     region["lead_variants"] = list(chain.from_iterable(map(lead_variants(region), region["paths"])))
     del(region["paths"], region["path"])
     return region
-    
+
 def extract_variants(region):
     finemapped_region_type = region["type"]
     def handler(path):
