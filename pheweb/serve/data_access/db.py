@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import imp
 import abc
 import attr
 import copy
@@ -739,15 +738,16 @@ class TabixResultCommonDao:
     def __init__(self, pheno_map):
         self.pheno_map = pheno_map
 
-    def get_variant_columns_using_header(self, split, header):
-        phenotype = split[header.index('#pheno')]
-        beta = split[header.index('beta')]
-        sebeta = split[header.index('sebeta')] if "sebeta" in header else None
-        maf = split[header.index('maf')] if "maf" in header else None
-        maf_case = split[header.index('maf_cases')] if "maf_cases" in header else None
-        maf_control = split[header.index('maf_cases')] if "maf_controls" in header else None
-        mlogp = split[header.index('mlogp')] if "mlogp" in header else None
-        pval = split[header.index('pval')] if "pval" in header else None
+    def get_variant_columns_using_header(self, split, header,columns):
+        hdi = {a:i for i,a in enumerate(header)}
+        phenotype = split[hdi[columns['pheno']]]
+        beta = split[hdi[columns['beta']]]
+        sebeta = split[hdi[columns['sebeta']]] if columns["sebeta"] in hdi else None
+        maf = split[hdi[columns['maf']]] if columns["maf"] in hdi else None
+        maf_case = split[hdi[columns['maf_cases']]] if columns["maf_cases"] in hdi else None
+        maf_control = split[hdi[columns['maf_controls']]] if columns["maf_controls"] in hdi else None
+        mlogp = split[hdi[columns['mlogp']]] if columns["mlogp"] in hdi else None
+        pval = split[hdi[columns['pval']]] if "pval" in hdi else None
         return phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval
 
     def get_variant_columns_using_header_offset(self, split, pheno, header_offset, columns):
@@ -789,7 +789,7 @@ class TabixResultCommonDao:
         """Return the list of common columns phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval
         """
         if header_offset is None:
-            return self.get_variant_columns_using_header(split, header)
+            return self.get_variant_columns_using_header(split, header,columns)
         else:
             return self.get_variant_columns_using_header_offset(split, pheno, header_offset, columns)
 
