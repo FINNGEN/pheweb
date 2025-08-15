@@ -843,18 +843,18 @@ class TabixResultCommonDao:
             )
             return []
 
-        ind = [i for i,e in enumerate(header) if 'chr' in e][0]
+        chr_idx = [i for i,e in enumerate(header) if 'chr' in e][0]
         result = {}
         for variant_row in tabix_iter:
             split = variant_row.split("\t")
             chrom = (
-                split[ind]
+                split[chr_idx]
                 .replace("chr", "")
                 .replace("X", "23")
                 .replace("Y", "24")
                 .replace("MT", "25")
             )
-            v = Variant(chrom, split[ind+1], split[ind+2], split[ind+3])
+            v = Variant(chrom, split[chr_idx+1], split[chr_idx+2], split[chr_idx+3])
             for pheno in phenos:
                 # get the common variant columns
                 phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval = self.get_variant_common_columns(
@@ -873,7 +873,6 @@ class TabixResultCommonDao:
                         result[v].append(pr)
                     else:
                         result[v] = [pr]
-
         return result.items()
 
 class TabixResultDao(ResultDB):
@@ -1005,7 +1004,7 @@ class TabixResultFiltDao(ResultDB):
     def __init__(self, phenos, matrix_path, columns):
         self.matrix_path = matrix_path
         self.columns = columns
-        self.header = gzip.open(self.matrix_path,'rt').readline().split("\t")
+        self.header = gzip.open(self.matrix_path,'rt').readline().strip("\n").split("\t")
         self.pheno_map = phenos(0)
         self.tabix_result_common_dao = TabixResultCommonDao(self.pheno_map)
 
