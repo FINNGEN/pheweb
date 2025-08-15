@@ -738,16 +738,16 @@ class TabixResultCommonDao:
     def __init__(self, pheno_map):
         self.pheno_map = pheno_map
 
-    def get_variant_columns_using_header(self, split, header,columns):
+    def get_variant_columns_using_header(self, values:list[str], header:list[str],columns:dict[str,str]):
         hdi = {a:i for i,a in enumerate(header)}
-        phenotype = split[hdi[columns['pheno']]]
-        beta = split[hdi[columns['beta']]]
-        sebeta = split[hdi[columns['sebeta']]] if columns["sebeta"] in hdi else None
-        maf = split[hdi[columns['maf']]] if columns["maf"] in hdi else None
-        maf_case = split[hdi[columns['maf_cases']]] if columns["maf_cases"] in hdi else None
-        maf_control = split[hdi[columns['maf_controls']]] if columns["maf_controls"] in hdi else None
-        mlogp = split[hdi[columns['mlogp']]] if columns["mlogp"] in hdi else None
-        pval = split[hdi[columns['pval']]] if "pval" in hdi else None
+        phenotype = values[hdi[columns['pheno']]]
+        beta = values[hdi[columns['beta']]]
+        sebeta = values[hdi[columns['sebeta']]] if columns["sebeta"] in hdi else None
+        maf = values[hdi[columns['maf']]] if columns["maf"] in hdi else None
+        maf_case = values[hdi[columns['maf_cases']]] if columns["maf_cases"] in hdi else None
+        maf_control = values[hdi[columns['maf_controls']]] if columns["maf_controls"] in hdi else None
+        mlogp = values[hdi[columns['mlogp']]] if columns["mlogp"] in hdi else None
+        pval = values[hdi[columns['pval']]] if "pval" in hdi else None
         return phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval
 
     def get_variant_columns_using_header_offset(self, split, pheno, header_offset, columns):
