@@ -83,7 +83,7 @@ class TestTabixResultDao(unittest.TestCase):
         with open(test_pheno_list_path, "r") as f:
             self.pheno_list_data = json.load(f)
         self.mocked_pheno_list_data=lambda x:self.pheno_list_data[0]
-        self.split_query = re.split("-|:|/|_", test_variant)
+        self.split_query = test_variant.split(":")
         self.variant = Variant(
             self.split_query[0],
             self.split_query[1],
@@ -130,13 +130,22 @@ class TestTabixResultFiltDao(unittest.TestCase):
         with open(test_pheno_list_path, "r") as f:
             self.pheno_list_data = json.load(f)
         self.mocked_pheno_list_data=lambda x:self.pheno_list_data[0]
-        self.split_query = re.split("-|:|/|_", test_variant)
+        self.split_query = test_variant.split(":")
         self.variant = Variant(
             self.split_query[0],
             self.split_query[1],
             self.split_query[2],
             self.split_query[3],
         )
+        self.validation_value = {
+            "beta":2.05148,
+            "sebeta":1.02193,
+            "maf":0.00598008,
+            "maf_case":0.00992459,
+            "maf_control":0.00597798,
+            "mlogp":1.34969,
+            "pval":0.04470025493374374
+        }
 
     def test_should_return_get_single_variant_results(self):
         # check get_single_variant_results
@@ -166,6 +175,14 @@ class TestTabixResultFiltDao(unittest.TestCase):
         self.assertEqual(
             variant_results[0]["n_control"], phenolist_values[0]["num_controls"]
         )
+        self.assertEqual(variant_results[0]["phenocode"],"AB1_ASPERGILLOSIS")
+        self.assertEqual(variant_results[0]["pval"],self.validation_value["pval"])
+        self.assertEqual(variant_results[0]["beta"],self.validation_value["beta"])
+        self.assertEqual(variant_results[0]["sebeta"],self.validation_value["sebeta"])
+        self.assertEqual(variant_results[0]["maf"],self.validation_value["maf"])
+        self.assertEqual(variant_results[0]["maf_case"],self.validation_value["maf_case"])
+        self.assertEqual(variant_results[0]["maf_control"],self.validation_value["maf_control"])
+        self.assertEqual(variant_results[0]["mlogp"],self.validation_value["mlogp"])
 
 
 class TestTabixResultCommonDao(unittest.TestCase):
@@ -181,7 +198,7 @@ class TestTabixResultCommonDao(unittest.TestCase):
         self.split = self.data[1].split("\t")
         self.phenos=["AB1_ASPERGILLOSIS"]
 
-        self.split_query = re.split("-|:|/|_", test_variant)
+        self.split_query = test_variant.split(":")
 
         self.validation_value = {
             "beta":"2.05148",
