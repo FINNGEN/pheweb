@@ -629,16 +629,17 @@ class MissingVariantDao(MissingVariantDB):
         self.missing_variant_path = missing_variant_path
         self.tabix_file = pysam.TabixFile(self.missing_variant_path, parser=None)
         self.headers = self.tabix_file.header[0].split("\t") if self.tabix_file.header else []
+        self.header_index = {a:i for i,a in enumerate(self.headers)}
+        self.colnames = [h.lower() for h in self.headers]
 
     def get_missing_variant(self, variant: Variant):
-        header = [h.lower() for h in self.headers]
         for row in self.tabix_file.fetch(f"{variant.chr}", start=variant.pos - 1, end=variant.pos + 1):
-            splited_row = row.split("\t")
-            if self.headers and splited_row is not None and splited_row[self.headers.index("Variant")] == f"{variant}":
-                json_obj = dict(zip(header, splited_row))
+            columns = row.split("\t")
+            if columns[self.header_index["Variant"]] == variant.varid:
+                json_obj = dict(zip(self.colnames, columns))
                 return json_obj
             else:
-                return None
+                pass
         return None
 
 
