@@ -638,8 +638,6 @@ class MissingVariantDao(MissingVariantDB):
             if columns[self.header_index["Variant"]] == variant.varid:
                 json_obj = dict(zip(self.colnames, columns))
                 return json_obj
-            else:
-                pass
         return None
 
 
