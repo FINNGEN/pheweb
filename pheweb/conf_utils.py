@@ -183,7 +183,7 @@ def _ensure_conf():
             else:
                 for key in dir(_auth_module):
                     if not key.startswith("_"):
-                        conf[key] = getattr(_conf_module, key)
+                        conf[key] = getattr(_auth_module, key)
 
     _load_config_file()
 
