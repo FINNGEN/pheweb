@@ -2,7 +2,7 @@
   "import_pheweb.pheno.gnomad_filepath": "gs://r13-data-green/annotation/gnomad.v4.0.munged.sites_v1.tsv.bgz",
   "import_pheweb.pheno.annotation_filepath": "gs://r13-data-green/annotation/R13_annotated_variants_v0.pheweb.gz",
   "import_pheweb.pheno.compress_manhattan": true,
-  "import_pheweb.docker": "europe-west1-docker.pkg.dev/phewas-development/fg-phewas-registry/pheweb:ci-b88e27e28f78b5ad945a0980cabcc0c24f09b285",
+  "import_pheweb.docker": "europe-west1-docker.pkg.dev/phewas-development/fg-phewas-registry/pheweb:intervaltree-jm",
   "import_pheweb.summary_files": "gs://r13-data-green/regenie/release/R13_summary_stats.txt",
   "import_pheweb.custom_json": "gs://r13-data-green/regenie/release/R13_pheno.json",
   "import_pheweb.disk": 6000,
@@ -20,8 +20,7 @@
     "num_controls"
   ],
   "import_pheweb.output_url": [
-    "gs://r13-data-green/regenie/release/pheweb",
-    "http://adSIz8tc88Wpl7wv:DgvgfvsdmxxOJdmf@10.132.0.6/data/shared/pheweb/r13/release"
+    "gs://r13-data-green/regenie/release/pheweb_v2"
   ],
   "import_pheweb.preprocess.chrom_column": "#chrom",
   "import_pheweb.preprocess.pos_column": "pos",
