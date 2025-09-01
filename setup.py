@@ -60,7 +60,7 @@ setup(
         'rauth~=0.7',
         'pysam~=0.23.0',
         'marisa-trie~=1.2.1',
-        'intervaltree~=3.1.0',
+        'intervaltree==2.1.0',
         'tqdm~=4.67.0',
         'openpyxl~=3.1.5',
         'scipy~=1.15.2',

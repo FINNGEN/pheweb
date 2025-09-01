@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import imp
 import abc
 import attr
 import copy
@@ -347,7 +346,6 @@ class KnownHitsDB(object):
 
 
 class ResultDB(metaclass=abc.ABCMeta):
-
     @abc.abstractmethod
     def get_variant_results_range(
         self, chrom, start, end
@@ -384,7 +382,6 @@ class ResultDB(metaclass=abc.ABCMeta):
         Returns None if variant does not exist.
         """
         raise NotImplementedError
-
 
 
 class CodingDB(object):
@@ -634,16 +631,15 @@ class MissingVariantDao(MissingVariantDB):
         self.missing_variant_path = missing_variant_path
         self.tabix_file = pysam.TabixFile(self.missing_variant_path, parser=None)
         self.headers = self.tabix_file.header[0].split("\t") if self.tabix_file.header else []
+        self.header_index = {a:i for i,a in enumerate(self.headers)}
+        self.colnames = [h.lower() for h in self.headers]
 
     def get_missing_variant(self, variant: Variant):
-        header = [h.lower() for h in self.headers]
         for row in self.tabix_file.fetch(f"{variant.chr}", start=variant.pos - 1, end=variant.pos + 1):
-            splited_row = row.split("\t")
-            if self.headers and splited_row is not None and splited_row[self.headers.index("Variant")] == f"{variant}":
-                json_obj = dict(zip(header, splited_row))
+            columns = row.split("\t")
+            if columns[self.header_index["Variant"]] == variant.varid:
+                json_obj = dict(zip(self.colnames, columns))
                 return json_obj
-            else:
-                return None
         return None
 
 
@@ -743,15 +739,16 @@ class TabixResultCommonDao:
     def __init__(self, pheno_map):
         self.pheno_map = pheno_map
 
-    def get_variant_columns_using_header(self, split, header):
-        phenotype = split[header.index('#pheno')]
-        beta = split[header.index('beta')]
-        sebeta = split[header.index('sebeta')] if "sebeta" in header else None
-        maf = split[header.index('maf')] if "maf" in header else None
-        maf_case = split[header.index('maf_cases')] if "maf_cases" in header else None
-        maf_control = split[header.index('maf_cases')] if "maf_controls" in header else None
-        mlogp = split[header.index('mlogp')] if "mlogp" in header else None
-        pval = split[header.index('pval')] if "pval" in header else None
+    def get_variant_columns_using_header(self, values:list[str], header:list[str],columns:dict[str,str]):
+        hdi = {a:i for i,a in enumerate(header)}
+        phenotype = values[hdi[columns['pheno']]]
+        beta = values[hdi[columns['beta']]]
+        sebeta = values[hdi[columns['sebeta']]] if columns["sebeta"] in hdi else None
+        maf = values[hdi[columns['maf']]] if columns["maf"] in hdi else None
+        maf_case = values[hdi[columns['maf_cases']]] if columns["maf_cases"] in hdi else None
+        maf_control = values[hdi[columns['maf_controls']]] if columns["maf_controls"] in hdi else None
+        mlogp = values[hdi[columns['mlogp']]] if columns["mlogp"] in hdi else None
+        pval = values[hdi[columns['pval']]] if "pval" in hdi else None
         return phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval
 
     def get_variant_columns_using_header_offset(self, split, pheno, header_offset, columns):
@@ -793,7 +790,7 @@ class TabixResultCommonDao:
         """Return the list of common columns phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval
         """
         if header_offset is None:
-            return self.get_variant_columns_using_header(split, header)
+            return self.get_variant_columns_using_header(split, header,columns)
         else:
             return self.get_variant_columns_using_header_offset(split, pheno, header_offset, columns)
 
@@ -802,10 +799,14 @@ class TabixResultCommonDao:
         """
         pr = PhenoResult(
             phenotype,
-            self.pheno_map[phenotype]["phenostring"],
-            self.pheno_map[phenotype]["category"],
+            self.pheno_map[phenotype]["phenostring"]
+            if phenotype in self.pheno_map and "phenostring" in self.pheno_map[phenotype]
+            else None,
+            self.pheno_map[phenotype]["category"]
+            if phenotype in self.pheno_map and "category" in self.pheno_map[phenotype]
+            else None,
             self.pheno_map[phenotype]["category_index"]
-            if "category_index" in self.pheno_map[phenotype]
+            if phenotype in self.pheno_map and "category_index" in self.pheno_map[phenotype]
             else None,
             pval,
             beta,
@@ -815,18 +816,18 @@ class TabixResultCommonDao:
             maf_control,
             (
                 self.pheno_map[phenotype]["num_cases"]
-                if "num_cases" in self.pheno_map[phenotype]
+                 if phenotype in self.pheno_map and "num_cases" in self.pheno_map[phenotype]
                 else 0
             ),
             (
                 self.pheno_map[phenotype]["num_controls"]
-                if "num_controls" in self.pheno_map[phenotype]
+                if phenotype in self.pheno_map and "num_controls" in self.pheno_map[phenotype]
                 else 0
             ),
             mlogp,
             (
                 self.pheno_map[phenotype]["num_samples"]
-                if "num_samples" in self.pheno_map[phenotype]
+                if phenotype in self.pheno_map and "num_samples" in self.pheno_map[phenotype]
                 else "NA"
             ),
         )
@@ -843,18 +844,18 @@ class TabixResultCommonDao:
             )
             return []
 
-        ind = [i for i,e in enumerate(header) if 'chr' in e][0]
+        chr_idx = [i for i,e in enumerate(header) if 'chr' in e][0]
         result = {}
         for variant_row in tabix_iter:
             split = variant_row.split("\t")
             chrom = (
-                split[ind]
+                split[chr_idx]
                 .replace("chr", "")
                 .replace("X", "23")
                 .replace("Y", "24")
                 .replace("MT", "25")
             )
-            v = Variant(chrom, split[ind+1], split[ind+2], split[ind+3])
+            v = Variant(chrom, split[chr_idx+1], split[chr_idx+2], split[chr_idx+3])
             for pheno in phenos:
                 # get the common variant columns
                 phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval = self.get_variant_common_columns(
@@ -873,7 +874,6 @@ class TabixResultCommonDao:
                         result[v].append(pr)
                     else:
                         result[v] = [pr]
-
         return result.items()
 
 class TabixResultDao(ResultDB):
@@ -903,7 +903,7 @@ class TabixResultDao(ResultDB):
 
     def get_variant_results_range(self, chrom, start, end):
         variant_results = self.tabix_result_common_dao.get_common_variant_results_range(
-            chrom, start, end, self.matrix_path, self.header, self.header_offset, self.columns, self.phenos
+            chrom, start, end, self.matrix_path, self.header, self.columns, self.header_offset, self.phenos
         )
         return variant_results
 
@@ -1005,7 +1005,7 @@ class TabixResultFiltDao(ResultDB):
     def __init__(self, phenos, matrix_path, columns):
         self.matrix_path = matrix_path
         self.columns = columns
-        self.header = gzip.open(self.matrix_path,'rt').readline().split("\t")
+        self.header = gzip.open(self.matrix_path,'rt').readline().strip("\n").split("\t")
         self.pheno_map = phenos(0)
         self.tabix_result_common_dao = TabixResultCommonDao(self.pheno_map)
 

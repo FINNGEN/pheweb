@@ -1,116 +1,114 @@
 task preprocess {
-  # after this task it is assumed the file
-  # is of form chrom, pos, ref, alt, pval, beta, sebeta ...
-  # see format-summary-file for details
+    # after this task it is assumed the file
+    # is of form chrom, pos, ref, alt, pval, beta, sebeta ...
+    # see format-summary-file for details
 
-  File summary_file
-  String docker
-  Int mem
+    File summary_file
+    String docker
+    Int mem
 
-  String? preprocessor
+    String? preprocessor
 
-  String? chrom_column
-  String chrom_flag = if defined(chrom_column) then "--chrom  '${chrom_column}'" else ""
+    String? chrom_column
+    String chrom_flag = if defined(chrom_column) then "--chrom  '${chrom_column}'" else ""
 
-  String? pos_column
-  String pos_flag = if defined(pos_column) then "--pos  '${pos_column}'" else ""
+    String? pos_column
+    String pos_flag = if defined(pos_column) then "--pos  '${pos_column}'" else ""
 
-  String? ref_column
-  String ref_flag = if defined(ref_column) then "--ref  '${ref_column}'" else ""
+    String? ref_column
+    String ref_flag = if defined(ref_column) then "--ref  '${ref_column}'" else ""
 
-  String? alt_column
-  String alt_flag = if defined(alt_column) then "--alt  '${alt_column}'" else ""
+    String? alt_column
+    String alt_flag = if defined(alt_column) then "--alt  '${alt_column}'" else ""
 
-  String? pval_column
-  String pval_flag = if defined(pval_column) then "--pval  '${pval_column}'" else ""
-
-
-  String? mlogp_column
-  String mlogp_flag = if defined(mlogp_column) then "--mlogp  '${mlogp_column}'" else ""
+    String? pval_column
+    String pval_flag = if defined(pval_column) then "--pval  '${pval_column}'" else ""
 
 
-  String? beta_column
-  String beta_flag = if defined(beta_column) then "--beta  '${beta_column}'" else ""
+    String? mlogp_column
+    String mlogp_flag = if defined(mlogp_column) then "--mlogp  '${mlogp_column}'" else ""
 
 
-  String? se_beta_column
-  String se_beta_flag = if defined(se_beta_column) then "--se_beta  '${se_beta_column}'" else ""
-
-  String? rename
-  String rename_flag = if defined(rename) then "--rename '${rename}'" else ""
-
-  String? exclude
-  String exclude_flag = if defined(exclude) then "--exclude '${exclude}'" else ""
-
-  String normalized_filename = sub(sub(basename(summary_file), ".gz$", ""), ".bgz$", "")
-  String out_filename = "${normalized_filename}.gz"
+    String? beta_column
+    String beta_flag = if defined(beta_column) then "--beta  '${beta_column}'" else ""
 
 
-  command <<<
-	   set -euxo pipefail
+    String? se_beta_column
+    String se_beta_flag = if defined(se_beta_column) then "--se_beta  '${se_beta_column}'" else ""
 
-       cat "${summary_file}" | \
-           cat | (if [[ "${summary_file}" == *.gz || "${summary_file}" == *.bgz ]]; then zcat ; else cat ; fi) | \
-           ${default="cat" preprocessor } | \
-           pheweb format-summary-file ${chrom_flag} ${pos_flag} ${ref_flag} ${alt_flag} ${pval_flag} ${mlogp_flag} ${beta_flag} ${se_beta_flag} | \
-           sort -t$'\t' -k1,1n -k2,2n -k3,3 -k4,4 | \
-           bgzip > "${out_filename}"
+    String? rename
+    String rename_flag = if defined(rename) then "--rename '${rename}'" else ""
 
-           du -h "${out_filename}"
-  >>>
+    String? exclude
+    String exclude_flag = if defined(exclude) then "--exclude '${exclude}'" else ""
 
-  output {
-     	    File out_file = "${out_filename}"
-  }
+    String normalized_filename = sub(sub(basename(summary_file), ".gz$", ""), ".bgz$", "")
+    String out_filename = "${normalized_filename}.gz"
 
-  runtime {
+
+    command <<<
+        set -euxo pipefail
+
+        cat "${summary_file}" | \
+        cat | (if [[ "${summary_file}" == *.gz || "${summary_file}" == *.bgz ]]; then zcat ; else cat ; fi) | \
+        ${default="cat" preprocessor } | \
+        pheweb format-summary-file ${chrom_flag} ${pos_flag} ${ref_flag} ${alt_flag} ${pval_flag} ${mlogp_flag} ${beta_flag} ${se_beta_flag} | \
+        sort -t$'\t' -k1,1n -k2,2n -k3,3 -k4,4 | \
+        bgzip > "${out_filename}"
+
+        du -h "${out_filename}"
+    >>>
+
+    output {
+        File out_file = "${out_filename}"
+    }
+
+    runtime {
         docker: "${docker}"
     	cpu: 2
         memory: "${mem} GB"
         bootDiskSizeGb: 30
         disks: "local-disk 10 HDD"
         zones: "europe-west1-b"
-        preemptible: 0
-  }
+        preemptible: 2
+    }
 }
 
 task sites {
-           Array[File] summary_files
-     	   String docker
-           String disk
-	   # There is a pheweb command `pheweb sites`
-     	   # that generates the list of variants.
-     	   # this is a bash replacement for that command
+    Array[File] summary_files
+    String docker
+    String disk
+    # There is a pheweb command `pheweb sites`
+    # that generates the list of variants.
+    # this is a bash replacement for that command
 
-  command <<<
+    command <<<
         set -euxo pipefail
 
         for file in ${sep="\t" summary_files}; do
-
-	   # decompress if suffixes indicate compression
-	   cat "$file" | \
-
-       (if [[ "$file" == *.gz || "$file" == *.bgz ]]; then zcat ; else cat ; fi)  | \
-	      cut -d$'\t' -f1-4| \
-	      sed '1d' | \
-	      sort -t$'\t' -k1,1n -k2,2n -k3,3 -k4,4 > "$file.tmp"
-	   # replace orginal file
-	   mv "$file.tmp" "$file"
-	   # write the list of files to file in case too long
-	   # for commandline
-	   echo $file >> summary_files.tsv
-	done
-	# output header
+            # decompress if suffixes indicate compression
+            cat "$file" | \
+            (if [[ "$file" == *.gz || "$file" == *.bgz ]]; then zcat ; else cat ; fi)  | \
+            cut -d$'\t' -f1-4| \
+            sed '1d' | \
+            sort -t$'\t' -k1,1n -k2,2n -k3,3 -k4,4 > "$file.tmp"
+            # replace orginal file
+            mv "$file.tmp" "$file"
+            # write the list of files to file in case too long
+            # for commandline
+            echo $file >> summary_files.tsv
+	    done
+	    # output header
         # then using the list of files sort and merge
         # python memory script
      	(echo -e 'chrom\tpos\tref\talt' ; cat summary_files.tsv | tr '\n' '\0' | sort --merge --unique --files0-from=- -t$'\t' -k1,1n -k2,2n -k3,3 -k4,4) > sites.tsv
-     >>>
+    >>>
 
-     output {
+    output {
         File variant_list = "sites.tsv"
-     }
+    }
 
-   runtime {
+    runtime {
         docker: "${docker}"
     	cpu: 2
     	memory: "2 GB"
@@ -122,53 +120,55 @@ task sites {
 }
 
 task annotation {
-     String docker
-     Int mem
+    String docker
+    Int mem
 
-     File? rsids_file
-     File bed_file
+    File? rsids_file
+    File? bed_file
 
-     File variant_list
+    File variant_list
 
-     Array[String] output_url
+    Array[String] output_url
 
-     Int gene_version
+    Int gene_version
 
     command <<<
-	set -euxo pipefail
+        set -euxo pipefail
 
-    mkdir -p pheweb/generated-by-pheweb/parsed
-	mkdir -p pheweb/generated-by-pheweb/tmp
-	mkdir -p pheweb/generated-by-pheweb/sites/genes
-	mkdir -p pheweb/generated-by-pheweb/sites/dbSNP
-    mkdir -p /root/.pheweb/cache/
+        mkdir -p pheweb/generated-by-pheweb/parsed
+        mkdir -p pheweb/generated-by-pheweb/tmp
+        mkdir -p pheweb/generated-by-pheweb/sites/genes
+        mkdir -p pheweb/generated-by-pheweb/sites/dbSNP
+        mkdir -p /root/.pheweb/cache/
 
-    # to ensure that bed file is used by pheweb
-    [[ -z "${bed_file}" ]] || cp ${bed_file} /root/.pheweb/cache/genes-b38-v${gene_version}.bed
+        # TODO test cache
+        # TODO this file also appears : generated-by-pheweb/sites/dbSNP/dbsnp-b151-GRCh38.gz
+        [[ -z "${rsids_file}" ]] || mv ${rsids_file} pheweb/generated-by-pheweb/sites/dbSNP/rsids-b38-dbsnp151.vcf.gz
+        [[ -z "${bed_file}" ]] || mv ${bed_file} /root/.pheweb/cache/genes-b38-v${gene_version}.bed
+        
+        zcat -f ${variant_list} > pheweb/generated-by-pheweb/sites/sites-unannotated.tsv
+        # Check header if variant list is already annotated, then move it with appropriate name
+        header=$(head -1 ${variant_list})
+        [[ "$header" =~ "rsids" ]] && [[ "$header" =~ "nearest_genes" ]] && mv pheweb/generated-by-pheweb/sites/sites-unannotated.tsv pheweb/generated-by-pheweb/sites/sites.tsv
 
-	# TODO test cache
-	# TODO this file also appears : generated-by-pheweb/sites/dbSNP/dbsnp-b151-GRCh38.gz
-	[[ -z "${rsids_file}" ]] || mv ${rsids_file} pheweb/generated-by-pheweb/sites/dbSNP/rsids-b38-dbsnp151.vcf.gz
-    [[ -z "${bed_file}" ]] || mv ${bed_file} /root/.pheweb/cache/genes-b38-v${gene_version}.bed
-    # allow for compressed sites file
-	cat ${variant_list} | (if [[ "${variant_list}" == *.gz || "${variant_list}" == *.bgz ]]; then zcat ; else cat ; fi) > pheweb/generated-by-pheweb/sites/sites-unannotated.tsv
+        cd pheweb
 
- 	cd pheweb
         [[ -z "${bed_file}" ]] && pheweb download-genes
-        df -h && pheweb add-rsids
-        [[ -z "${bed_file}" ]] && pheweb add-genes || pheweb add-genes --genes-filepath /root/.pheweb/cache/genes-b38-v${gene_version}.bed
+
+        if [ ! -f "generated-by-pheweb/sites/sites.tsv" ]; then
+            df -h && pheweb add-rsids
+            [[ -z "${bed_file}" ]] && pheweb add-genes || pheweb add-genes --genes-filepath /root/.pheweb/cache/genes-b38-v${gene_version}.bed
+        fi
         df -h && pheweb make-cpras-rsids-sqlite3
         df -h && pheweb make-gene-aliases-sqlite3
         cd ..
         find ./
 
         for url in ${sep="\t" output_url}; do
-
-        /pheweb/scripts/copy_files.sh pheweb/generated-by-pheweb/sites/sites.tsv                $url/generated-by-pheweb/sites/sites.tsv
-        /pheweb/scripts/copy_files.sh pheweb/generated-by-pheweb/resources/gene_aliases.sqlite3 $url/generated-by-pheweb/resources/gene_aliases.sqlite3
-        /pheweb/scripts/copy_files.sh pheweb/generated-by-pheweb/sites/cpras-rsids.sqlite3      $url/generated-by-pheweb/sites/cpras-rsids.sqlite3
-        /pheweb/scripts/copy_files.sh /root/.pheweb/cache/genes-b38-v${gene_version}.bed $url/cache/genes-b38-v${gene_version}.bed
-
+            /pheweb/scripts/copy_files.sh pheweb/generated-by-pheweb/sites/sites.tsv                $url/generated-by-pheweb/sites/sites.tsv
+            /pheweb/scripts/copy_files.sh pheweb/generated-by-pheweb/resources/gene_aliases.sqlite3 $url/generated-by-pheweb/resources/gene_aliases.sqlite3
+            /pheweb/scripts/copy_files.sh pheweb/generated-by-pheweb/sites/cpras-rsids.sqlite3      $url/generated-by-pheweb/sites/cpras-rsids.sqlite3
+            /pheweb/scripts/copy_files.sh /root/.pheweb/cache/genes-b38-v${gene_version}.bed $url/cache/genes-b38-v${gene_version}.bed
         done
         #copy bed file so that it's used as an output,
         #since cromwell often leaves inputs out even though they have been requested in the metadata.
@@ -176,11 +176,11 @@ task annotation {
     >>>
 
     output {
-	File sites_list = "pheweb/generated-by-pheweb/sites/sites.tsv"
-	File gene_aliases_sqlite3 = "pheweb/generated-by-pheweb/resources/gene_aliases.sqlite3"
-	File cpras_rsids_sqlite3 = "pheweb/generated-by-pheweb/sites/cpras-rsids.sqlite3"
-	File bed_file_output = "pheweb/genes-b38-v${gene_version}.bed"
-   }
+        File sites_list = "pheweb/generated-by-pheweb/sites/sites.tsv"
+        File gene_aliases_sqlite3 = "pheweb/generated-by-pheweb/resources/gene_aliases.sqlite3"
+        File cpras_rsids_sqlite3 = "pheweb/generated-by-pheweb/sites/cpras-rsids.sqlite3"
+        File bed_file_output = "pheweb/genes-b38-v${gene_version}.bed"
+    }
 
    runtime {
         docker: "${docker}"
@@ -198,23 +198,21 @@ task webdav_directories {
 
     Array[String] output_url
     String docker
-    File bed_file
 
-  command <<<
+    command <<<
 
-    for url in ${sep="\t" output_url}; do
-
-    if [[ "$url" = http* ]]; then
-      # we ignore failures as directories may alread by created
-      curl -X MKCOL "$url/generated-by-pheweb/" || true
-      curl -X MKCOL "$url/generated-by-pheweb/sites/" || true
-      curl -X MKCOL "$url/generated-by-pheweb/resources/" || true
-      curl -X MKCOL "$url/generated-by-pheweb/pheno_gz/" || true
-      curl -X MKCOL "$url/generated-by-pheweb/manhattan/" || true
-      curl -X MKCOL "$url/generated-by-pheweb/qq/" || true
-      curl -X MKCOL "$url/cache/" || true
-    fi
-    done
+        for url in ${sep="\t" output_url}; do
+            if [[ "$url" = http* ]]; then
+                # we ignore failures as directories may alread by created
+                curl -X MKCOL "$url/generated-by-pheweb/" || true
+                curl -X MKCOL "$url/generated-by-pheweb/sites/" || true
+                curl -X MKCOL "$url/generated-by-pheweb/resources/" || true
+                curl -X MKCOL "$url/generated-by-pheweb/pheno_gz/" || true
+                curl -X MKCOL "$url/generated-by-pheweb/manhattan/" || true
+                curl -X MKCOL "$url/generated-by-pheweb/qq/" || true
+                curl -X MKCOL "$url/cache/" || true
+            fi
+        done
     >>>
 
     runtime {
@@ -230,50 +228,51 @@ task webdav_directories {
 
 
 task pheno {
-    	String docker
+    String docker
 	File variant_list
 	File pheno_file
-    	String file_affix
-        File bed_file
+    String file_affix
+    File bed_file
 	Int gene_version
 
-        File? gnomad_filepath
-        File? annotation_filepath
-	Array[File]? annotation_indexes
+    File? gnomad_filepath
+    File? annotation_filepath
+    File? gnomad_filepath_tbi = gnomad_filepath + ".tbi"
+    File? annotation_filepath_tbi = annotation_filepath + ".tbi"
 
-        String base_name = sub(basename(pheno_file), file_affix, "")
-        String pheno_name = sub(base_name, ".gz$", "")
+    String base_name = sub(basename(pheno_file), file_affix, "")
+    String pheno_name = sub(base_name, ".gz$", "")
 
-        Boolean annotate_manhattan = defined(gnomad_filepath) && defined(annotation_filepath) && defined(annotation_indexes)
+    Boolean annotate_manhattan = defined(gnomad_filepath) && defined(annotation_filepath) && defined(gnomad_filepath_tbi) && defined(annotation_filepath_tbi)
 	Boolean compress_manhattan = false
 
 	# translate manhattan flags
 	String compress_suffix=if compress_manhattan then ".gz" else ""
 	String compress_flag=if compress_manhattan then "true" else "false"
-        Array[String] output_url
+    Array[String] output_url
 
 	String gz_file = "pheweb/generated-by-pheweb/pheno_gz/${pheno_name}.gz"
  	String tbi_file = "pheweb/generated-by-pheweb/pheno_gz/${pheno_name}.gz.tbi"
 	String manhattan_file = "pheweb/generated-by-pheweb/manhattan/${pheno_name}.json${compress_suffix}"
-    	String qq_jsons = "pheweb/generated-by-pheweb/qq/${pheno_name}.json"
+    String qq_jsons = "pheweb/generated-by-pheweb/qq/${pheno_name}.json"
 
-        command <<<
+    command <<<
 
         set -euxo pipefail
 
         mkdir -p pheweb/generated-by-pheweb/parsed
-	mkdir -p pheweb/generated-by-pheweb/sites
-	mkdir -p pheweb/generated-by-pheweb/pheno_gz
-	mkdir -p /root/.pheweb/cache
+	    mkdir -p pheweb/generated-by-pheweb/sites
+	    mkdir -p pheweb/generated-by-pheweb/pheno_gz
+	    mkdir -p /root/.pheweb/cache
 
-	mv ${variant_list} pheweb/generated-by-pheweb/sites/
+        mv ${variant_list} pheweb/generated-by-pheweb/sites/
 
-	[[ -z "${bed_file}" ]] || cp ${bed_file} /root/.pheweb/cache/genes-b38-v${gene_version}.bed
+        [[ -z "${bed_file}" ]] || cp ${bed_file} /root/.pheweb/cache/genes-b38-v${gene_version}.bed
 
-	# pipeline to file without compression suffix if there is one
-	cat ${pheno_file} | \
-	(if [[ "${pheno_file}" == *.gz || "${pheno_file}" == *.bgz ]]; then zcat ; else cat ; fi) | \
-	sed '1 s/^#chrom/chrom/ ; '  > pheweb/generated-by-pheweb/parsed/${pheno_name}
+        # pipeline to file without compression suffix if there is one
+        cat ${pheno_file} | \
+        (if [[ "${pheno_file}" == *.gz || "${pheno_file}" == *.bgz ]]; then zcat ; else cat ; fi) | \
+        sed '1 s/^#chrom/chrom/ ; '  > pheweb/generated-by-pheweb/parsed/${pheno_name}
 
         cd pheweb
 
@@ -282,20 +281,18 @@ task pheno {
         pheweb augment-phenos && \
         pheweb manhattan && \
         ([[ -z "${gnomad_filepath}" ]] || \
-	 [[ -z "${annotation_filepath}" ]] || \
-	 pheweb annotate-manhattan --gnomad_filepath=${gnomad_filepath} --annotation_filepath=${annotation_filepath} --compress=${compress_flag}) && \
-	pheweb qq && \
+        [[ -z "${annotation_filepath}" ]] || \
+        pheweb annotate-manhattan --gnomad_filepath=${gnomad_filepath} --annotation_filepath=${annotation_filepath} --compress=${compress_flag}) && \
+        pheweb qq && \
         pheweb bgzip-phenos &&
         find ./
 
         for url in ${sep="\t" output_url}; do
-
-        /pheweb/scripts/copy_files.sh generated-by-pheweb/pheno_gz/${pheno_name}.gz                        $url/generated-by-pheweb/pheno_gz/${pheno_name}.gz
-	/pheweb/scripts/copy_files.sh generated-by-pheweb/pheno_gz/${pheno_name}.gz.tbi                    $url/generated-by-pheweb/pheno_gz/${pheno_name}.gz.tbi
-	/pheweb/scripts/copy_files.sh generated-by-pheweb/manhattan/${pheno_name}.json${compress_suffix}   $url/generated-by-pheweb/manhattan/${pheno_name}.json${compress_suffix}
-	/pheweb/scripts/copy_files.sh generated-by-pheweb/qq/${pheno_name}.json                            $url/generated-by-pheweb/qq/${pheno_name}.json
-
-	done
+            /pheweb/scripts/copy_files.sh generated-by-pheweb/pheno_gz/${pheno_name}.gz                        $url/generated-by-pheweb/pheno_gz/${pheno_name}.gz
+            /pheweb/scripts/copy_files.sh generated-by-pheweb/pheno_gz/${pheno_name}.gz.tbi                    $url/generated-by-pheweb/pheno_gz/${pheno_name}.gz.tbi
+            /pheweb/scripts/copy_files.sh generated-by-pheweb/manhattan/${pheno_name}.json${compress_suffix}   $url/generated-by-pheweb/manhattan/${pheno_name}.json${compress_suffix}
+            /pheweb/scripts/copy_files.sh generated-by-pheweb/qq/${pheno_name}.json                            $url/generated-by-pheweb/qq/${pheno_name}.json
+    	done
 	>>>
 
    output {
@@ -312,7 +309,7 @@ task pheno {
         bootDiskSizeGb: 30
         disks: "local-disk 70 HDD"
         zones: "europe-west1-b"
-        preemptible: 0
+        preemptible: 2
     }
 }
 
@@ -330,7 +327,6 @@ task matrix {
     Int mem
 
     Array[String] output_url
-
 
     command <<<
         set -euxo pipefail
@@ -662,7 +658,7 @@ task filter_sumstat {
         bootDiskSizeGb: 30
         disks: "local-disk ${disk_size} HDD"
         zones: "europe-west1-b"
-        preemptible: 0
+        preemptible: 2
     }
 
 }
@@ -784,112 +780,118 @@ task matrix_longformat {
 }
 
 workflow import_pheweb {
-         # this variable is to make sure the json file matches the import version
-	 String docker
-	 String summary_files
-         Boolean generate_longformat_matrix
-	 Int gene_version
+    
+    String docker
+    String summary_files
+    Boolean generate_longformat_matrix
+    Int gene_version = 39
 
-	 String file_affix = ""
-         File? sites_file
-         Array[String] post_import = []
-         Array[String] output_url = []
+    String file_affix = ""
+    File? sites_file
+    Array[String] post_import = []
+    Array[String] output_url = []
 
-         File custom_json
-         Array[String] fields
+    File custom_json
+    Array[String] fields
 
-         Int disk
-         Int mem
+    Int disk
+    Int mem
 
-	 Array[String] pheno_files = read_lines(summary_files)
-         # get file from here https://resources.pheweb.org/
-         # https://resources.pheweb.org/genes-v37-hg38.bed
-	 File bed_file
-	 File? rsids_file
+    Array[String] pheno_files = read_lines(summary_files)
+    File? bed_file
+    File? rsids_file
 
     # for merging sumstats files into a long format file
     Float pval_thres
 
-         call webdav_directories { input :
- 	     output_url = output_url ,
-	     docker = docker ,
-	     bed_file = bed_file
-         }
-
-
-	 scatter (pheno_file in pheno_files) {
-	    call preprocess { input :
-               summary_file = pheno_file ,
-               docker = docker ,
-	       }
-         }
-
-	 if (!defined(sites_file)) {
-	   call sites { input :
-              summary_files = preprocess.out_file ,
-              docker = docker,
-	      disk=disk
-           }
-	 }
-
-	 call annotation { input :
-	    output_url = output_url,
-            variant_list = select_first([sites_file, sites.variant_list]) ,
-            mem = mem ,
-	    bed_file = bed_file ,
-	    gene_version = gene_version ,
-	    rsids_file = rsids_file ,
+    call webdav_directories { 
+        input:
+            output_url = output_url,
             docker = docker
-         }
+    }
 
-	 scatter (pheno_file in preprocess.out_file) {
-	 	 call pheno { input :
-		              gene_version = gene_version ,
-	 	      	      bed_file = bed_file,
-                   	      variant_list = annotation.sites_list ,
-	       	      	      pheno_file = pheno_file ,
-	       	       	      file_affix = file_affix,
-                              docker = docker,
-	                      output_url = output_url
-	 	 }
+
+    scatter (pheno_file in pheno_files) {
+        call preprocess {
+            input:
+                summary_file = pheno_file,
+                docker = docker
+        }
+    }
+
+    if (!defined(sites_file)) {
+	    call sites {
+            input:
+                summary_files = preprocess.out_file,
+                docker = docker,
+	            disk=disk
+        }
+    }
+
+    call annotation {
+        input:
+            output_url = output_url,
+            variant_list = select_first([sites_file, sites.variant_list]),
+            mem = mem,
+            bed_file = bed_file,
+            gene_version = gene_version,
+            rsids_file = rsids_file,
+            docker = docker
+    }
+
+    scatter (pheno_file in preprocess.out_file) {
+        call pheno {
+            input:
+                gene_version = gene_version,
+                bed_file = select_first([bed_file, annotation.bed_file_output]),
+                variant_list = annotation.sites_list,
+                pheno_file = pheno_file,
+                file_affix = file_affix,
+                docker = docker,
+                output_url = output_url
+        }
 	}
 
     if (!generate_longformat_matrix) {
         call matrix {
-            input: sites=annotation.sites_list ,
-                   pheno_gz=pheno.pheno_gz,
-                   manhattan=pheno.pheno_manhattan,
-                   bed_file = bed_file,
-                   docker=docker,
-                   mem = mem ,
-                   disk=disk ,
-                   output_url = output_url
+            input:
+                sites = annotation.sites_list ,
+                pheno_gz = pheno.pheno_gz,
+                manhattan = pheno.pheno_manhattan,
+                bed_file = select_first([bed_file, annotation.bed_file_output]),
+                docker=docker,
+                mem = mem,
+                disk = disk,
+                output_url = output_url
         }
     }
 
     if (generate_longformat_matrix) {
-        call get_phenolist{
-            input: pheno_gz = pheno.pheno_gz,
-                   manhattan = pheno.pheno_manhattan,
-                   bed_file = bed_file,
-                   disk = disk,
-                   docker = docker
+        call get_phenolist {
+            input:
+                pheno_gz = pheno.pheno_gz,
+                manhattan = pheno.pheno_manhattan,
+                bed_file = select_first([bed_file, annotation.bed_file_output]),
+                disk = disk,
+                docker = docker
         }
 
         scatter (file in preprocess.out_file) {
-            call filter_sumstat{
-                input: file_affix = file_affix,
-		       sumstat = file,
-                       pval_thres = pval_thres,
-                       docker = docker
+            call filter_sumstat {
+                input:
+                    file_affix = file_affix,
+		            sumstat = file,
+                    pval_thres = pval_thres,
+                    docker = docker
             }
         }
 
         call matrix_longformat {
-            input:  sumstats = filter_sumstat.out,
-                    output_url = output_url,
-                    disk = disk,
-                    docker = docker
+            input: 
+                sumstats = filter_sumstat.out,
+                output_url = output_url,
+                disk = disk,
+                docker = docker
         }
     }
 
@@ -897,18 +899,19 @@ workflow import_pheweb {
 
 	call fix_json{
         input:
-          pheno_json = phenolist ,
-          qq_jsons = pheno.pheno_qq ,
-          man_jsons = pheno.pheno_manhattan ,
-          docker = docker ,
-	  output_url = output_url ,
-	  custom_json = custom_json ,
-          fields = fields
+            pheno_json = phenolist,
+            qq_jsons = pheno.pheno_qq,
+            man_jsons = pheno.pheno_manhattan,
+            docker = docker,
+            output_url = output_url,
+            custom_json = custom_json,
+            fields = fields
         }
 
-	call exec_cmd { input :
-	  docker = docker ,
-	  cmd = post_import ,
-	  input_file = fix_json.json
+	call exec_cmd {
+        input:
+        docker = docker,
+        cmd = post_import,
+        input_file = fix_json.json
 	}
 }
