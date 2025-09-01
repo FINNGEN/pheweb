@@ -364,6 +364,7 @@ class ResultDB(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
     def get_variants_results(
         self, variants: List[Variant]
     ) -> List[Tuple[Variant, List[PhenoResult]]]:
@@ -372,6 +373,7 @@ class ResultDB(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
     def get_single_variant_results(
         self, variant: Variant
     ) -> Optional[Tuple[Variant, List[PhenoResult]]]:
