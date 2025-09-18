@@ -6,7 +6,7 @@ def parse_susie_summary(path : str,
                         region : str,
                         prob_threshold : float =-1):
      data = pd.read_csv(path, sep='\t')
-     data = data[(data.region == region) & (data.prob > prob_threshold)]
+     data = data[(data.region == region.replace('23','X')) & (data.prob > prob_threshold)]
      data['id'] = data['v'] = data['v'].replace('X','23')
      data[['chr', 'position', 'ref', 'alt']] = data['v'].str.split(':', expand=True)
      data['index'] = data['v']
