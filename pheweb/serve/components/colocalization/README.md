@@ -42,16 +42,42 @@ Assuming you're using Linux and using the mysql client:
 ```
 ## Input Files
 
-- `colocQC.filtered_h4_0_8_lbf_0_9_minpm_0_9.tsv.gz` – colocalization results
-- `coloc.credsets.filtered.tsv.gz` – credible sets file
+  This section should change with every data load
+  **Update this to reflect you environment**
+
+- environment settings
+- colocalization results
+- credible sets file
 
 ```bash
-# update to reflect your environment
-export TABLE_VERSION=test
+export TABLE_VERSION=v3
 export GROUP_SUFFIX=prod
-export COLOC_DATA_PATH=/tmp/coloc_r13/release/colocQC.tsv.gz
-export CREDSET_DATA_PATH=/tmp/coloc_r13/release/coloc.credsets.tsv.gz
+export GS_COLOC_DATA_PATH=gs://r13-data-green/coloc_susie/release/colocQC.tsv.gz
+export GS_CREDSET_DATA_PATH=gs://r13-data-green/coloc_susie/release/coloc.credsets.tsv.gz
+export DATASET1='FinnGen-R13'
 ```
+
+  Localize files to be loaded
+
+```bash
+export WORK_DIRECTORY="/tmp/$TABLE_VERSION"
+mkdir -p $WORK_DIRECTORY
+export COLOC_DATA_PATH=$WORK_DIRECTORY/`basename $GS_COLOC_DATA_PATH`
+export CREDSET_DATA_PATH=$WORK_DIRECTORY/`basename $GS_CREDSET_DATA_PATH`
+[ -f "$COLOC_DATA_PATH" ]   && echo "using cache ... $COLOC_DATA_PATH"   || gsutil cp "$GS_COLOC_DATA_PATH" "$COLOC_DATA_PATH"
+[ -f "$CREDSET_DATA_PATH" ] && echo "using cache ... $CREDSET_DATA_PATH" || gsutil cp "$GS_CREDSET_DATA_PATH" "$CREDSET_DATA_PATH"
+```
+
+   Check file headers
+   
+```bash
+echo "COLOC_DATA_PATH : $COLOC_DATA_PATH"
+zcat $COLOC_DATA_PATH | head -n 1
+echo "CREDSET_DATA_PATH : $CREDSET_DATA_PATH"
+zcat $CREDSET_DATA_PATH | head -n 1
+```
+
+
 
 ## Cloud settings
 
@@ -63,15 +89,12 @@ export GS_PATH="gs://r13-data-green/pheweb/coloc_susie"
 export INSTANCE_NAME="production-releases-pheweb-database"
 ```
 
-
 ## Setup
 
 Define the environment variables:
 
 ```bash
-export WORK_DIR="/tmp/${TABLE_VERSION}"
-mkdir -p ${WORK_DIR}
-export DB_PATH="/tmp/${TABLE_VERSION}/colocalization.db"
+export DB_PATH="${WORK_DIRECTORY}/colocalization.db"
 export DUCKDB_CMD="env COLOC_DATA_PATH=${COLOC_DATA_PATH} CREDSET_DATA_PATH=${CREDSET_DATA_PATH} duckdb $DB_PATH"
 export CONNECTION_STRING="user=${MYSQL_USER} port=${MYSQL_PORT} database=${MYSQL_DATABASE} password=${MYSQL_PASSWORD} host=${MYSQL_HOST}"
 echo $CONNECTION_STRING
@@ -105,7 +128,6 @@ EOF
 This command creates a duckdb table colocalization from the compressed TSV
 file with additional cleaned columns.
 
-
 ```bash
 $DUCKDB_CMD <<EOF
 DROP TABLE IF EXISTS colocalization;
@@ -115,10 +137,10 @@ CREATE TABLE colocalization AS
             row_number() OVER () AS colocalization_id,
 
             dataset1,
-	    REPLACE(list_extract(split(dataset1, '--'), 1), '_', ' ') AS dataset1_label,
+	        REPLACE(list_extract(split(dataset1, '--'), 1), '_', ' ') AS dataset1_label,
 
             dataset2,
-	    REPLACE(list_extract(split(dataset2, '--'), 1), '_', ' ') AS dataset2_label,
+	        REPLACE(list_extract(split(dataset2, '--'), 1), '_', ' ') AS dataset2_label,
 
             trait1,
             trait2,
@@ -192,9 +214,9 @@ CREATE TABLE colocalization AS
             END AS clpa,
 
 	    cs1_size,
-            cs2_size,
+        cs2_size,
 
-            cs_overlap,
+        cs_overlap,
 	    topInOverlap,
 
 	    probmass_1,
@@ -360,11 +382,11 @@ COPY(SELECT
   hit2_beta, hit2_pvalue,
   colocRes
 from colocalization.colocalization_stage) 
-TO '${WORK_DIR}/colocalization_${TABLE_VERSION}.tsv.gz' (FORMAT 'csv', DELIMITER E'\t', HEADER TRUE, COMPRESSION 'gzip');
+TO '${WORK_DIRECTORY}/colocalization_${TABLE_VERSION}.tsv.gz' (FORMAT 'csv', DELIMITER E'\t', HEADER TRUE, COMPRESSION 'gzip');
 EOF
 
 if [ -n "$GS_PATH" ]; then
-  cat "${WORK_DIR}/colocalization_${TABLE_VERSION}.tsv.gz" | zcat | sed '1d' | gzip --best | gsutil cp - "${GS_PATH}/colocalization_${TABLE_VERSION}.tsv.gz"
+  cat "${WORK_DIRECTORY}/colocalization_${TABLE_VERSION}.tsv.gz" | zcat | sed '1d' | gzip --best | gsutil cp - "${GS_PATH}/colocalization_${TABLE_VERSION}.tsv.gz"
 fi
 ```
 
@@ -388,12 +410,12 @@ COPY(SELECT
   trait,
   variants
 from colocalization.colocalization_variants_stage) 
-TO '${WORK_DIR}/colocalization_variants_${TABLE_VERSION}.tsv.gz' 
+TO '${WORK_DIRECTORY}/colocalization_variants_${TABLE_VERSION}.tsv.gz' 
 (FORMAT 'csv', DELIMITER E'\t', HEADER TRUE, COMPRESSION 'gzip');
 EOF
 
 if [ -n "$GS_PATH" ]; then
-  cat "${WORK_DIR}/colocalization_variants_${TABLE_VERSION}.tsv.gz" | zcat | sed '1d' | gzip --best | gsutil cp - "${GS_PATH}/colocalization_variants_${TABLE_VERSION}.tsv.gz"
+  cat "${WORK_DIRECTORY}/colocalization_variants_${TABLE_VERSION}.tsv.gz" | zcat | sed '1d' | gzip --best | gsutil cp - "${GS_PATH}/colocalization_variants_${TABLE_VERSION}.tsv.gz"
 fi
 ```
 
@@ -516,16 +538,18 @@ database to the MySQL `colocalization` table created earlier.
 There are three options for the next step: **MySQL LOAD**, **DuckDB import**, and **gcloud SQL import**. Choose based on your setup and data size:
 
 - **DuckDB import**  
-  Use if your dataset is small (~200 MB) and the MySQL connection is fast and stable.
+  Development: Use if your dataset is small (~200 MB) and the MySQL connection is fast and stable.
 
+- **MySQL LOAD**  
+  Local : Use for large datasets (>200 MB) on **non-GCP MySQL** servers.
+  
 - **gcloud SQL import**  
   Use for large datasets (>200 MB) on **Google Cloud SQL**.
 
-- **MySQL LOAD**  
-  Use for large datasets (>200 MB) on **non-GCP MySQL** servers.
 
 ### Duckdb import
 ```bash
+# import using duckdb development
 $DUCKDB_CMD <<EOF
 INSTALL mysql;
 -- Connect to the MySQL database using credentials
@@ -540,7 +564,8 @@ EOF
 ### MySQL Load
 
 ```bash
-gunzip -c ${WORK_DIR}/colocalization_${TABLE_VERSION}.tsv.gz | mysql --defaults-group-suffix=${GROUP_SUFFIX} --local-infile=1  -e "
+# import using mysql local database
+gunzip -c ${WORK_DIRECTORY}/colocalization_${TABLE_VERSION}.tsv.gz | mysql --defaults-group-suffix=${GROUP_SUFFIX} --local-infile=1  -e "
       LOAD DATA LOCAL INFILE '/dev/stdin'
       INTO TABLE colocalization_${TABLE_VERSION}
       FIELDS TERMINATED BY '\t'
@@ -552,12 +577,13 @@ gunzip -c ${WORK_DIR}/colocalization_${TABLE_VERSION}.tsv.gz | mysql --defaults-
 ### Gcloud SQL Import
 
 ```bash
-gcloud sql import csv ${INSTANCE_NAME} \
+OP=$(gcloud sql import csv ${INSTANCE_NAME} \
   "${GS_PATH}/colocalization_${TABLE_VERSION}.tsv.gz" \
   --database=${MYSQL_DATABASE} \
   --table="colocalization_${TABLE_VERSION}" \
   --escape=5C --fields-terminated-by=09  --quote=22 \
-  --async ;
+  --async --quiet)
+echo "Started op: $OP"
 echo loading "${GS_PATH}/colocalization_${TABLE_VERSION}.tsv.gz" to database "${MYSQL_DATABASE}"
 ```
 
@@ -581,10 +607,11 @@ ATTACH '${CONNECTION_STRING}' AS mysqldb (TYPE mysql);
 -- Export the variants table from DuckDB to MySQL
 INSERT INTO mysqldb.${MYSQL_DATABASE}.colocalization_variants_${TABLE_VERSION}
 SELECT * FROM colocalization.colocalization_variants_stage;
-
-
 EOF
 ```
+
+
+
 
 ## Step 7: Create Index and Views in MySQL
 
@@ -620,12 +647,6 @@ mysql --defaults-group-suffix=${GROUP_SUFFIX} <<EOF
 drop view if exists colocalization_phenotype_${TABLE_VERSION};
 create view colocalization_phenotype_${TABLE_VERSION} as
 select distinct trait1 as phenotype from colocalization_${TABLE_VERSION};
-
-drop view if exists colocalization_region_${TABLE_VERSION};
-create view colocalization_region_${TABLE_VERSION} as
-select *,
-       trait1 as phenotype
- from colocalization_${TABLE_VERSION};
 
 drop view if exists colocalization_region_${TABLE_VERSION};
 create view colocalization_region_${TABLE_VERSION} as
@@ -671,6 +692,21 @@ LEFT JOIN colocalization_variants_${TABLE_VERSION} AS v2
 EOF
 ```
 
+
+## Step 7 : Checks
+
+
+Check the outputs of these queries to check
+the tables.
+
+```
+mysql --defaults-group-suffix=${GROUP_SUFFIX} <<EOF
+select min(beta1) min_beta1, avg(beta1) avg_beta1, max(beta1) max_beta1, 
+       min(beta2) min_beta2, avg(beta2) avg_beta2, max(beta1) max_beta2,
+       avg(pval1) avg_pval1, avg(pval2) avg_pval2 from colocalization_region_${TABLE_VERSION};
+select count(distinct dataset1) count_dataset1, count(distinct dataset2) count_dataset2 from colocalization_region_${TABLE_VERSION};
+EOF
+```
 
 ## Step 7: Update PheWeb Configuration for Colocalization V2
 
