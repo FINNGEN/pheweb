@@ -43,7 +43,7 @@ Assuming you're using Linux and using the mysql client:
 ## Input Files
 
   This section should change with every data load
-  **Update this to reflect you environment**
+  **Update this to reflect your environment**
 
 - environment settings
 - colocalization results
@@ -54,7 +54,6 @@ export TABLE_VERSION=v3
 export GROUP_SUFFIX=prod
 export GS_COLOC_DATA_PATH=gs://r13-data-green/coloc_susie/release/colocQC.tsv.gz
 export GS_CREDSET_DATA_PATH=gs://r13-data-green/coloc_susie/release/coloc.credsets.tsv.gz
-export DATASET1='FinnGen-R13'
 ```
 
   Localize files to be loaded
@@ -81,7 +80,7 @@ zcat $CREDSET_DATA_PATH | head -n 1
 
 ## Cloud settings
 
-If you are working in a GCP environment set these variables to reflect
+If you are working in a GCP environment, set these variables to reflect
 your environment.
 
 ```bash
@@ -235,7 +234,7 @@ CREATE TABLE colocalization AS
 EOF
 ```
 
-Parse and aggregates variant-level information from credible set data
+Parse and aggregate variant-level information from credible set data
 into a structured JSON array per `(dataset, region, trait, cs)`
 combination. It creates a new DuckDB table named
 `colocalization_variants`.
@@ -617,7 +616,7 @@ EOF
 
 This step improves query performance on colocalization data and
 defines useful SQL views pheweb. It includes the creation of an
-indexes for region queries and multiple views for phenotypes, regions,
+index for region queries and multiple views for phenotypes, regions,
 and enriched variant joins.
 
 ### Indexes
