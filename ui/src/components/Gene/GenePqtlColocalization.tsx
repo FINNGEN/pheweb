@@ -13,6 +13,8 @@ declare let window: ConfigurationWindow;
 const { config : { userInterface } = { userInterface : undefined } } = window;
 
 const tableColumns : Column<PqtlColocalizationsModel.Row>[] = createTableColumns(userInterface?.gene?.pqtlColocalizations?.tableColumns) || (genePqtlTableColumns as Column<PqtlColocalizationsModel.Row>[])
+const subtableColumns :  Column<any>[] = createTableColumns(userInterface?.gene?.pqtlColocalizations?.subTableColumns) || colocSubTable as Column<any>[];
+
 const dataToTableRows = (d : PqtlColocalizationsModel.Data| null) : PqtlColocalizationsModel.Row[] => d || []
 
 const tableProperties = {
@@ -56,7 +58,7 @@ const colocalizationSubTable = ( row :  ReactTable ) : JSX.Element | any => {
           <h5>Disease Colocalizations</h5>
           <ReactTable  
             data={value}  
-            columns={colocSubTable} 
+            columns={subtableColumns}
             defaultPageSize={pageSize}
           /> 
       </div> : 

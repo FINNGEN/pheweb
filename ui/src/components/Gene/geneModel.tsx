@@ -38,6 +38,7 @@ export namespace Gene {
   export interface PqtlColocalizationsConfiguration {
     banner?: string
     tableColumns? : TableColumnConfiguration<PqtlColocalizations.Row>
+    subTableColumns? : TableColumnConfiguration<any>
   }
 
   export interface GeneColocalizationsConfiguration {
