@@ -43,28 +43,31 @@ Assuming you're using Linux and using the mysql client:
 ## Input Files
 
   This section should change with every data load
-  **Update this to reflect your environment**
+  **Update this to reflect you environment**
 
 - environment settings
 - colocalization results
 - credible sets file
 
 ```bash
-export TABLE_VERSION=v3
+export TABLE_VERSION=v5
 export GROUP_SUFFIX=prod
 export GS_COLOC_DATA_PATH=gs://r13-data-green/coloc_susie/release/colocQC.tsv.gz
 export GS_CREDSET_DATA_PATH=gs://r13-data-green/coloc_susie/release/coloc.credsets.tsv.gz
+export DATASET1='FinnGen-R13'
 ```
 
-  Localize files to be loaded
+Localize files to be loaded
 
 ```bash
 export WORK_DIRECTORY="/tmp/$TABLE_VERSION"
 mkdir -p $WORK_DIRECTORY
+
 export COLOC_DATA_PATH=$WORK_DIRECTORY/`basename $GS_COLOC_DATA_PATH`
 export CREDSET_DATA_PATH=$WORK_DIRECTORY/`basename $GS_CREDSET_DATA_PATH`
-[ -f "$COLOC_DATA_PATH" ]   && echo "using cache ... $COLOC_DATA_PATH"   || gsutil cp "$GS_COLOC_DATA_PATH" "$COLOC_DATA_PATH"
-[ -f "$CREDSET_DATA_PATH" ] && echo "using cache ... $CREDSET_DATA_PATH" || gsutil cp "$GS_CREDSET_DATA_PATH" "$CREDSET_DATA_PATH"
+
+[ -f "$COLOC_DATA_PATH" ]      && echo "using cache ... $COLOC_DATA_PATH"   || gsutil cp "$GS_COLOC_DATA_PATH" "$COLOC_DATA_PATH"
+[ -f "$CREDSET_DATA_PATH" ]    && echo "using cache ... $CREDSET_DATA_PATH" || gsutil cp "$GS_CREDSET_DATA_PATH" "$CREDSET_DATA_PATH"
 ```
 
    Check file headers
@@ -80,7 +83,7 @@ zcat $CREDSET_DATA_PATH | head -n 1
 
 ## Cloud settings
 
-If you are working in a GCP environment, set these variables to reflect
+If you are working in a GCP environment set these variables to reflect
 your environment.
 
 ```bash
@@ -98,6 +101,7 @@ export DUCKDB_CMD="env COLOC_DATA_PATH=${COLOC_DATA_PATH} CREDSET_DATA_PATH=${CR
 export CONNECTION_STRING="user=${MYSQL_USER} port=${MYSQL_PORT} database=${MYSQL_DATABASE} password=${MYSQL_PASSWORD} host=${MYSQL_HOST}"
 echo $CONNECTION_STRING
 echo $GROUP_SUFFIX
+[ -e "$DB_PATH" ] && rm -f "$DB_PATH"
 ```
 
 Make sure the DuckDB database has the MySQL extension installed.
@@ -133,12 +137,41 @@ DROP TABLE IF EXISTS colocalization;
 
 CREATE TABLE colocalization AS
         SELECT
+		
             row_number() OVER () AS colocalization_id,
 
             dataset1,
+
+	        REPLACE(list_extract(split(dataset1, '--'), 1), '_', ' ') AS dataset1_label,
+
+	        CASE WHEN dataset1 LIKE '%--%--%--%' THEN REPLACE(split_part(split_part(dataset1, '--', 2), '--', 2), '_', ' ')
+                 ELSE NULL
+            END AS dataset1_sample,
+
+			CASE WHEN dataset1 LIKE '%--%--%--%'
+                 THEN REPLACE(split_part(dataset1, '--', 3), '_', ' ')   -- the 3rd segment between '--'
+                 ELSE NULL
+            END AS dataset1_methods,
+
+	        REPLACE(reverse(split_part(reverse(dataset1), '--', 1)), '_', ' ') AS dataset1_collection,
+
 	        REPLACE(list_extract(split(dataset1, '--'), 1), '_', ' ') AS dataset1_label,
 
             dataset2,
+			
+	        REPLACE(list_extract(split(dataset2, '--'), 1), '_', ' ') AS dataset2_label,
+
+	        CASE WHEN dataset2 LIKE '%--%--%--%' THEN REPLACE(split_part(split_part(dataset2, '--', 2), '--', 2), '_', ' ')
+                 ELSE NULL
+            END AS dataset2_sample,
+
+			CASE WHEN dataset2 LIKE '%--%--%--%'
+                 THEN REPLACE(split_part(dataset2, '--', 3), '_', ' ')   -- the 3rd segment between '--'
+                 ELSE NULL
+            END AS dataset2_methods,
+
+	        REPLACE(reverse(split_part(reverse(dataset2), '--', 1)), '_', ' ') AS dataset2_collection,
+
 	        REPLACE(list_extract(split(dataset2, '--'), 1), '_', ' ') AS dataset2_label,
 
             trait1,
@@ -173,18 +206,62 @@ CREATE TABLE colocalization AS
 
 	    hit1,
 
+        CASE WHEN hit1 ILIKE 'chr%' THEN
+             CASE WHEN UPPER(regexp_replace(split_part(hit1, '_', 1), '(?i)^chr', '')) = 'X'  THEN 23
+                  WHEN UPPER(regexp_replace(split_part(hit1, '_', 1), '(?i)^chr', '')) = 'Y'  THEN 24
+                  WHEN UPPER(regexp_replace(split_part(hit1, '_', 1), '(?i)^chr', '')) = 'MT' THEN 25
+                  ELSE CAST(regexp_replace(split_part(hit1, '_', 1), '(?i)^chr', '') AS INTEGER)
+             END
+             ELSE NULL
+        END AS hit1_chromosome,
+
+	    CASE WHEN hit1 ILIKE 'chr%' THEN CAST(split_part(hit1, '_', 2) AS INTEGER)
+             ELSE NULL
+        END AS hit1_position,
+
+        CASE WHEN hit1 ILIKE 'chr%' THEN split_part(hit1, '_', 3)
+             ELSE NULL
+        END AS hit1_ref,
+
+        CASE WHEN hit1 ILIKE 'chr%' THEN split_part(hit1, '_', 4)
+             ELSE NULL
+        END AS hit1_alt,
+
 	    CASE WHEN split_part(hit1_info, ',', 1) == 'NA' THEN null
                  ELSE CAST(split_part(hit1_info, ',', 1) AS DOUBLE)
             END AS hit1_beta,
+		
 	    CASE WHEN split_part(hit1_info, ',', 2) == 'NA' THEN null
                  ELSE CAST(split_part(hit1_info, ',', 2) AS DOUBLE)
             END AS hit1_pvalue,
 
 	    hit2,
 
+        CASE WHEN hit2 ILIKE 'chr%' THEN
+             CASE WHEN UPPER(regexp_replace(split_part(hit2, '_', 1), '(?i)^chr', '')) = 'X'  THEN 23
+                  WHEN UPPER(regexp_replace(split_part(hit2, '_', 1), '(?i)^chr', '')) = 'Y'  THEN 24
+                  WHEN UPPER(regexp_replace(split_part(hit2, '_', 1), '(?i)^chr', '')) = 'MT' THEN 25
+                  ELSE CAST(regexp_replace(split_part(hit2, '_', 1), '(?i)^chr', '') AS INTEGER)
+             END
+             ELSE NULL
+        END AS hit2_chromosome,
+
+	    CASE WHEN hit2 ILIKE 'chr%' THEN CAST(split_part(hit2, '_', 2) AS INTEGER)
+             ELSE NULL
+        END AS hit2_position,
+
+        CASE WHEN hit2 ILIKE 'chr%' THEN split_part(hit2, '_', 3)
+             ELSE NULL
+        END AS hit2_ref,
+
+        CASE WHEN hit2 ILIKE 'chr%' THEN split_part(hit2, '_', 4)
+             ELSE NULL
+        END AS hit2_alt,
+
 	    CASE WHEN hit2_info = 'NA' OR split_part(hit2_info, ',', 1) == 'NA' THEN null
                  ELSE CAST(split_part(hit2_info, ',', 1) AS DOUBLE)
             END AS hit2_beta,
+			
 	    CASE WHEN hit2_info = 'NA' OR split_part(hit2_info, ',', 2) == 'NA' OR split_part(hit2_info, ',', 2) == '' THEN null
                   ELSE CAST(split_part(hit2_info, ',', 2) AS DOUBLE)
             END AS hit2_pvalue,
@@ -231,10 +308,12 @@ CREATE TABLE colocalization AS
             delim='\t',
             sample_size=-1
         );
+
+
 EOF
 ```
 
-Parse and aggregate variant-level information from credible set data
+Parse and aggregates variant-level information from credible set data
 into a structured JSON array per `(dataset, region, trait, cs)`
 combination. It creates a new DuckDB table named
 `colocalization_variants`.
@@ -245,21 +324,21 @@ DROP TABLE IF EXISTS colocalization_variants;
 
 CREATE TABLE colocalization_variants AS
 SELECT
-    -- Parse chromosome from region string
+    --- Parse chromosome from region string
     CASE WHEN regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'X' THEN 23
          WHEN regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'Y' THEN 24
          WHEN regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'MT' THEN 25
          ELSE CAST(regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 1) AS TINYINT)
     END AS region_chromosome,
 
-    -- Parse start and end coordinates
+    --- Parse start and end coordinates
     CAST(regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 2) AS BIGINT) AS region_start,
     CAST(regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 3) AS BIGINT) AS region_end,
 
     dataset,
     trait,
 	cs::TINYINT AS cs,
-    -- Aggregate variant-level data into a JSON array
+    --- Aggregate variant-level data into a JSON array
     to_json(ARRAY_AGG(JSON_OBJECT(
         'rsid', rsid,
         'position', CAST(REGEXP_EXTRACT(rsid, 'chr(\w+)_([0-9]+)', 2) AS UBIGINT),
@@ -295,8 +374,8 @@ $DUCKDB_CMD <<EOF
 CREATE TABLE colocalization.colocalization_stage AS
 SELECT
   colocalization_id,
-  dataset1, dataset1_label,
-  dataset2, dataset2_label,
+  dataset1, dataset1_label, dataset1_sample, dataset1_methods, dataset1_collection,
+  dataset2, dataset2_label, dataset2_sample, dataset2_methods, dataset2_collection,
   trait1,
   trait2,
   CASE WHEN region1_chromosome != region2_chromosome THEN NULL
@@ -317,8 +396,8 @@ SELECT
   cs1,
   cs2,
   nsnps,
-  hit1,
-  hit2,
+  hit1,hit1_chromosome,hit1_position,hit1_ref,hit1_alt,
+  hit2,hit2_chromosome,hit2_position,hit2_ref,hit2_alt,
   PPH0abf,
   PPH1abf,
   PPH2abf,
@@ -357,15 +436,16 @@ FROM colocalization.colocalization;
 
 COPY(SELECT 
   colocalization_id,
-  dataset1, dataset1_label,
-  dataset2, dataset2_label,
+  dataset1, dataset1_label, dataset1_sample, dataset1_methods, dataset1_collection,
+  dataset2, dataset2_label, dataset2_sample, dataset2_methods, dataset2_collection,
   trait1, trait2,
   region_chromosome, region_start, region_end,
   region1, region1_chromosome, region1_start, region1_end,
   region2, region2_chromosome, region2_start, region2_end,
   cs1, cs2,
   nsnps,
-  hit1, hit2,
+  hit1,hit1_chromosome,hit1_position,hit1_ref,hit1_alt,
+  hit2,hit2_chromosome,hit2_position,hit2_ref,hit2_alt,
   PPH0abf, PPH1abf, PPH2abf, PPH3abf, PPH4abf,
   low_purity1, low_purity2,
   nsnps1, nsnps2,
@@ -434,10 +514,17 @@ DROP TABLE IF EXISTS colocalization_${TABLE_VERSION};
 CREATE TABLE colocalization_${TABLE_VERSION} (
   colocalization_id             INTEGER,
 
-  dataset1           VARCHAR(100)  NULL,
-  dataset1_label     VARCHAR(100)  NULL,
-  dataset2           VARCHAR(100)  NULL,
-  dataset2_label     VARCHAR(100)  NULL,
+  dataset1                VARCHAR(100)  NULL,
+  dataset1_label          VARCHAR(100)  NULL,
+  dataset1_sample         VARCHAR(100)  NULL,
+  dataset1_methods        VARCHAR(100)  NULL, 
+  dataset1_collection     VARCHAR(100)  NULL,
+
+  dataset2                VARCHAR(100)  NULL,
+  dataset2_label          VARCHAR(100)  NULL,
+  dataset2_sample         VARCHAR(100)  NULL,
+  dataset2_methods        VARCHAR(100)  NULL, 
+  dataset2_collection     VARCHAR(100)  NULL,
 
   trait1             VARCHAR(100)  NULL,
   trait2             VARCHAR(100)  NULL,
@@ -461,9 +548,18 @@ CREATE TABLE colocalization_${TABLE_VERSION} (
 
   nsnps              BIGINT        NULL,
 
-  hit1               VARCHAR(500)  NULL,
+  hit1               VARCHAR(500)  NOT NULL,
+  hit1_chromosome    TINYINT  NOT NULL,
+  hit1_position      BIGINT  NOT NULL,
+  hit1_ref           VARCHAR(500)  NOT NULL,
+  hit1_alt           VARCHAR(500)  NOT NULL,
+  
   hit2               VARCHAR(500)  NULL,
-
+  hit2_chromosome    TINYINT  NOT NULL,
+  hit2_position      BIGINT  NOT NULL,
+  hit2_ref           VARCHAR(500)  NOT NULL,
+  hit2_alt           VARCHAR(500)  NOT NULL,
+  
   PPH0abf            DOUBLE        NULL,
   PPH1abf            DOUBLE        NULL,
   PPH2abf            DOUBLE        NULL,
@@ -616,7 +712,7 @@ EOF
 
 This step improves query performance on colocalization data and
 defines useful SQL views pheweb. It includes the creation of an
-index for region queries and multiple views for phenotypes, regions,
+indexes for region queries and multiple views for phenotypes, regions,
 and enriched variant joins.
 
 ### Indexes
@@ -634,8 +730,19 @@ CREATE INDEX idx_colocalization_region1_${TABLE_VERSION}
 
 CREATE INDEX idx_colocalization_region2_${TABLE_VERSION}
     ON colocalization_${TABLE_VERSION}(region2_chromosome, region2_start, region2_end, dataset2, trait2, cs2);
+	
+CREATE INDEX idx_colocalization_pqtl_query ON colocalization_${TABLE_VERSION} (
+    trait2(100),
+    dataset2_label,
+	
+    hit2_chromosome,
+    hit2_position,
+    hit2_ref(50),
+    hit2_alt(50)
+);
 EOF
 ```
+
 
 ### Views
 
