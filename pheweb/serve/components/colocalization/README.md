@@ -50,7 +50,7 @@ Assuming you're using Linux and using the mysql client:
 - credible sets file
 
 ```bash
-export TABLE_VERSION=v5
+export TABLE_VERSION=v6
 export GROUP_SUFFIX=prod
 export GS_COLOC_DATA_PATH=gs://r13-data-green/coloc_susie/release/colocQC.tsv.gz
 export GS_CREDSET_DATA_PATH=gs://r13-data-green/coloc_susie/release/coloc.credsets.tsv.gz
@@ -66,8 +66,8 @@ mkdir -p $WORK_DIRECTORY
 export COLOC_DATA_PATH=$WORK_DIRECTORY/`basename $GS_COLOC_DATA_PATH`
 export CREDSET_DATA_PATH=$WORK_DIRECTORY/`basename $GS_CREDSET_DATA_PATH`
 
-[ -f "$COLOC_DATA_PATH" ]      && echo "using cache ... $COLOC_DATA_PATH"   || gsutil cp "$GS_COLOC_DATA_PATH" "$COLOC_DATA_PATH"
-[ -f "$CREDSET_DATA_PATH" ]    && echo "using cache ... $CREDSET_DATA_PATH" || gsutil cp "$GS_CREDSET_DATA_PATH" "$CREDSET_DATA_PATH"
+[ -f "$COLOC_DATA_PATH" ]         && echo "using cache ... $COLOC_DATA_PATH"      || gsutil cp "$GS_COLOC_DATA_PATH"      "$COLOC_DATA_PATH"
+[ -f "$CREDSET_DATA_PATH" ]       && echo "using cache ... $CREDSET_DATA_PATH"    || gsutil cp "$GS_CREDSET_DATA_PATH"    "$CREDSET_DATA_PATH"
 ```
 
    Check file headers
@@ -78,8 +78,6 @@ zcat $COLOC_DATA_PATH | head -n 1
 echo "CREDSET_DATA_PATH : $CREDSET_DATA_PATH"
 zcat $CREDSET_DATA_PATH | head -n 1
 ```
-
-
 
 ## Cloud settings
 
@@ -99,8 +97,12 @@ Define the environment variables:
 export DB_PATH="${WORK_DIRECTORY}/colocalization.db"
 export DUCKDB_CMD="env COLOC_DATA_PATH=${COLOC_DATA_PATH} CREDSET_DATA_PATH=${CREDSET_DATA_PATH} duckdb $DB_PATH"
 export CONNECTION_STRING="user=${MYSQL_USER} port=${MYSQL_PORT} database=${MYSQL_DATABASE} password=${MYSQL_PASSWORD} host=${MYSQL_HOST}"
-echo $CONNECTION_STRING
-echo $GROUP_SUFFIX
+
+echo "CONNECTION_STRING : $CONNECTION_STRING"
+echo "GROUP_SUFFIX      : $GROUP_SUFFIX"
+echo "DB_PATH           : $DB_PATH"
+echo "DUCKDB_CMD        : $DUCKDB_CMD"
+
 [ -e "$DB_PATH" ] && rm -f "$DB_PATH"
 ```
 
@@ -361,6 +363,79 @@ FROM read_csv('${CREDSET_DATA_PATH}',
 GROUP BY dataset, region, trait, cs;
 EOF
 ```
+
+
+## Optional : Data Fixes
+
+Check the trait2 column for any rows where the entry begins with “seq”
+(i.e., probe identifiers).  These rows correspond to SomaScan entries
+and should be replaced with the appropriate gene names from the
+annotation file.  If this query returns no rows, you can skip this
+step.
+
+```bash
+$DUCKDB_CMD <<EOF
+select trait2 from colocalization WHERE trait2 like '%seq%' limit 10;
+EOF
+```
+Setup somma annotation
+
+```bash
+export GS_SOMA_ANNOTATION_PATH=gs://finngen-production-library-green/omics/proteomics/release_2023_10_11/data/Somascan/somalogic_aptamer_annotation.tsv
+```
+
+Download somma annotation
+
+```bash
+export SOMA_ANNOTATION_PATH=$WORK_DIRECTORY/`basename $GS_SOMA_ANNOTATION_PATH`
+
+[ -f "$SOMA_ANNOTATION_PATH" ]    && echo "using cache ... $SOMA_ANNOTATION_PATH" || gsutil cp "$GS_SOMA_ANNOTATION_PATH" "$SOMA_ANNOTATION_PATH"
+```
+
+Check somma annotation header
+
+```bash
+echo "SOMA_ANNOTATION_PATH : $SOMA_ANNOTATION_PATH"
+cat $SOMA_ANNOTATION_PATH | head -n 1
+```
+
+Load the Soma annotation file into DuckDB.
+
+```bash
+$DUCKDB_CMD <<EOF
+CREATE TABLE somalogic_annotation AS
+SELECT *
+FROM read_csv_auto(getenv('SOMA_ANNOTATION_PATH'),
+    delim='\t',
+    quote='"',
+    sample_size=-1);
+EOF
+```
+
+Update the trait column to replace the colocation entries with the
+corresponding gene names from the Soma annotation file.
+
+```bash
+$DUCKDB_CMD <<EOF
+UPDATE colocalization
+SET trait2 = (
+  SELECT s.geneName
+  FROM somalogic_annotation AS s
+  WHERE s.Probe = colocalization.trait2
+)
+WHERE dataset2 = 'FIN-R12-Somascan--Plasma-Proteomics';
+EOF
+```
+
+Verify that all sequence entries have been removed.
+If they were successfully removed, this query should return no rows.
+
+```bash
+$DUCKDB_CMD <<EOF
+select trait2 from colocalization WHERE trait2 like '%seq%' limit 10;
+EOF
+```
+
 
 ## Step 3: Export Data from DuckDB to files
 
