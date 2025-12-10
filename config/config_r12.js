@@ -101,7 +101,7 @@ const coding = { "config" : {
     "beta rec": "recessive model effect size beta from imputed data",
     "beta chip": "additive model effect size beta from chip genotype data",
     "rec-add": "recessive -log10(p) minus additive -log10(p)<br/>positive values mean recessive signal is more significant",
-    "leads": "data on possible more significant non-coding lead variants in the region<br/>if the lead variant is more than two orders of magnitude stronger than the coding variant, the column is yellow"
+    "leads": "data on possible more significant non-coding lead variants in the region<br/>if the lead variant is more than two orders of magnitude stronger than the coding variant, the column is red"
   }
 } };
 // configuration
