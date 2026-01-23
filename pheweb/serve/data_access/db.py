@@ -761,17 +761,17 @@ class TabixResultCommonDao:
         )
         maf = (
             split[pheno[1] + header_offset[columns["maf"]]]
-            if "maf" in columns
+            if "maf" in columns and columns["maf"] in header_offset
             else None
         )
         maf_case = (
             split[pheno[1] + header_offset[columns["maf_cases"]]]
-            if "maf_cases" in columns
+            if "maf_cases" in columns and columns["maf_cases"] in header_offset
             else None
         )
         maf_control = (
             split[pheno[1] + header_offset[columns["maf_controls"]]]
-            if "maf_controls" in columns
+            if "maf_controls" in columns and columns["maf_controls"] in header_offset
             else None
         )
         mlogp = (
@@ -1006,12 +1006,13 @@ class TabixResultFiltDao(ResultDB):
         self.matrix_path = matrix_path
         self.columns = columns
         self.header = gzip.open(self.matrix_path,'rt').readline().strip("\n").split("\t")
+        self.header_offset = {item.split('\n')[0]: i for i, item in enumerate(self.header)}
         self.pheno_map = phenos(0)
         self.tabix_result_common_dao = TabixResultCommonDao(self.pheno_map)
 
     def get_variant_results_range(self, chrom, start, end):
         variant_results = self.tabix_result_common_dao.get_common_variant_results_range(
-            chrom, start, end, self.matrix_path, self.header, self.columns, None, [(None, 0)]
+            chrom, start, end, self.matrix_path, self.header, self.columns,self.header_offset, [(None, 0)]
         )
         return variant_results
 
