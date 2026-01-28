@@ -68,8 +68,8 @@ task preprocess {
     	cpu: 2
         memory: "${mem} GB"
         bootDiskSizeGb: 30
-        disks: "local-disk 10 HDD"
-        zones: "europe-west1-b"
+        disks: "local-disk 15 HDD"
+        zones: "europe-west1-b europe-west1-c europe-west1-d"
         preemptible: 2
     }
 }
@@ -114,7 +114,7 @@ task sites {
     	memory: "2 GB"
         bootDiskSizeGb: 30
         disks: "local-disk ${disk} HDD"
-        zones: "europe-west1-b"
+        zones: "europe-west1-b europe-west1-c europe-west1-d"
         preemptible: 0
     }
 }
@@ -188,7 +188,7 @@ task annotation {
     	memory: "${mem} GB"
         bootDiskSizeGb: 50
         disks: "local-disk 100 HDD"
-        zones: "europe-west1-b"
+        zones: "europe-west1-b europe-west1-c europe-west1-d"
         preemptible: 0
     }
 }
@@ -221,7 +221,7 @@ task webdav_directories {
     	memory: "2 GB"
         bootDiskSizeGb: 50
         disks: "local-disk 100 HDD"
-        zones: "europe-west1-b"
+        zones: "europe-west1-b europe-west1-c europe-west1-d"
         preemptible: 0
     }
 }
@@ -308,7 +308,7 @@ task pheno {
     	memory: "10 GB"
         bootDiskSizeGb: 30
         disks: "local-disk 70 HDD"
-        zones: "europe-west1-b"
+        zones: "europe-west1-b europe-west1-c europe-west1-d"
         preemptible: 2
     }
 }
@@ -457,7 +457,7 @@ EOF
     	cpu: "${cpu}"
     	memory: "${mem} GB"
         disks: "local-disk ${disk} HDD"
-        zones: "europe-west1-b"
+        zones: "europe-west1-b europe-west1-c europe-west1-d"
         preemptible: 0
     }
 }
@@ -543,9 +543,9 @@ CODE
    runtime {
         docker: "${docker}"
         cpu: 1
-        memory: "4 GB"
+        memory: "8 GB"
         disks: "local-disk 40 HDD"
-        zones: "europe-west1-b"
+        zones: "europe-west1-b europe-west1-c europe-west1-d"
         preemptible: 0
     }
 }
@@ -570,7 +570,7 @@ task exec_cmd {
         cpu: 1
         memory: "2 GB"
         disks: "local-disk 5 HDD"
-        zones: "europe-west1-b"
+        zones: "europe-west1-b europe-west1-c europe-west1-d"
         preemptible: 0
   }
   meta {
@@ -657,7 +657,7 @@ task filter_sumstat {
         cpu: "1"
         bootDiskSizeGb: 30
         disks: "local-disk ${disk_size} HDD"
-        zones: "europe-west1-b"
+        zones: "europe-west1-b europe-west1-c europe-west1-d"
         preemptible: 2
     }
 
@@ -700,7 +700,7 @@ task get_phenolist {
         memory: "8 GB"
         cpu: "2"
         bootDiskSizeGb: 30
-        zones: "europe-west1-b"
+        zones: "europe-west1-b europe-west1-c europe-west1-d"
         disks: "local-disk ${disk} HDD"
         preemptible: 0
     }
@@ -767,7 +767,7 @@ task matrix_longformat {
         cpu: "${cpu}"
         memory: "${mem} GB"
         bootDiskSizeGb: 50
-        zones: "europe-west1-b"
+        zones: "europe-west1-b europe-west1-c europe-west1-d"
         disks: "local-disk ${disk} HDD"
         preemptible: 0
     }
