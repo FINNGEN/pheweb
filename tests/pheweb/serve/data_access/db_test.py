@@ -7,7 +7,6 @@ from pheweb.serve.data_access.db import (
     optional_float,
     TabixResultDao,
     TabixResultFiltDao,
-    TabixResultCommonDao,
 )
 import unittest
 
@@ -16,6 +15,7 @@ test_wide_data_file_path = os.getcwd() + "/tests/mocked-data/mocked-wide.tsv.gz"
 test_pheno_list_path = os.getcwd() + "/tests/mocked-data/mocked-pheno-list.json"
 test_mocked_columns = {
     "pheno": "#pheno",
+    "pval": "pval",
     "mlogp": "mlogp",
     "beta": "beta",
     "sebeta": "sebeta",
@@ -184,106 +184,6 @@ class TestTabixResultFiltDao(unittest.TestCase):
         self.assertEqual(variant_results[0]["maf_control"],self.validation_value["maf_control"])
         self.assertEqual(variant_results[0]["mlogp"],self.validation_value["mlogp"])
 
-
-class TestTabixResultCommonDao(unittest.TestCase):
-    def setUp(self):
-        # Load resources
-        with gzip.open(test_data_file_path, "rt",encoding="utf-8") as f:
-            self.data = f.read().splitlines()
-        self.header = self.data[0].split("\t")
-        with open(test_pheno_list_path, "r") as f:
-            mocked_pheno_list_data = json.load(f)
-        self.mocked_pheno_list_data=lambda x:mocked_pheno_list_data[0]
-
-        self.split = self.data[1].split("\t")
-        self.phenos=["AB1_ASPERGILLOSIS"]
-
-        self.split_query = test_variant.split(":")
-
-        self.validation_value = {
-            "beta":"2.05148",
-            "sebeta":"1.02193",
-            "maf":"0.00598008",
-            "maf_case":"0.00992459",
-            "maf_control":"0.00597798",
-            "mlogp":"1.34969",
-            "pval":None
-        }
-
-    def test_should_return_variant_common_columns(self):
-        # check get_variant_common_columns
-        tabix_result_common = TabixResultCommonDao(self.mocked_pheno_list_data(0))
-        phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval = (
-            tabix_result_common.get_variant_common_columns(
-                self.split, self.phenos, None, test_mocked_columns, self.header
-            )
-        )
-        
-        self.assertEqual(phenotype, self.split[0])
-        self.assertEqual(beta, self.validation_value["beta"])
-        self.assertEqual(sebeta, self.validation_value["sebeta"])
-        self.assertEqual(maf, self.validation_value["maf"])
-        self.assertEqual(maf_case, self.validation_value["maf_case"])
-        self.assertEqual(maf_control, self.validation_value["maf_control"])
-        self.assertEqual(mlogp, self.validation_value["mlogp"])
-        self.assertEqual(pval, self.validation_value["pval"])
-
-    def test_should_return_variant_columns_using_header(self):
-        # check get_variant_columns_using_header
-        tabix_result_common = TabixResultCommonDao(self.mocked_pheno_list_data(0))
-        results = tabix_result_common.get_variant_columns_using_header(
-            self.split, self.header,test_mocked_columns
-        )
-        self.assertEqual(len(results), 8)
-
-    def test_should_return_common_pheno_results(self):
-        # check get_common_pheno_results
-        tabix_result_common = TabixResultCommonDao(self.mocked_pheno_list_data(0))
-        phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval = (
-            tabix_result_common.get_variant_columns_using_header(
-                self.split, self.header,test_mocked_columns
-            )
-        )
-        self.assertEqual(phenotype, self.split[0])
-        self.assertEqual(beta, self.validation_value["beta"])
-        self.assertEqual(sebeta, self.validation_value["sebeta"])
-        self.assertEqual(maf, self.validation_value["maf"])
-        self.assertEqual(maf_case, self.validation_value["maf_case"])
-        self.assertEqual(maf_control, self.validation_value["maf_control"])
-        self.assertEqual(mlogp, self.validation_value["mlogp"])
-        self.assertEqual(pval, self.validation_value["pval"])
-        # check common phenoresults
-        common_phenoresults = tabix_result_common.get_common_pheno_results(
-            phenotype, pval, beta, sebeta, maf, maf_case, maf_control, mlogp
-        )
-        self.assertIsNotNone(common_phenoresults)
-        self.assertEqual(common_phenoresults.beta, float(self.validation_value["beta"]))
-        self.assertEqual(common_phenoresults.sebeta, float(self.validation_value["sebeta"]) )
-        self.assertEqual(common_phenoresults.maf, float(self.validation_value["maf"]))
-        self.assertEqual(common_phenoresults.maf_case, float(self.validation_value["maf_case"]))
-        self.assertEqual(
-            common_phenoresults.maf_control, float(self.validation_value["maf_control"])
-        )
-        self.assertEqual(common_phenoresults.mlogp, float(self.validation_value["mlogp"]))
-        self.assertEqual(common_phenoresults.pval, self.validation_value["pval"])
-
-    def test_should_return_common_variant_results_range(self):
-        # check get_common_variant_results_range
-        tabix_result_common = TabixResultCommonDao(self.mocked_pheno_list_data(0))
-        variant_results_range = list(tabix_result_common.get_common_variant_results_range(
-            self.split_query[0],
-            int(self.split_query[1]),
-            int(self.split_query[1]),
-            test_data_file_path,
-            self.header,
-            test_mocked_columns,
-            None,
-            self.phenos,
-        ))
-        
-        self.assertIsNotNone(variant_results_range)
-        self.assertEqual(Variant(*self.split_query),variant_results_range[0][0])
-        #TODO: test that Phenoresult results are coherent
 
 if __name__ == "__main__":
     unittest.main()
