@@ -65,7 +65,7 @@ const dataToTableRows =
 
 const GenePhenotypeAssociation = () => {
   const { genePhenotype , gene , selectedPhenotype} = useContext<Partial<GeneState>>(GeneContext);
-  const filename =  `${gene}_top_associations`
+  const filename =  `${gene}_top_associations.tsv`
   const tableProperties = {
     defaultFilterMethod : wordFilter,
     getTrProps : (state, rowInfo, column) => {
