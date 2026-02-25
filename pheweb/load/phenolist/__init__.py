@@ -517,7 +517,7 @@ def run(argv):
     @modifies_phenolist
     def f(args, phenolist):
         if args.simple:
-            args.pattern = r'.*/(?:(?:epacts|pheno)[\.-]?)?' + r'([^/]+?)' + r'(?:\.epacts|\.gz|\.tsv)*$'
+            args.pattern = r'.*/(?:[\.-]?)?' + r'([^/]+?)' + r'(?:\.epacts|\.gz|\.tsv)*$'
         if not args.pattern: raise PheWebError("You must either supply a pattern or use --simple")
         extract_phenocode_from_filepath(phenolist, args.pattern)
     p = subparsers.add_parser('extract-phenocode-from-filepath', help='use a regex to extract phenocodes from association filepaths')
