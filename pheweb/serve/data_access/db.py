@@ -1774,8 +1774,8 @@ class HLASummaryMySQLDao(HLASummaryDB):
         try:
             with conn.cursor(pymysql.cursors.DictCursor) as c:
                 sql = f"SELECT * FROM hla_summary WHERE mlogp > 5"
-                c.execute(sql, [self.release])
-                result = [{"hla_data": data} for data in c.fetchall()]
+                c.execute(sql, [])
+                result = c.fetchall()
         finally:
             conn.close()
         return result

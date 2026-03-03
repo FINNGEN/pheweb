@@ -43,4 +43,4 @@ def get_dao(current_app=app) -> HLASummaryDAO:
 
 @hla_summary.route('/api/v1/hla_summary/top')
 def top_data():
-    return get_dao().top_results
+    return get_dao().get_top_results()
