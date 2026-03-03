@@ -83,6 +83,7 @@ class ServerJeeves(object):
         self.pqtl_colocalization = self.dbs_fact.get_pqtl_colocalization_dao()
         self.health_dao = self.dbs_fact.get_health_dao()
         self.manhattan_dao = self.dbs_fact.get_manhattan_dao()
+        self.hla_summary_dao = self.dbs_fact.get_hla_summary_dao()
         
     def gene_functional_variants(self, gene, pThreshold=None, use_aliases=None):
         if pThreshold is None:
@@ -485,6 +486,9 @@ class ServerJeeves(object):
 
     def chip(self):
         return self.chip_dao.get_chip() if self.chip_dao is not None else None
+
+    def hla_summary(self):
+        return self.hla_summary.get_hla_summary()
 
     @functools.lru_cache(None)
     def get_gene_region_mapping(self):

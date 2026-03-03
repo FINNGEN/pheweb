@@ -434,6 +434,12 @@ class FineMappingDB(object):
         """
         return
 
+class HLASummaryDB(object):
+    @abc.abstractmethod
+    def get_top_results(self):
+        """Retrieve top HLA results (mlogp > 5)
+        """
+        return
 
 class MichinganGWASUKBBCatalogDao(KnownHitsDB):
 
@@ -876,7 +882,7 @@ class TabixResultCommonDao:
                         result[v] = [pr]
         return result.items()
 
-class TabixResultDao(ResultDB):
+class TabixResultDao():
     def __init__(self, phenos, matrix_path, columns):
 
         self.matrix_path = matrix_path
@@ -1748,6 +1754,32 @@ class TabixAnnotationDao(AnnotationDB):
         # print('TABIX get_gene_functional_variant_annotations ' + str(round(10 *(time.time() - t)) / 10))
         return annotations
 
+class HLASummaryMySQLDao(HLASummaryDB):
+    def __init__(self, authentication_file):
+        self.authentication_file = authentication_file
+        auth_module = load_source("mysql_auth", self.authentication_file)
+        self.user = getattr(auth_module, "mysql")["user"]
+        self.password = getattr(auth_module, "mysql")["password"]
+        self.host = getattr(auth_module, "mysql")["host"]
+        self.db = getattr(auth_module, "mysql")["db"]
+        self.release = getattr(auth_module, "mysql")["release"]
+    
+    def get_connection(self):
+        return pymysql.connect(
+            host=self.host, user=self.user, password=self.password, db=self.db
+        )
+    
+    def get_top_results(self):
+        conn = self.get_connection()
+        try:
+            with conn.cursor(pymysql.cursors.DictCursor) as c:
+                sql = f"SELECT * FROM hla_summary WHERE mlogp > 5"
+                c.execute(sql, [self.release])
+                result = [{"hla_data": data} for data in c.fetchall()]
+        finally:
+            conn.close()
+        return result
+
 
 class LofMySQLDao(LofDB):
     def __init__(self, authentication_file, table_name="lof"):
@@ -2203,3 +2235,6 @@ class DataFactory(object):
 
     def get_pqtl_colocalization_dao(self):
         return self.dao_impl["pqtl_colocalization"] if "pqtl_colocalization" in self.dao_impl else None
+    
+    def get_hla_summary_dao(self):
+        return self.dao_impl["hla_summary"] if "hla_summary" in self.dao_impl else None
