@@ -12,6 +12,7 @@ import Region from './components/Region/Region'
 import About from './components/About/About'
 import Gene from './components/Gene/Gene'
 import TopHits from './components/TopHits/TopsHits'
+import HLA from './components/HLA/HLA'
 import 'react-table/react-table.css'
 import 'react-tabs/style/react-tabs.css'
 import './assets/common.css'
@@ -49,6 +50,7 @@ if (typeof (element) !== 'undefined' && element != null) {
             <Route exact path='/gene/:gene' component={Gene} />
             <Route exact path='/gene/:gene/pheno/:phenotype' component={Gene} />
             <Route path='/top_hits' component={TopHits} />
+            <Route path='/hla' component={HLA} />
             <Route component={NotFoundEntity('page')} />
           </Switch>
 
