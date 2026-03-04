@@ -1773,7 +1773,7 @@ class HLASummaryMySQLDao(HLASummaryDB):
         conn = self.get_connection()
         try:
             with conn.cursor(pymysql.cursors.DictCursor) as c:
-                sql = f"SELECT * FROM hla_summary WHERE mlogp > 5"
+                sql = f"SELECT endpoint as phenocode, number_chrom as chrom, pos, ref, alt, pval,mlogp, beta, sebeta, af_alt, af_alt_cases, af_alt_controls FROM hla_summary WHERE mlogp > 5"
                 c.execute(sql, [])
                 result = c.fetchall()
         finally:
