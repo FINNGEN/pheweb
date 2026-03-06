@@ -16,7 +16,7 @@ from flask import (
 
 from .model import HLASummaryDAO, JeevesContext
 
-hla_summary = Blueprint("pheweb_hla_summary", __name__)
+hla = Blueprint("pheweb_hla", __name__)
 development = Blueprint("development", __name__)
 
 
@@ -32,7 +32,7 @@ def get_dao(current_app=app) -> HLASummaryDAO:
     it means the HLA Summary data is not
     available.
     """
-    dao: typing.Optional[HLASummaryDAO] = current_app.jeeves.hla_summary_dao
+    dao: typing.Optional[HLASummaryDAO] = current_app.jeeves.hla_dao
     if dao is None:
         result = None
         abort(404, "HLA Summary data not available")
@@ -41,6 +41,22 @@ def get_dao(current_app=app) -> HLASummaryDAO:
     return result
 
 
-@hla_summary.route('/api/v1/hla_summary/top')
+@hla.route('/api/v1/hla/top')
 def top_data():
     return get_dao().get_top_results()
+
+@hla.route('/api/v1/hla/phenocode/<phenocode>')
+def get_by_phenocode(phenocode):
+    return get_dao().get_by_phenocode(phenocode)
+
+@hla.route('/api/v1/hla/autocomplete')
+def get_autocomplete():
+    return get_dao().get_autocomplete()
+
+@hla.route('/api/v1/hla/gene/<gene>')
+def get_by_gene(gene):
+    return get_dao().get_by_gene(gene)
+
+@hla.route('/api/v1/hla/variant/<variant>')
+def get_by_alt(variant):
+    return get_dao().get_by_variant(variant)

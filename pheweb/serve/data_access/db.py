@@ -41,6 +41,7 @@ from ..components.autocomplete.tries_dao import AutocompleterTriesDAO
 from ..components.autocomplete.sqlite_dao import AutocompleterSqliteDAO
 from ..components.autocomplete.mysql_dao import AutocompleterMYSQLDAO
 from pheweb.serve.data_access.file import FilePathResultDao, ManhattanFileResultDao, ManhattanCompressedResultDao
+from pheweb.serve.data_access.db_util import MysqlDAO
 
 from .pqtl_colocalization import PqtlColocalisationDao
 from ...load_source.load_source import load_source
@@ -1754,31 +1755,64 @@ class TabixAnnotationDao(AnnotationDB):
         # print('TABIX get_gene_functional_variant_annotations ' + str(round(10 *(time.time() - t)) / 10))
         return annotations
 
-class HLASummaryMySQLDao(HLASummaryDB):
+class HLAMySQLDao(HLASummaryDB, MysqlDAO):
     def __init__(self, authentication_file):
-        self.authentication_file = authentication_file
-        auth_module = load_source("mysql_auth", self.authentication_file)
-        self.user = getattr(auth_module, "mysql")["user"]
-        self.password = getattr(auth_module, "mysql")["password"]
-        self.host = getattr(auth_module, "mysql")["host"]
-        self.db = getattr(auth_module, "mysql")["db"]
-        self.release = getattr(auth_module, "mysql")["release"]
-    
-    def get_connection(self):
-        return pymysql.connect(
-            host=self.host, user=self.user, password=self.password, db=self.db
-        )
-    
+        MysqlDAO.__init__(self, authentication_file)
+
+    def get_autocomplete(self):
+        conn = self.get_connection()
+        try:
+            with conn.cursor(pymysql.cursors.DictCursor) as c:
+                c.execute("select distinct phenocode from hla", [])
+                phenocode_result = c.fetchall()
+                c.execute("select distinct alt from hla", [])
+                alt_result = c.fetchall()
+                c.execute("select distinct CONCAT('HLA-', SUBSTRING_INDEX(alt, '*', 1)) as gene from hla", [])
+                gene_result = c.fetchall()
+        finally:
+            conn.close()
+        return phenocode_result + alt_result + gene_result
+
     def get_top_results(self):
         conn = self.get_connection()
         try:
             with conn.cursor(pymysql.cursors.DictCursor) as c:
-                sql = f"SELECT endpoint as phenocode, number_chrom as chrom, pos, ref, alt, pval,mlogp, beta, sebeta, af_alt, af_alt_cases, af_alt_controls FROM hla_summary WHERE mlogp > 5"
+                sql = """SELECT
+                    *,
+                    CONCAT('HLA-', SUBSTRING_INDEX(alt, '*', 1)) as gene
+                    FROM hla
+                    WHERE mlogp > 5
+                    """
                 c.execute(sql, [])
                 result = c.fetchall()
         finally:
             conn.close()
         return result
+    
+    def get_by_column(self, column, value):
+        conn = self.get_connection()
+        try:
+            with conn.cursor(pymysql.cursors.DictCursor) as c:
+                sql = f"""SELECT
+                    *,
+                    CONCAT('HLA-', SUBSTRING_INDEX(alt, '*', 1)) as gene
+                    FROM hla
+                    WHERE lower({column}) = lower(%s)
+                    """
+                c.execute(sql, [value])
+                result = c.fetchall()
+        finally:
+            conn.close()
+        return result
+
+    def get_by_phenocode(self, phenocode):
+        return self.get_by_column("phenocode", phenocode)
+    
+    def get_by_gene(self, gene):
+        return self.get_by_column("CONCAT('HLA-', SUBSTRING_INDEX(alt, '*', 1))", gene)
+
+    def get_by_variant(self, variant):
+        return self.get_by_column("alt", variant)
 
 
 class LofMySQLDao(LofDB):
@@ -2236,5 +2270,5 @@ class DataFactory(object):
     def get_pqtl_colocalization_dao(self):
         return self.dao_impl["pqtl_colocalization"] if "pqtl_colocalization" in self.dao_impl else None
     
-    def get_hla_summary_dao(self):
-        return self.dao_impl["hla_summary"] if "hla_summary" in self.dao_impl else None
+    def get_hla_dao(self):
+        return self.dao_impl["hla"] if "hla" in self.dao_impl else None

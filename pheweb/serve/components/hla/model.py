@@ -25,4 +25,4 @@ class JeevesContext:
     Type interface for the jeeves context.
     """
 
-    hla_summary_dao: typing.Optional[HLASummaryDAO]
+    hla_dao: typing.Optional[HLASummaryDAO]
