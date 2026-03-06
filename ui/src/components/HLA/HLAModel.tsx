@@ -1,11 +1,12 @@
 export namespace HLAModel {
     export type Data = Row[]
-    
+
     export interface Row {
-        endpoint: string
+        phenocode: string
         number_chrom: number
         pos: number
         ref: string
+        gene: string
         alt: string
         pval: number
         mlogp: number
@@ -18,3 +19,17 @@ export namespace HLAModel {
 }
 
 export default HLAModel;
+
+export interface HLAConfiguration {}
+
+export interface PhenotypeSearchResult {
+    phenocode: string
+}
+export interface GeneSearchResult {
+    gene: string
+}
+export interface VariantSearchResult {
+    alt: string
+}
+
+export type SearchResult = PhenotypeSearchResult | GeneSearchResult | VariantSearchResult

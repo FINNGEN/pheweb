@@ -2187,11 +2187,12 @@ export const topHitTableColumns = [
 ]
 
 export const hlaTableColumns = [
-  phenotypeColumns.phenocode,
+  {...phenotypeColumns.phenocode, filterMethod: wordFilter },
   phenotypeColumns.chrom,
   phenotypeColumns.pos,
   phenotypeColumns.ref,
-  phenotypeColumns.alt,
+  { ...phenotypeColumns.lofGene, filterMethod: wordFilter },
+  { ...phenotypeColumns.alt, filterMethod: wordFilter },
   phenotypeColumns.pValue,
   phenotypeColumns.mlogp,
   phenotypeColumns.beta,

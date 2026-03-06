@@ -50,7 +50,10 @@ if (typeof (element) !== 'undefined' && element != null) {
             <Route exact path='/gene/:gene' component={Gene} />
             <Route exact path='/gene/:gene/pheno/:phenotype' component={Gene} />
             <Route path='/top_hits' component={TopHits} />
-            <Route path='/hla' component={HLA} />
+            <Route path='/hla/top' component={HLA} />
+            <Route path='/hla/phenocode/:phenocode' component={HLA} />
+            <Route path='/hla/gene/:gene' component={HLA} />
+            <Route path='/hla/variant/:variant' component={HLA} />
             <Route component={NotFoundEntity('page')} />
           </Switch>
 
