@@ -3,7 +3,6 @@ import Select from 'react-select'
 import { getAutocomplete } from "./HLAAPI";
 import { AutoCompleteModel } from "./HLAModel";
 
-
 const onChange = (selected) => {
     const value: AutoCompleteModel.Row = selected.value
     let url = `/error/${selected.display}`

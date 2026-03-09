@@ -40,7 +40,6 @@ const HLA = (props) => {
   const [hlaData, setHlaData] = useState<HLAModel.Data | null>(null);
 
   useEffect(() => {
-    console.log(props.match.path)
     if (props.match.path === '/hla/top') {
       getTopHLAResults(setHlaData);
     }
