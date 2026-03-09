@@ -14,7 +14,7 @@ from flask import (
     Response,
 )
 
-from .model import HLASummaryDAO, JeevesContext
+from .model import HLADAO, JeevesContext
 
 hla = Blueprint("pheweb_hla", __name__)
 development = Blueprint("development", __name__)
@@ -23,7 +23,7 @@ development = Blueprint("development", __name__)
 app.jeeves: JeevesContext  # type: ignore
 
 
-def get_dao(current_app=app) -> HLASummaryDAO:
+def get_dao(current_app=app) -> HLADAO:
     """ "
     Get DAO.
 
@@ -32,10 +32,10 @@ def get_dao(current_app=app) -> HLASummaryDAO:
     it means the HLA Summary data is not
     available.
     """
-    dao: typing.Optional[HLASummaryDAO] = current_app.jeeves.hla_dao
+    dao: typing.Optional[HLADAO] = current_app.jeeves.hla_dao
     if dao is None:
         result = None
-        abort(404, "HLA Summary data not available")
+        abort(404, "HLA data not available")
     else:
         result = dao
     return result

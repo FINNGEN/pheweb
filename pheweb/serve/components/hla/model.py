@@ -10,11 +10,11 @@ from dataclasses import dataclass
 from typing import NamedTuple, List, Any
 
 
-class HLASummaryDAO:
+class HLADAO:
     """
-    HLA Summary DAO.
+    HLA DAO.
 
-    Abstract class for HLA summary dao.
+    Abstract class for HLA dao.
     """
 
 @dataclass
@@ -25,4 +25,4 @@ class JeevesContext:
     Type interface for the jeeves context.
     """
 
-    hla_dao: typing.Optional[HLASummaryDAO]
+    hla_dao: typing.Optional[HLADAO]

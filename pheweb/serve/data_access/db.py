@@ -435,12 +435,37 @@ class FineMappingDB(object):
         """
         return
 
-class HLASummaryDB(object):
+class HLADB(object):
     @abc.abstractmethod
     def get_top_results(self):
         """Retrieve top HLA results (mlogp > 5)
         """
         return
+
+    @abc.abstractmethod
+    def get_autocomplete(self):
+        """Retrieve HLA autocomplete results
+        """
+        return
+
+    @abc.abstractmethod
+    def get_by_phenocode(self, phenocode):
+        """Retrieve all HLA data for a phenocode
+        """
+        return
+    
+    @abc.abstractmethod
+    def get_by_gene(self, gene):
+        """Retrieve all HLA data for a gene
+        """
+        return
+
+    @abc.abstractmethod
+    def get_by_variant(self, variant):
+        """Retrieve all HLA data for a variant
+        """
+        return
+
 
 class MichinganGWASUKBBCatalogDao(KnownHitsDB):
 
@@ -1755,7 +1780,7 @@ class TabixAnnotationDao(AnnotationDB):
         # print('TABIX get_gene_functional_variant_annotations ' + str(round(10 *(time.time() - t)) / 10))
         return annotations
 
-class HLAMySQLDao(HLASummaryDB, MysqlDAO):
+class HLAMySQLDao(HLADB, MysqlDAO):
     def __init__(self, authentication_file):
         MysqlDAO.__init__(self, authentication_file)
 
@@ -1763,11 +1788,11 @@ class HLAMySQLDao(HLASummaryDB, MysqlDAO):
         conn = self.get_connection()
         try:
             with conn.cursor(pymysql.cursors.DictCursor) as c:
-                c.execute("select distinct phenocode from hla", [])
+                c.execute("SELECT DISTINCT phenocode FROM hla", [])
                 phenocode_result = c.fetchall()
-                c.execute("select distinct alt from hla", [])
+                c.execute("SELECT DISTINCT alt FROM hla", [])
                 alt_result = c.fetchall()
-                c.execute("select distinct CONCAT('HLA-', SUBSTRING_INDEX(alt, '*', 1)) as gene from hla", [])
+                c.execute("SELECT DISTINCT CONCAT('HLA-', SUBSTRING_INDEX(alt, '*', 1)) AS gene FROM hla", [])
                 gene_result = c.fetchall()
         finally:
             conn.close()
@@ -1777,42 +1802,58 @@ class HLAMySQLDao(HLASummaryDB, MysqlDAO):
         conn = self.get_connection()
         try:
             with conn.cursor(pymysql.cursors.DictCursor) as c:
-                sql = """SELECT
-                    *,
-                    CONCAT('HLA-', SUBSTRING_INDEX(alt, '*', 1)) as gene
-                    FROM hla
-                    WHERE mlogp > 5
+                sql = """SELECT *,
+                    CONCAT('HLA-', SUBSTRING_INDEX(alt, '*', 1)) AS gene
+                    FROM hla WHERE mlogp > 5
                     """
                 c.execute(sql, [])
                 result = c.fetchall()
         finally:
             conn.close()
         return result
-    
-    def get_by_column(self, column, value):
+
+    def get_by_phenocode(self, phenocode):
         conn = self.get_connection()
         try:
             with conn.cursor(pymysql.cursors.DictCursor) as c:
-                sql = f"""SELECT
-                    *,
-                    CONCAT('HLA-', SUBSTRING_INDEX(alt, '*', 1)) as gene
-                    FROM hla
-                    WHERE lower({column}) = lower(%s)
+                sql = """SELECT *,
+                    CONCAT('HLA-', SUBSTRING_INDEX(alt, '*', 1)) AS gene
+                    FROM hla WHERE phenocode = %s
                     """
-                c.execute(sql, [value])
+                c.execute(sql, [phenocode])
+                result = c.fetchall()
+        finally:
+            conn.close()
+        return result
+    
+    def get_by_gene(self, gene):
+        conn = self.get_connection()
+        try:
+            with conn.cursor(pymysql.cursors.DictCursor) as c:
+                sql = """SELECT *,
+                    CONCAT('HLA-', SUBSTRING_INDEX(alt, '*', 1)) AS gene
+                    FROM hla
+                    WHERE CONCAT('HLA-', SUBSTRING_INDEX(alt, '*', 1)) = %s
+                    """
+                c.execute(sql, [gene])
                 result = c.fetchall()
         finally:
             conn.close()
         return result
 
-    def get_by_phenocode(self, phenocode):
-        return self.get_by_column("phenocode", phenocode)
-    
-    def get_by_gene(self, gene):
-        return self.get_by_column("CONCAT('HLA-', SUBSTRING_INDEX(alt, '*', 1))", gene)
-
     def get_by_variant(self, variant):
-        return self.get_by_column("alt", variant)
+        conn = self.get_connection()
+        try:
+            with conn.cursor(pymysql.cursors.DictCursor) as c:
+                sql = """SELECT *,
+                    CONCAT('HLA-', SUBSTRING_INDEX(alt, '*', 1)) AS gene
+                    FROM hla WHERE alt = %s
+                    """
+                c.execute(sql, [variant])
+                result = c.fetchall()
+        finally:
+            conn.close()
+        return result
 
 
 class LofMySQLDao(LofDB):
