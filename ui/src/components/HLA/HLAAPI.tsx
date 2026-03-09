@@ -1,40 +1,28 @@
 import { get, Handler } from "../../common/commonUtilities";
 import { resolveURL } from "../Configuration/configurationModel";
-import { HLAModel, SearchResult } from "./HLAModel";
+import { HLAModel, AutoCompleteModel } from "./HLAModel";
 
-export const getTopHLAResults = (
-    sink: (s: HLAModel.Data) => void,
-    getURL = get): void => {
-    getURL(resolveURL(`/api/v1/hla/top`), sink)
+type Sink<Datatype> = (s: Datatype) => void
+
+export function getTopHLAResults(sink: Sink<HLAModel.Data>): void {
+    get(resolveURL('/api/v1/hla/top'), sink)
 }
 
-export const getByPhenocode = (phenocode: string,
-    sink: (s: HLAModel.Data) => void,
-    handler: Handler = (url: string) => (e: Error) => console.error(`Loading HLA data for phenocode ${phenocode} ${e.message}`),
-    getURL = get): void => {
+export function getByPhenocode(phenocode: string, sink: Sink<HLAModel.Data>): void {
     const url = resolveURL(`/api/v1/hla/phenocode/${phenocode}`)
-    getURL(url, sink, handler)
+    get(url, sink)
 }
 
-export const getByGene = (gene: string,
-    sink: (s: HLAModel.Data) => void,
-    handler: Handler = (url: string) => (e: Error) => console.error(`Loading HLA data for gene ${gene} ${e.message}`),
-    getURL = get): void => {
+export function getByGene(gene: string, sink: Sink<HLAModel.Data>): void {
     const url = resolveURL(`/api/v1/hla/gene/${gene}`)
-    getURL(url, sink, handler)
+    get(url, sink)
 }
-export const getByVariant = (variant: string,
-    sink: (s: HLAModel.Data) => void,
-    handler: Handler = (url: string) => (e: Error) => console.error(`Loading HLA data for variant ${variant} ${e.message}`),
-    getURL = get): void => {
+export function getByVariant(variant: string, sink: Sink<HLAModel.Data>): void {
     const url = resolveURL(`/api/v1/hla/variant/${variant}`)
-    getURL(url, sink, handler)
+    get(url, sink)
 }
 
-export const getAutocomplete = (
-    sink: (s: SearchResult[]) => void,
-    handler: Handler = (url: string) => (e: Error) => console.error(`Loading HLA autocomplete data ${e.message}`),
-    getURL = get): void => {
+export function getAutocomplete(sink: Sink<AutoCompleteModel.Data>): void {
     const url = resolveURL('/api/v1/hla/autocomplete')
-    getURL(url, sink, handler)
+    get(url, sink)
 }

@@ -22,14 +22,16 @@ export default HLAModel;
 
 export interface HLAConfiguration {}
 
-export interface PhenotypeSearchResult {
-    phenocode: string
+export namespace AutoCompleteModel {
+    type PhenotypeSearchResultRow = {
+        phenocode: string
+    }
+    type GeneSearchResultRow = {
+        gene: string
+    }
+    type VariantSearchResultRow = {
+        alt: string
+    }
+    export type Row = PhenotypeSearchResultRow | GeneSearchResultRow | VariantSearchResultRow
+    export type Data = Row[]
 }
-export interface GeneSearchResult {
-    gene: string
-}
-export interface VariantSearchResult {
-    alt: string
-}
-
-export type SearchResult = PhenotypeSearchResult | GeneSearchResult | VariantSearchResult

@@ -2187,7 +2187,7 @@ export const topHitTableColumns = [
 ]
 
 export const hlaTableColumns = [
-  {...phenotypeColumns.phenocode, filterMethod: wordFilter },
+  { ...phenotypeColumns.phenocode, filterMethod: wordFilter },
   phenotypeColumns.chrom,
   phenotypeColumns.pos,
   phenotypeColumns.ref,
@@ -2198,24 +2198,24 @@ export const hlaTableColumns = [
   phenotypeColumns.beta,
   phenotypeColumns.sebeta,
   {
-Header: () => (<span title="alternate allele frequency (alt. af)" style={{textDecoration: 'underline'}}>alt af</span>),
-accessor: 'af_alt',
-filterMethod: (filter, row) => Math.abs(row[filter.id]) < +filter.value,
-    Cell: optionalCellScientificFormatter ,
-minWidth: 40,
-}, {
-Header: () => (<span title="alt. af (cases)" style={{textDecoration: 'underline'}}>alt af (cases)</span>),
-accessor: 'af_alt_cases',
-filterMethod: (filter, row) => Math.abs(row[filter.id]) < +filter.value,
-Cell: optionalCellScientificFormatter ,
-minWidth: 40,
-}, {
-Header: () => (<span title="alt. af (controls)" style={{textDecoration: 'underline'}}>alt af (controls)</span>),
-accessor: 'af_alt_controls',
-filterMethod: (filter, row) => Math.abs(row[filter.id]) < +filter.value,
-Cell: optionalCellScientificFormatter,
-minWidth: 40,
-},
+    Header: () => (<span title="alternate allele frequency (alt. af)" style={{ textDecoration: 'underline' }}>alt af</span>),
+    accessor: 'af_alt',
+    filterMethod: (filter, row) => Math.abs(row[filter.id]) < +filter.value,
+    Cell: optionalCellScientificFormatter,
+    minWidth: 40,
+  }, {
+    Header: () => (<span title="alt. af (cases)" style={{ textDecoration: 'underline' }}>alt af (cases)</span>),
+    accessor: 'af_alt_cases',
+    filterMethod: (filter, row) => Math.abs(row[filter.id]) < +filter.value,
+    Cell: optionalCellScientificFormatter,
+    minWidth: 40,
+  }, {
+    Header: () => (<span title="alt. af (controls)" style={{ textDecoration: 'underline' }}>alt af (controls)</span>),
+    accessor: 'af_alt_controls',
+    filterMethod: (filter, row) => Math.abs(row[filter.id]) < +filter.value,
+    Cell: optionalCellScientificFormatter,
+    minWidth: 40,
+  },
 ]
 
 interface ColumnArchetype<E extends {}> {

@@ -1,11 +1,11 @@
 import React from 'react'
 import Select from 'react-select'
 import { getAutocomplete } from "./HLAAPI";
-import { SearchResult } from "./HLAModel";
+import { AutoCompleteModel } from "./HLAModel";
 
 
 const onChange = (selected) => {
-    const value: SearchResult = selected.value
+    const value: AutoCompleteModel.Row = selected.value
     let url = `/error/${selected.display}`
     if ('phenocode' in value) {
         url = `/hla/phenocode/${selected.label}`
@@ -19,7 +19,7 @@ const onChange = (selected) => {
     window.location.href = url
 }
 
-const reshapeResult = (result: SearchResult) => {
+const reshapeResult = (result: AutoCompleteModel.Row) => {
     if ('phenocode' in result) {
         return { value: result, label: result.phenocode }
     }
@@ -44,10 +44,10 @@ const customStyles = {
     }),
 }
 const Search = () => {
-    const [autoCompleteOptions, setOptions] = React.useState<{ value: SearchResult, label: string }[]>([])
+    const [autoCompleteOptions, setOptions] = React.useState<{ value: AutoCompleteModel.Row, label: string }[]>([])
     React.useEffect(
         () => {
-            getAutocomplete((results: SearchResult[]) => setOptions(results.map(reshapeResult)))
+            getAutocomplete((results: AutoCompleteModel.Data) => setOptions(results.map(reshapeResult)))
         },
         []
     )
