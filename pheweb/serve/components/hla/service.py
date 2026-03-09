@@ -8,10 +8,8 @@ import typing
 
 from flask import (
     Blueprint,
-    jsonify,
     current_app as app,
     abort,
-    Response,
 )
 
 from .model import HLADAO, JeevesContext

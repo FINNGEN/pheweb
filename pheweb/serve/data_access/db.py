@@ -908,7 +908,7 @@ class TabixResultCommonDao:
                         result[v] = [pr]
         return result.items()
 
-class TabixResultDao():
+class TabixResultDao(ResultDB):
     def __init__(self, phenos, matrix_path, columns):
 
         self.matrix_path = matrix_path

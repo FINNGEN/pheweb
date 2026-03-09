@@ -4,10 +4,8 @@ HLA Summary data model classes.
 
 DAO, DTO classes and interfaces.
 """
-import abc
 import typing
 from dataclasses import dataclass
-from typing import NamedTuple, List, Any
 
 
 class HLADAO:
