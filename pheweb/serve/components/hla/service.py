@@ -12,7 +12,9 @@ from flask import (
     abort,
 )
 
-from .model import HLADAO, JeevesContext
+from pheweb.serve.data_access.db import HLADB
+
+from .model import JeevesContext
 
 hla = Blueprint("pheweb_hla", __name__)
 development = Blueprint("development", __name__)
@@ -21,7 +23,7 @@ development = Blueprint("development", __name__)
 app.jeeves: JeevesContext  # type: ignore
 
 
-def get_dao(current_app=app) -> HLADAO:
+def get_dao(current_app=app) -> HLADB:
     """ "
     Get DAO.
 
@@ -30,7 +32,7 @@ def get_dao(current_app=app) -> HLADAO:
     it means the HLA Summary data is not
     available.
     """
-    dao: typing.Optional[HLADAO] = current_app.jeeves.hla_dao
+    dao: typing.Optional[HLADB] = current_app.jeeves.hla_dao
     if dao is None:
         result = None
         abort(404, "HLA data not available")

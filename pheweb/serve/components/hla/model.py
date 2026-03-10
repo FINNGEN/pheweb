@@ -6,14 +6,7 @@ DAO, DTO classes and interfaces.
 """
 import typing
 from dataclasses import dataclass
-
-
-class HLADAO:
-    """
-    HLA DAO.
-
-    Abstract class for HLA dao.
-    """
+from pheweb.serve.data_access.db import HLADB
 
 @dataclass
 class JeevesContext:
@@ -23,4 +16,4 @@ class JeevesContext:
     Type interface for the jeeves context.
     """
 
-    hla_dao: typing.Optional[HLADAO]
+    hla_dao: typing.Optional[HLADB]
