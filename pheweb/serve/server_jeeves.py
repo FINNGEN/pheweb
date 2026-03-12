@@ -487,9 +487,6 @@ class ServerJeeves(object):
     def chip(self):
         return self.chip_dao.get_chip() if self.chip_dao is not None else None
 
-    def hla(self):
-        return self.hla.get_hla()
-
     @functools.lru_cache(None)
     def get_gene_region_mapping(self):
         return {genename: (chrom, pos1, pos2) for chrom, pos1, pos2, genename in get_gene_tuples()}
