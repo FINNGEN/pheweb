@@ -2,6 +2,7 @@ import React, { useContext } from "react";
 import { Tab, TabList, TabPanel, Tabs } from 'react-tabs'
 import { PhenotypeContext, PhenotypeState } from "./PhenotypeContext";
 import VariantTable from './PhenotypeVariantTable';
+import HLATable from '../HLA/HLATable';
 import PhenotypeCSTable from "./PhenotypeCSTable";
 import {isNonEmptyArray} from "../../common/commonUtilities";
 
@@ -10,7 +11,10 @@ const PhenotypeTab = () => {
           credibleSets ,
           selectedTab,
           setSelectedTab } = useContext<Partial<PhenotypeState>>(PhenotypeContext);
-
+  
+  
+  const { hlaData } = useContext<Partial<PhenotypeState>>(PhenotypeContext);
+  
   return <>
     <h3>Lead variants</h3>
     <Tabs
@@ -22,6 +26,7 @@ const PhenotypeTab = () => {
       <TabList>
         { isNonEmptyArray(credibleSets) && <Tab>Credible Sets</Tab> }
         <Tab>Traditional</Tab>
+        <Tab>HLA</Tab>
       </TabList>
       { isNonEmptyArray(credibleSets) && <TabPanel>
         <div id='cs table' className='phenotype-tab'>
@@ -31,6 +36,11 @@ const PhenotypeTab = () => {
       <TabPanel>
         <div id='traditional table' className='phenotype-tab'>
           <VariantTable/>
+        </div>
+      </TabPanel>
+      <TabPanel>
+        <div id='hla table' className='phenotype-tab'>
+          <HLATable {...{data: hlaData}}/>
         </div>
       </TabPanel>
     </Tabs>
