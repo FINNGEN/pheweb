@@ -8,9 +8,12 @@ import commonLoading from "../../common/CommonLoading";
 import 'react-table-v6/react-table.css';
 import { getTopHLAResults, getByPhenocode, getByGene, getByVariant } from "./HLAAPI";
 import Search from "./HLASearch";
+import defaultConfig from "./HLAConfig";
+import './style.css';
+import ReactTooltip from "react-tooltip";
 
 declare let window: ConfigurationWindow;
-const { config: { userInterface } = { userInterface: undefined } } = window;
+const config: { [key: string]: any } = window?.config?.userInterface?.coding?.config || defaultConfig;
 
 const tableColumns: Column<HLAModel.Row>[] = hlaTableColumns as Column<HLAModel.Row>[]
 
@@ -63,7 +66,12 @@ const HLA = (props) => {
     defaultSorted,
   }
   const content = (
-    <div>
+    <div className="hla">
+      <div>
+        <ReactTooltip place="left" arrowColor="transparent" offset={{top: -50}} html={true}/>
+        <span><h2>{config.title}</h2></span>
+        <span className="help" data-tip={config.help}>?</span>
+      </div>
       <Search />
       <br/>
       <CommonDownloadTable {...prop} />
