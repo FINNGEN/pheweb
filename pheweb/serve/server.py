@@ -41,6 +41,7 @@ from .server_auth import before_request, is_public, do_check_auth
 from pheweb.serve.components.colocalization.view import colocalization
 from .components.chip.service import chip
 from .components.coding.service import coding
+from .components.hla.service import hla
 from flask_cors import CORS
 
 from pheweb.serve.components.autocomplete.service import component as component_autocomplete
@@ -115,6 +116,7 @@ app.jeeves = jeeves
 app.register_blueprint(colocalization)
 app.register_blueprint(chip)
 app.register_blueprint(coding)
+app.register_blueprint(hla)
 
 for c in components:
     app.register_blueprint(c.blueprint)

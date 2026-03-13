@@ -8,6 +8,7 @@ import { VariantConfiguration } from "../Variant/variantModel";
 import { TopHitsConfiguration } from "../TopHits/topHitsModel";
 import { Gene } from "../Gene/geneModel";
 import { LOFConfiguration } from "../LOF/lofModel";
+import { HLAConfiguration } from "../HLA/HLAModel";
 import { RegionModel } from '../Region/regionModel';
 
 export interface VisConfiguration {
@@ -46,6 +47,7 @@ export interface ConfigurationUserInterface {
   gene?: Gene.Configuration;
   lof?: LOFConfiguration;
   coding?: CodingConfiguration;
+  hla?: HLAConfiguration;
   region?: RegionModel.Configuration;
 }
 export interface ConfigurationMetaData {

@@ -20,6 +20,7 @@ const Nav = () => {
   const hasLOF = userInterface?.lof !== undefined,
     hasCoding = userInterface?.coding !== undefined,
     hasChip = userInterface?.chip !== undefined,
+    hasHLA = userInterface?.hla !== undefined,
     hasAbout = userInterface?.about !== undefined;
 
   return <nav className="navbar navbar-expand-lg navbar-light nav-bg">
@@ -35,6 +36,7 @@ const Nav = () => {
       <ul className="navbar-nav ml-auto">
         {show(hasLOF)(navLink('/lof','LOF'))}
         {show(hasCoding)(navLink('/coding','Coding'))}
+        {show(hasHLA)(navLink('/hla/top','HLA'))}
         {show(hasChip)(navLink('/chip','Chip'))}
         {show(hasAbout)(navLink('/about','About'))}
         <Logout/>

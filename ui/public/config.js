@@ -45,6 +45,7 @@ const userInterface = {
     entity: { message: notFoundEntityMessage },
     page: { message: notFoundPageMessage }
   },
+  hla: {},
   about: { banner: aboutBanner },
   phenotype: {
     banner: `
