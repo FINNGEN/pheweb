@@ -83,6 +83,7 @@ class ServerJeeves(object):
         self.pqtl_colocalization = self.dbs_fact.get_pqtl_colocalization_dao()
         self.health_dao = self.dbs_fact.get_health_dao()
         self.manhattan_dao = self.dbs_fact.get_manhattan_dao()
+        self.hla_dao = self.dbs_fact.get_hla_dao()
         
     def gene_functional_variants(self, gene, pThreshold=None, use_aliases=None):
         if pThreshold is None:

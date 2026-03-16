@@ -60,7 +60,7 @@ const numberCellFormatter = (props) : number => +props.value;
 export const optionalCellNumberFormatter = (props) => isNaN(+props.value) || props.value === "" ? props.value : numberCellFormatter(props);
 
 const scientificCellFormatter = (props) : string => (+props.value).toExponential(1);
-export const optionalCellScientificFormatter = (props) => isNaN(+props.value) || props.value === "" ? props.value : scientificCellFormatter(props);
+export const optionalCellScientificFormatter = (props) => isNaN(+props.value) || props.value === "" || props.value === null ? props.value : scientificCellFormatter(props);
 
 export const nearestGeneFormatter = (geneName : string | null | undefined) => {
        const geneLabels = geneName?.split(",")?.map(geneName => <a key={geneName} href={`/gene/${geneName}`}>{geneName}</a>);
@@ -396,7 +396,7 @@ const idFilter = (filter, row) => row[filter.id] <= filter.value;
 const absoluteValueFilter = (filter, row) => Math.abs(row[filter.id]) > +filter.value
 const numberFilter = (filter, row) => row[filter.id] > +filter.value
 const numberGEFilter = (filter, row) => row[filter.id] >= +filter.value
-export const wordFilter = (filter, row) => row[filter.id].toLowerCase().includes(filter.value.toLowerCase())
+export const wordFilter = (filter, row) => row[filter.id].toString().toLowerCase().includes(filter.value.toString().toLowerCase())
 
 
 
@@ -2186,6 +2186,40 @@ export const topHitTableColumns = [
   phenotypeColumns.mlogp
 ]
 
+export const hlaTableColumns = [
+  { ...phenotypeColumns.phenocode, filterMethod: wordFilter },
+  {...phenotypeColumns.chrom, filterMethod: wordFilter },
+  {...phenotypeColumns.pos,
+    Cell: props => props.original.pos,
+    filterMethod: wordFilter
+  },
+  phenotypeColumns.ref,
+  { ...phenotypeColumns.lofGene, filterMethod: wordFilter },
+  { ...phenotypeColumns.alt, filterMethod: wordFilter },
+  phenotypeColumns.pValue,
+  phenotypeColumns.mlogp,
+  phenotypeColumns.beta,
+  phenotypeColumns.sebeta,
+  {
+    Header: () => (<span title="alternate allele frequency (alt. af)" style={{ textDecoration: 'underline' }}>alt af</span>),
+    accessor: 'af_alt',
+    filterMethod: (filter, row) => Math.abs(row[filter.id]) < +filter.value,
+    Cell: optionalCellScientificFormatter,
+    minWidth: 40,
+  }, {
+    Header: () => (<span title="alt. af (cases)" style={{ textDecoration: 'underline' }}>alt af (cases)</span>),
+    accessor: 'af_alt_cases',
+    filterMethod: (filter, row) => Math.abs(row[filter.id]) < +filter.value,
+    Cell: optionalCellScientificFormatter,
+    minWidth: 40,
+  }, {
+    Header: () => (<span title="alt. af (controls)" style={{ textDecoration: 'underline' }}>alt af (controls)</span>),
+    accessor: 'af_alt_controls',
+    filterMethod: (filter, row) => Math.abs(row[filter.id]) < +filter.value,
+    Cell: optionalCellScientificFormatter,
+    minWidth: 40,
+  },
+]
 
 interface ColumnArchetype<E extends {}> {
   type: string,

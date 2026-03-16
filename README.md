@@ -289,6 +289,23 @@ Instructions for loading these files are available [here](pheweb/serve/component
 
 Details on how to load previous colocalization files can be found [here](pheweb/serve/components/colocalization/README.md).
 
+## HLA
+HLA data is stored as individual files, one file per endpoint. We need to read these files, combine them into one, adding the endpoint as a column and finally loading the full data into the database (mysql).
+
+Start by copying the HLA data into your machine:
+```
+gsutil cp gs://finngen-production-library-green/finngen_R13/finngen_R13_analysis_data/hla/summary_stats/*.gz <local path>/
+```
+Then use the script to combine the individual files into one file
+```
+python scripts/combine_hla_data.py <local path to hla files>/
+```
+The script outputs the file in a file named combined.gz. Finally, use the script to load the full data into the database. You need to have the mysql credentials in a conf file, and give that to the script as an argument. 
+```
+python scripts/load_hla_data_into_db.py <path to mysql.conf> <input file name>
+```
+If no filename is given, the scripts expects to read `combined.gz` file.
+
 # Deploying PheWeb in Google Cloud using Kubernetes
 
 ### 1. Install Docker, Google Cloud SDK, and kubectl
