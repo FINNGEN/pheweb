@@ -1,9 +1,11 @@
 import React, { createContext, useEffect, useState } from "react";
 import { CredibleSet, PhenotypeParams, PhenotypeVariantData, QQ } from "./phenotypeModel";
 import { Phenotype } from "./../../common/commonModel";
-import { getUKBBN, getManhattan, getPhenotype, getCredibleSets, getQQ, getHLA } from "./phenotypeAPI";
+import { getUKBBN, getManhattan, getPhenotype, getCredibleSets, getQQ } from "./phenotypeAPI";
 import {setPageTitle} from "../../common/commonUtilities";
 import {HLAModel} from "../HLA/HLAModel";
+import { getByPhenocode as getHLA } from "../HLA/HLAAPI"
+
 export interface PhenotypeState {
   phenotypeVariantData : PhenotypeVariantData
   hlaData : HLAModel.Data

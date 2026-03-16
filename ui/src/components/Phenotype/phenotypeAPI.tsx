@@ -81,9 +81,3 @@ export const getQQ = (phenotypeCode : string,
                       getURL = get) : void => {
   getURL(resolveURL(`/api/qq/pheno/${phenotypeCode}`), sink)
 }
-
-export const getHLA = (phenotypeCode : string,
-                      sink: (s: HLAModel.Data) => void,
-                      getURL = get) : void => {
-  getURL(resolveURL(`/api/v1/hla/phenocode/${phenotypeCode}`), sink)
-}
