@@ -3,7 +3,7 @@ import { CredibleSet, PhenotypeParams, PhenotypeVariantData, QQ } from "./phenot
 import { Phenotype } from "./../../common/commonModel";
 import { getUKBBN, getManhattan, getPhenotype, getCredibleSets, getQQ } from "./phenotypeAPI";
 import {setPageTitle} from "../../common/commonUtilities";
-import {HLAModel} from "../HLA/HLAModel";
+import { HLAModel } from "../HLA/HLAModel";
 import { getByPhenocode as getHLA } from "../HLA/HLAAPI"
 
 export interface PhenotypeState {
