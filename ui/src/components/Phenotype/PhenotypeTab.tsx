@@ -10,10 +10,8 @@ const PhenotypeTab = () => {
   const { phenotypeCode ,
           credibleSets ,
           selectedTab,
-          setSelectedTab } = useContext<Partial<PhenotypeState>>(PhenotypeContext);
-  
-  
-  const { hlaData } = useContext<Partial<PhenotypeState>>(PhenotypeContext);
+          setSelectedTab,
+          hlaData } = useContext<Partial<PhenotypeState>>(PhenotypeContext);
   
   return <>
     <h3>Lead variants</h3>

@@ -3,7 +3,6 @@ import { compose, get, Handler } from "../../common/commonUtilities";
 import { CredibleSet, LocusGroupEntry, PhenotypeVariantData, QQ } from "./phenotypeModel";
 import { resolveURL } from "../Configuration/configurationModel";
 import { pValueSentinel } from "../../common/commonTableColumn";
-import { HLAModel } from "../HLA/HLAModel";
 
 const reshapeManhattan = (phenotypeCode: string) =>(data : PhenotypeVariantData) : PhenotypeVariantData => {
   if(data === null || data === undefined) return data;
