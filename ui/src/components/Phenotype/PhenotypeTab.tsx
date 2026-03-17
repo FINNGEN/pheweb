@@ -24,23 +24,24 @@ const PhenotypeTab = () => {
       <TabList>
         { isNonEmptyArray(credibleSets) && <Tab>Credible Sets</Tab> }
         <Tab>Traditional</Tab>
-        <Tab>HLA</Tab>
+        { isNonEmptyArray(hlaData) && <Tab>Classical HLA Alleles</Tab> }
       </TabList>
       { isNonEmptyArray(credibleSets) && <TabPanel>
         <div id='cs table' className='phenotype-tab'>
           <PhenotypeCSTable/>
         </div>
-      </TabPanel> }
+      </TabPanel> } 
       <TabPanel>
         <div id='traditional table' className='phenotype-tab'>
           <VariantTable/>
         </div>
       </TabPanel>
+      { isNonEmptyArray(hlaData) &&
       <TabPanel>
         <div id='hla table' className='phenotype-tab'>
           <HLATable {...{data: hlaData}}/>
         </div>
-      </TabPanel>
+      </TabPanel> }
     </Tabs>
   </>
 }
