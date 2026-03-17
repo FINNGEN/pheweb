@@ -5,6 +5,8 @@ import VariantTable from './PhenotypeVariantTable';
 import HLATable from '../HLA/HLATable';
 import PhenotypeCSTable from "./PhenotypeCSTable";
 import {isNonEmptyArray} from "../../common/commonUtilities";
+import ReactTooltip from "react-tooltip";
+import hlaConfig from "../HLA/HLAConfig";
 
 const PhenotypeTab = () => {
   const { phenotypeCode ,
@@ -24,7 +26,11 @@ const PhenotypeTab = () => {
       <TabList>
         { isNonEmptyArray(credibleSets) && <Tab>Credible Sets</Tab> }
         <Tab>Traditional</Tab>
-        { isNonEmptyArray(hlaData) && <Tab>Classical HLA Alleles</Tab> }
+        { isNonEmptyArray(hlaData) &&
+        <Tab>Classical HLA Alleles
+          <ReactTooltip place="right" arrowColor="transparent" offset={{top: -50}} html={true}/>
+          <span className="help" data-tip={hlaConfig.help}> ?</span></Tab>
+        }
       </TabList>
       { isNonEmptyArray(credibleSets) && <TabPanel>
         <div id='cs table' className='phenotype-tab'>

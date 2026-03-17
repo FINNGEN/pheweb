@@ -13,3 +13,9 @@ a.risteys {
     height: 100%;
     width: 100%;
 }
+
+.help {
+  font-weight: bold;
+  font-size: 1.25em;
+  cursor: help;
+}
