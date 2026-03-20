@@ -3,9 +3,12 @@ import { CredibleSet, PhenotypeParams, PhenotypeVariantData, QQ } from "./phenot
 import { Phenotype } from "./../../common/commonModel";
 import { getUKBBN, getManhattan, getPhenotype, getCredibleSets, getQQ } from "./phenotypeAPI";
 import {setPageTitle} from "../../common/commonUtilities";
+import { HLAModel } from "../HLA/HLAModel";
+import { getByPhenocode as getHLA } from "../HLA/HLAAPI"
 
 export interface PhenotypeState {
   phenotypeVariantData : PhenotypeVariantData
+  hlaData : HLAModel.Data
   UKBBN : Phenotype[]
   phenotype : Phenotype
   credibleSets : CredibleSet[]
@@ -34,13 +37,15 @@ const PhenotypeContextProvider = (props : Props) => {
   const [loading, setLoading] = useState<boolean| undefined>(true);
   const [qq, setQQ] = useState<QQ| undefined>(undefined)
   const [errorMessage, setErrorMessage] = useState<string| undefined>(undefined);
-
+  const [hlaData, setHlaData] = useState<HLAModel.Data| null>(null);
+  
   useEffect(() => {
     getManhattan(phenotypeCode,setPhenotypeVariantData);
     getUKBBN(phenotypeCode,setUKBBN);
     getPhenotype(phenotypeCode, setPhenotype, setErrorMessage);
     getCredibleSets(phenotypeCode, setCredibleSets);
     getQQ(phenotypeCode, setQQ);
+    getHLA(phenotypeCode, setHlaData);
   },[setPhenotypeVariantData, setUKBBN, setPhenotype, phenotypeCode]);
 
   useEffect(() => {
@@ -51,6 +56,7 @@ const PhenotypeContextProvider = (props : Props) => {
 <PhenotypeContext.Provider value={{
   phenotypeCode,
   phenotypeVariantData ,
+  hlaData ,
   UKBBN ,
   phenotype ,
   loading ,

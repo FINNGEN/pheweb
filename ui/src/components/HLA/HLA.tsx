@@ -1,42 +1,16 @@
 import React, { useEffect, useState } from "react";
 import HLAModel from "./HLAModel";
-import { Column } from "react-table";
 import { ConfigurationWindow } from "../Configuration/configurationModel";
-import { hlaTableColumns } from "../../common/commonTableColumn";
-import CommonDownloadTable, { DownloadTableProps } from "../../common/CommonDownloadTable";
-import commonLoading from "../../common/CommonLoading";
 import 'react-table-v6/react-table.css';
 import { getTopHLAResults, getByPhenocode, getByGene, getByVariant } from "./HLAAPI";
 import Search from "./HLASearch";
 import defaultConfig from "./HLAConfig";
 import './style.css';
 import ReactTooltip from "react-tooltip";
+import HLATable from "./HLATable";
 
 declare let window: ConfigurationWindow;
 const config: { [key: string]: any } = window?.config?.userInterface?.coding?.config || defaultConfig;
-
-const tableColumns: Column<HLAModel.Row>[] = hlaTableColumns as Column<HLAModel.Row>[]
-
-const tableProperties = {
-  defaultPageSize: 30
-}
-
-const defaultSorted = [{
-  id: 'phenocode',
-  desc: false
-},
-{
-  id: 'mlogp',
-  desc: true
-}]
-
-export const hasError = (errorMessage: string | null | undefined, content: JSX.Element): JSX.Element => {
-  if (errorMessage === null || errorMessage === undefined) {
-    return content
-  } else {
-    return <div>{errorMessage}</div>
-  }
-}
 
 const HLA = (props) => {
 
@@ -57,14 +31,6 @@ const HLA = (props) => {
     }
   }, []);
 
-  const prop: DownloadTableProps<HLAModel.Data, HLAModel.Row> = {
-    filename: 'hla.tsv',
-    tableData: hlaData,
-    dataToTableRows: (data) => data,
-    tableColumns,
-    tableProperties,
-    defaultSorted,
-  }
   const content = (
     <div className="hla">
       <div>
@@ -74,10 +40,10 @@ const HLA = (props) => {
       </div>
       <Search />
       <br/>
-      <CommonDownloadTable {...prop} />
+      <HLATable {...{data: hlaData}}/>
     </div>
   )
-  return hlaData == null && props.error == null ? commonLoading : hasError(props.error, content)
+  return content;
 
 }
 export default HLA;

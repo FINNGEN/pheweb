@@ -1796,7 +1796,8 @@ class HLAMySQLDao(HLADB, MysqlDAO):
                 gene_result = c.fetchall()
         finally:
             conn.close()
-        return phenocode_result + alt_result + gene_result
+        result = phenocode_result + alt_result + gene_result
+        return result if len(result) != 0 else []
 
     def get_top_results(self):
         conn = self.get_connection()
@@ -1810,7 +1811,7 @@ class HLAMySQLDao(HLADB, MysqlDAO):
                 result = c.fetchall()
         finally:
             conn.close()
-        return result
+        return result if len(result) != 0 else []
 
     def get_by_phenocode(self, phenocode):
         conn = self.get_connection()
@@ -1824,7 +1825,7 @@ class HLAMySQLDao(HLADB, MysqlDAO):
                 result = c.fetchall()
         finally:
             conn.close()
-        return result
+        return result if len(result) != 0 else []
     
     def get_by_gene(self, gene):
         conn = self.get_connection()
@@ -1839,7 +1840,7 @@ class HLAMySQLDao(HLADB, MysqlDAO):
                 result = c.fetchall()
         finally:
             conn.close()
-        return result
+        return result if len(result) != 0 else []
 
     def get_by_variant(self, variant):
         conn = self.get_connection()
@@ -1853,7 +1854,7 @@ class HLAMySQLDao(HLADB, MysqlDAO):
                 result = c.fetchall()
         finally:
             conn.close()
-        return result
+        return result if len(result) != 0 else []
 
 
 class LofMySQLDao(LofDB):
