@@ -942,7 +942,6 @@ class TabixResultDao(ResultDB):
     def get_single_variant_results(
         self, variant: Variant
     ) -> Optional[Tuple[Variant, List[PhenoResult]]]:
-
         res = self.get_variants_results([variant])
         for r in res:
             if r[0] == variant:
@@ -1032,6 +1031,96 @@ class TabixResultDao(ResultDB):
     def get_top_per_pheno_variant_results_range(self, chrom, start, end):
         pheno_results = self.get_top_per_pheno_variant(chrom, start, end)
         return pheno_results
+
+class TabixResultLongDao(ResultDB):
+    def __init__(self, phenos, matrix_path, columns):
+        self.matrix_path = matrix_path
+        self.columns = columns
+        self.header = gzip.open(self.matrix_path,'rt').readline().strip("\n").split("\t")
+        self.pheno_map = phenos(0)
+
+    def get_variant_results_range(
+        self, chrom, start, end
+    ) -> List[Tuple[Variant, List[PhenoResult]]]:
+        tbx_file = pysam.TabixFile(self.matrix_path)
+        tabix_iter = tbx_file.fetch(chrom, start - 1, end)
+        # reverse the columns to get a mapping from file to standard column names
+        columns_reverse = {v:k for k,v in self.columns.items()}
+        results = defaultdict(list)
+        for line in tabix_iter:
+            # create a dict with header as keys and line values as values
+            row = dict(zip(self.header, line.split("\t")))
+            # rename the keys in columns config, leave others as is
+            row = {columns_reverse.get(k, k): v for k, v in row.items()}
+            phenotype = row['pheno']
+            if phenotype not in self.pheno_map:
+                continue
+            variant = Variant(chrom, row['pos'], row['ref'], row['alt'])
+            phenoresult = PhenoResult(
+                phenotype,
+                self.pheno_map[phenotype]['phenostring'],
+                self.pheno_map[phenotype]['category'],
+                self.pheno_map[phenotype]['category_index'],
+                row.get("pval"),
+                row.get("beta"),
+                row.get("sebeta"),
+                row.get("maf"),
+                row.get("maf_cases"),
+                row.get("maf_controls"),
+                self.pheno_map[phenotype]['num_cases'],
+                self.pheno_map[phenotype]['num_controls'],
+                row.get("mlogp"),
+                self.pheno_map[phenotype].get('num_samples')
+            )
+            results[variant].append(phenoresult)
+        tbx_file.close()
+        variant_list = []
+        for result in results.keys():
+            variant_list.append((result, results[result]))
+        return variant_list
+
+    def get_top_per_pheno_variant_results_range(
+        self, chrom, start, end
+    ) -> List[PhenoResults]:
+        """Retrieves top variant for each phenotype in a given range
+        Returns: A list of PhenoResults "pheno" which contains a phenotype dict, and "assoc" containing PhenoResult object, 'variant' contains Variant object. The list is sorted by p-value.
+        """
+        results = self.get_variant_results_range(chrom, start, end)
+        top_results = []
+        for variant, pheno_results in results:
+            top_result = pheno_results[0]
+            for pheno_result in pheno_results:
+                if pheno_result.mlogp > top_result.mlogp:
+                    top_result = pheno_result
+            top_results.append(PhenoResults(pheno=self.pheno_map[top_result.phenocode], assoc=top_result, variant=variant))
+        return top_results
+
+    def get_variants_results(
+        self, variants: List[Variant]
+    ) -> List[Tuple[Variant, List[PhenoResult]]]:
+        """
+        Returns all results and annotations for given variant list. Returns empty list if no results found
+        """
+        variant_list = []
+        for variant in variants:
+            result = self.get_single_variant_results(variant)
+            if result is not None:
+                variant_list.append(result)
+        return variant_list
+
+    def get_single_variant_results(
+        self, variant: Variant
+    ) -> Optional[Tuple[Variant, List[PhenoResult]]]:
+        """
+        Returns all results and annotations for given variant. Returns tuple of Variant (including updated annotations if any) and phenotype results.
+        Returns None if variant does not exist.
+        """
+        variant_list = self.get_variant_results_range(variant.chr, variant.pos, variant.pos)
+        if len(variant_list) == 1:
+            return variant_list[0]
+        else:
+            return None
+
 
 class TabixResultFiltDao(ResultDB):
     def __init__(self, phenos, matrix_path, columns):
