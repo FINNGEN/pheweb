@@ -1858,7 +1858,16 @@ class HLAMySQLDao(HLADB, MysqlDAO):
 
 
 class LofMySQLDao(LofDB):
-    def __init__(self, authentication_file, table_name="lof"):
+    def __init__(self,
+                 authentication_file,
+                 table_name="lof",
+                 search_table_name: Optional[str] = None):
+        """
+        Args:
+            search_table_name: Table to search for a particular gene. Genes may have aliases
+                and it is expected to resolve aliases in this search. If None, defaults to
+                table_name (preserving the old behavior).
+        """
         self.authentication_file = authentication_file
         auth_module = load_source("mysql_auth", self.authentication_file)
         self.user = getattr(auth_module, "mysql")["user"]
@@ -1866,7 +1875,8 @@ class LofMySQLDao(LofDB):
         self.host = getattr(auth_module, "mysql")["host"]
         self.db = getattr(auth_module, "mysql")["db"]
         self.release = getattr(auth_module, "mysql")["release"]
-        self.table_name=table_name
+        self.table_name = table_name
+        self.search_table_name = search_table_name or self.table_name
 
     def get_connection(self):
         return pymysql.connect(
@@ -1888,7 +1898,7 @@ class LofMySQLDao(LofDB):
         conn = self.get_connection()
         try:
             with conn.cursor(pymysql.cursors.DictCursor) as cursori:
-                sql = f"SELECT * FROM {self.table_name} WHERE rel=%s AND gene=%s"
+                sql = f"SELECT * FROM {self.search_table_name} WHERE rel=%s AND gene=%s"
                 cursori.execute(sql, [self.release, gene])
                 result = [{"gene_data": data} for data in cursori.fetchall()]
         finally:
