@@ -15,7 +15,7 @@ import numpy as np
 import pymysql
 from typing import List, Tuple, Dict, Union, Optional, Any
 from ...file_utils import MatrixReader, common_filepaths
-from ...utils import get_phenolist, get_gene_tuples, pvalue_to_mlogp, get_use_phenocode_pheno_map
+from ...utils import get_phenolist, get_gene_tuples, pvalue_to_mlogp, mlogp_to_pvalue, get_use_phenocode_pheno_map
 from ..components.health.health_check import default_dao as health_default_dao, HealthSimpleDAO, HealthNotificationDAO, HealthTrivialDAO
 from pheweb.serve.components.autocomplete.sqlite_dao import GeneAliasesSqliteDAO
 from pheweb.serve.data_access.gene_info import NCBIGeneInfoDao
@@ -773,7 +773,25 @@ class TabixResultLongDao(ResultDB):
         self.columns = columns
         self.header = gzip.open(self.matrix_path,'rt').readline().strip("\n").split("\t")
         self.pheno_map = phenos(0)
+    
+    def get_p_and_mlogp(self, pval, mlogp):
+        # TODO: change this to match statement
+        if pval is None and mlogp is None:
+            return None, None
+        elif mlogp is not None and pval is not None:
+            return pval, mlogp
+        elif mlogp is not None:
+            return mlogp_to_pvalue(float(mlogp)), mlogp
+        elif pval is not None:
+            return pval, pvalue_to_mlogp(float(pval))
 
+    def add_extra_columns(self, row : Dict, phenoresult : PhenoResult):
+        # Add any extra columns in row as additional attrributes to the object
+        std_columns = ["beta", "sebeta", "maf", "maf_cases", "maf_controls", "pval", "mlogp"]
+        for key in row.keys():
+            if key not in std_columns and not hasattr(phenoresult, key):
+                setattr(phenoresult, key, row[key])
+                
     def get_variant_results_range(
         self, chrom, start, end
     ) -> List[Tuple[Variant, List[PhenoResult]]]:
@@ -791,13 +809,13 @@ class TabixResultLongDao(ResultDB):
             if phenotype not in self.pheno_map:
                 continue
             variant = Variant(chrom, row['pos'], row['ref'], row['alt'])
-            print(row)
+            pval, mlogp = self.get_p_and_mlogp(row.get("pval"), row.get("mlogp"))
             phenoresult = PhenoResult(
                 phenotype,
                 self.pheno_map[phenotype]['phenostring'],
                 self.pheno_map[phenotype]['category'],
                 self.pheno_map[phenotype]['category_index'],
-                row.get("pval"),
+                pval,
                 row.get("beta"),
                 row.get("sebeta"),
                 row.get("maf"),
@@ -805,9 +823,10 @@ class TabixResultLongDao(ResultDB):
                 row.get("maf_controls"),
                 self.pheno_map[phenotype]['num_cases'],
                 self.pheno_map[phenotype]['num_controls'],
-                row.get("mlogp"),
+                mlogp,
                 self.pheno_map[phenotype].get('num_samples')
             )
+            self.add_extra_columns(row, phenoresult)
             results[variant].append(phenoresult)
         tbx_file.close()
         variant_list = []
@@ -822,14 +841,20 @@ class TabixResultLongDao(ResultDB):
         Returns: A list of PhenoResults "pheno" which contains a phenotype dict, and "assoc" containing PhenoResult object, 'variant' contains Variant object. The list is sorted by p-value.
         """
         results = self.get_variant_results_range(chrom, start, end)
-        top_results = []
+        top_results = {}
         for variant, pheno_results in results:
-            top_result = pheno_results[0]
             for pheno_result in pheno_results:
-                if pheno_result.mlogp > top_result.mlogp:
-                    top_result = pheno_result
-            top_results.append(PhenoResults(pheno=self.pheno_map[top_result.phenocode], assoc=top_result, variant=variant))
-        return top_results
+                if top_results.get(pheno_result.phenocode) is None:
+                    top_results[pheno_result.phenocode] = PhenoResults(
+                        pheno=self.pheno_map[pheno_result.phenocode],
+                        assoc=pheno_result,
+                        variant=variant)
+                elif top_results[pheno_result.phenocode].assoc.mlogp < pheno_result.mlogp:
+                    top_results[pheno_result.phenocode] = PhenoResults(
+                        pheno=self.pheno_map[pheno_result.phenocode],
+                        assoc=pheno_result,
+                        variant=variant)          
+        return list(top_results.values())
 
     def get_variants_results(
         self, variants: List[Variant]

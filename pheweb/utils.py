@@ -234,7 +234,9 @@ def pvalue_to_mlogp(p_value: float) -> float:
         m_log_p_value = -math.log10(p_value)
     return m_log_p_value
 
-
+def mlogp_to_pvalue(mlogp : float) -> float:
+    return 10 ** (-mlogp)
+    
 def beta_to_m_log_p(beta: float, se_beta: float) -> float:
     """
     Compute m log p from betas.
