@@ -758,14 +758,6 @@ class TabixGnomadDao(GnomadDB):
 
         return annotations
 
-def extend_pheno_result(pr : PhenoResult,
-                        record_offset : int,
-                        field_offsets,
-                        row):
-    for key, offset in field_offsets.items():
-        if not hasattr(pr, key):
-            setattr(pr, key, row[record_offset+offset])
-
 
 class TabixResultLongDao(ResultDB):
     def __init__(self, phenos, matrix_path, columns):
@@ -787,7 +779,7 @@ class TabixResultLongDao(ResultDB):
 
     def add_extra_columns(self, row : Dict, phenoresult : PhenoResult):
         # Add any extra columns in row as additional attrributes to the object
-        std_columns = ["beta", "sebeta", "maf", "maf_cases", "maf_controls", "pval", "mlogp"]
+        std_columns = ["pheno", "chr", "pos", "ref", "alt", "beta", "sebeta", "maf", "maf_cases", "maf_controls", "pval", "mlogp"]
         for key in row.keys():
             if key not in std_columns and not hasattr(phenoresult, key):
                 setattr(phenoresult, key, row[key])
@@ -795,43 +787,42 @@ class TabixResultLongDao(ResultDB):
     def get_variant_results_range(
         self, chrom, start, end
     ) -> List[Tuple[Variant, List[PhenoResult]]]:
-        tbx_file = pysam.TabixFile(self.matrix_path)
-        tabix_iter = tbx_file.fetch(chrom, start - 1, end)
-        # reverse the columns to get a mapping from file to standard column names
-        columns_reverse = {v:k for k,v in self.columns.items()}
-        results = defaultdict(list)
-        for line in tabix_iter:
-            # create a dict with header as keys and line values as values
-            row = dict(zip(self.header, line.split("\t")))
-            # rename the keys in columns config, leave others as is
-            row = {columns_reverse.get(k, k): v for k, v in row.items()}
-            phenotype = row['pheno']
-            if phenotype not in self.pheno_map:
-                continue
-            variant = Variant(chrom, row['pos'], row['ref'], row['alt'])
-            pval, mlogp = self.get_p_and_mlogp(row.get("pval"), row.get("mlogp"))
-            phenoresult = PhenoResult(
-                phenotype,
-                self.pheno_map[phenotype]['phenostring'],
-                self.pheno_map[phenotype]['category'],
-                self.pheno_map[phenotype]['category_index'],
-                pval,
-                row.get("beta"),
-                row.get("sebeta"),
-                row.get("maf"),
-                row.get("maf_cases"),
-                row.get("maf_controls"),
-                self.pheno_map[phenotype]['num_cases'],
-                self.pheno_map[phenotype]['num_controls'],
-                mlogp,
-                self.pheno_map[phenotype].get('num_samples')
-            )
-            self.add_extra_columns(row, phenoresult)
-            results[variant].append(phenoresult)
-        tbx_file.close()
-        variant_list = []
-        for result in results.keys():
-            variant_list.append((result, results[result]))
+        with pysam.TabixFile(self.matrix_path) as tbx_file:
+            tabix_iter = tbx_file.fetch(chrom, start - 1, end)
+            # reverse the columns to get a mapping from file to standard column names
+            columns_reverse = {v:k for k,v in self.columns.items()}
+            results = defaultdict(list)
+            for line in tabix_iter:
+                # create a dict with header as keys and line values as values
+                row = dict(zip(self.header, line.split("\t")))
+                # rename the keys in columns config, leave others as is
+                row = {columns_reverse.get(k, k): v for k, v in row.items()}
+                phenotype = row['pheno']
+                if phenotype not in self.pheno_map:
+                    continue
+                variant = Variant(chrom, row['pos'], row['ref'], row['alt'])
+                pval, mlogp = self.get_p_and_mlogp(row.get("pval"), row.get("mlogp"))
+                phenoresult = PhenoResult(
+                    phenotype,
+                    self.pheno_map[phenotype]['phenostring'],
+                    self.pheno_map[phenotype]['category'],
+                    self.pheno_map[phenotype]['category_index'],
+                    pval,
+                    row.get("beta"),
+                    row.get("sebeta"),
+                    row.get("maf"),
+                    row.get("maf_cases"),
+                    row.get("maf_controls"),
+                    self.pheno_map[phenotype]['num_cases'],
+                    self.pheno_map[phenotype]['num_controls'],
+                    mlogp,
+                    self.pheno_map[phenotype].get('num_samples')
+                )
+                self.add_extra_columns(row, phenoresult)
+                results[variant].append(phenoresult)
+            variant_list = []
+            for result in results.keys():
+                variant_list.append((result, results[result]))
         return variant_list
 
     def get_top_per_pheno_variant_results_range(
@@ -884,7 +875,9 @@ class TabixResultLongDao(ResultDB):
 
 
 class TabixResultFiltDao(TabixResultLongDao):
-    pass
+    def __init__(self, phenos, matrix_path, columns):
+        print("WARNING: TabixResultFiltDao is deprecated. Use TabixResultLongDao instead.")
+        super().__init__(phenos, matrix_path, columns)
 
 class ExternalMatrixResultDao(ExternalResultDB):
     def __init__(self, matrix, metadatafile):
