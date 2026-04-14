@@ -844,7 +844,11 @@ class TabixResultLongDao(ResultDB):
         top_results = {}
         for variant, pheno_results in results:
             for pheno_result in pheno_results:
-                if top_results.get(pheno_result.phenocode) is None or top_results[pheno_result.phenocode].assoc.mlogp < pheno_result.mlogp:
+                # replace the value in the dict for the phenocode if there is no previous value,
+                # or if the previous value is less significant (p-value) than the new.
+                if top_results.get(pheno_result.phenocode) is None or \
+                    (top_results[pheno_result.phenocode].assoc.mlogp is not None and
+                     top_results[pheno_result.phenocode].assoc.mlogp < pheno_result.mlogp):
                     top_results[pheno_result.phenocode] = PhenoResults(
                         pheno=self.pheno_map[pheno_result.phenocode],
                         assoc=pheno_result,
