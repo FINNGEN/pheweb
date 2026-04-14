@@ -10,8 +10,10 @@ from pheweb.serve.data_access.db import (
 )
 import unittest
 
-test_data_file_path = os.getcwd() + "/tests/mocked-data/fixed_mocked_data.tsv.gz"
+test_data_file_path = os.getcwd() + "/tests/mocked-data/mocked_data_long.tsv.gz"
 test_pheno_list_path = os.getcwd() + "/tests/mocked-data/mocked-pheno-list.json"
+
+# mock of the column configuration in pheweb
 test_mocked_columns = {
     "pheno": "#pheno",
     "mlogp": "mlogp",
@@ -20,9 +22,10 @@ test_mocked_columns = {
     "maf": "af_alt",
     "maf_cases": "af_alt_cases",
     "maf_controls": "af_alt_controls",
+    "extra_2_renamed": "extra_2"
 }
-test_phenocode = "AB1_ACTINOMYCOSIS"
-test_variant = "1:13668:G:A"
+
+# This is the expected result for mocked_data_long.tsv.gz
 expected_phenoresults = [
     {
         "category": "I Certain infectious and parasitic diseases (AB1_)",
@@ -37,7 +40,9 @@ expected_phenoresults = [
         'sebeta': 1.02193,
         'maf': 0.00598008,
         'maf_case': 0.00992459,
-        'maf_control': 0.00597798
+        'maf_control': 0.00597798,
+        'extra_1': '1.0',
+        'extra_2_renamed': '0.1'
     },
     {
         "category": "I Certain infectious and parasitic diseases (AB1_)",
@@ -52,7 +57,9 @@ expected_phenoresults = [
         'sebeta': 2.23179,
         'maf': 0.00596686,
         'maf_case': 0.0167393,
-        'maf_control': 0.00596554
+        'maf_control': 0.00596554,
+        'extra_1': '2.0',
+        'extra_2_renamed': '0.2'
     },
     {
         "category": "I Certain infectious and parasitic diseases (AB1_)",
@@ -67,7 +74,9 @@ expected_phenoresults = [
         'sebeta': 0.545803,
         'maf': 0.0059836,
         'maf_case': 0.00826492,
-        'maf_control': 0.00597919
+        'maf_control': 0.00597919,
+        'extra_1': '3.0',
+        'extra_2_renamed': '0.3'
     },
     {
         "category": "I Certain infectious and parasitic diseases (AB1_)",
@@ -82,7 +91,9 @@ expected_phenoresults = [
         'sebeta': 0.538156,
         'maf': 0.00598633,
         'maf_case': 0.00807085,
-        'maf_control': 0.00598227
+        'maf_control': 0.00598227,
+        'extra_1': '4.0',
+        'extra_2_renamed': '0.4'
     },
     {
         "category": "I Certain infectious and parasitic diseases (AB1_)",
@@ -97,7 +108,9 @@ expected_phenoresults = [
         'sebeta': 2.23179,
         'maf': 0.00596686,
         'maf_case': 0.0167393,
-        'maf_control': 0.00596554
+        'maf_control': 0.00596554,
+        'extra_1': '5.0',
+        'extra_2_renamed': '0.5'
     },
     {
         "category": "I Certain infectious and parasitic diseases (AB1_)",
@@ -112,7 +125,9 @@ expected_phenoresults = [
         'sebeta': 2.23179,
         'maf': 0.00596686,
         'maf_case': 0.0167393,
-        'maf_control': 0.00596554
+        'maf_control': 0.00596554,
+        'extra_1': '6.0',
+        'extra_2_renamed': '0.6'
     },
 ]
 
@@ -149,28 +164,12 @@ class TestTabixResultLongDao(unittest.TestCase):
         # Load resources
         with open(test_pheno_list_path, "r") as f:
             self.pheno_list_data = json.load(f)
-        self.mocked_pheno_list_data=lambda x:self.pheno_list_data[0]
-        self.split_query = test_variant.split(":")
-        self.variant = Variant(
-            self.split_query[0],
-            self.split_query[1],
-            self.split_query[2],
-            self.split_query[3],
-        )
-        self.validation_value = {
-            "beta":2.05148,
-            "sebeta":1.02193,
-            "maf":0.00598008,
-            "maf_case":0.00992459,
-            "maf_control":0.00597798,
-            "mlogp":1.34969,
-            "pval":0.04470025493374374
-        }
-    
+        self.mocked_pheno_list_data = lambda x: self.pheno_list_data[0]
+
     def validate_phenoresult(self, phenoresult, expected):
         phenoresult_dict = vars(phenoresult)
         columns_to_validate = ["category", "category_index", "phenostring", "n_case", "n_control",
-                "phenocode", "mlogp", "pval", "beta", "sebeta", "maf", "maf_case", "maf_control"]
+                "phenocode", "mlogp", "pval", "beta", "sebeta", "maf", "maf_case", "maf_control", "extra_1", "extra_2_renamed"]
         for column in columns_to_validate:
             self.assertEqual(phenoresult_dict[column], expected[column], f"Mismatch in column '{column}'")
 
