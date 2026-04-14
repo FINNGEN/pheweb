@@ -775,7 +775,7 @@ class TabixResultLongDao(ResultDB):
         self.pheno_map = phenos(0)
     
     def get_p_and_mlogp(self, pval, mlogp):
-        # TODO: change this to match statement
+        # TODO: change this to a match statement
         if pval is None and mlogp is None:
             return None, None
         elif mlogp is not None and pval is not None:
@@ -844,12 +844,7 @@ class TabixResultLongDao(ResultDB):
         top_results = {}
         for variant, pheno_results in results:
             for pheno_result in pheno_results:
-                if top_results.get(pheno_result.phenocode) is None:
-                    top_results[pheno_result.phenocode] = PhenoResults(
-                        pheno=self.pheno_map[pheno_result.phenocode],
-                        assoc=pheno_result,
-                        variant=variant)
-                elif top_results[pheno_result.phenocode].assoc.mlogp < pheno_result.mlogp:
+                if top_results.get(pheno_result.phenocode) is None or top_results[pheno_result.phenocode].assoc.mlogp < pheno_result.mlogp:
                     top_results[pheno_result.phenocode] = PhenoResults(
                         pheno=self.pheno_map[pheno_result.phenocode],
                         assoc=pheno_result,
