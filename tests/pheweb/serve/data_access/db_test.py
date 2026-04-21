@@ -7,11 +7,13 @@ from pheweb.serve.data_access.db import (
     PhenoResult,
     optional_float,
     TabixResultLongDao,
+    AllVariantsSitesDao
 )
 import unittest
 
 test_data_file_path = os.getcwd() + "/tests/mocked-data/mocked_data_long.tsv.gz"
 test_pheno_list_path = os.getcwd() + "/tests/mocked-data/mocked-pheno-list.json"
+mock_sites_file_path = os.getcwd() + "/tests/mocked-data/sites_mocked.tsv.gz"
 
 # mock of the column configuration in pheweb
 test_mocked_columns = {
@@ -153,7 +155,7 @@ class TestDBValidatedInterfacesImplemented(unittest.TestCase):
 
     def test_resultdb_interface_implemented(self):
         tabix_result_long = TabixResultLongDao(
-            self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns
+            self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns, mock_sites_file_path
         )
         with self.assertRaises(not NotImplementedError or AttributeError):
             tabix_result_long.mock_test()
@@ -176,7 +178,7 @@ class TestTabixResultLongDao(unittest.TestCase):
     def test_should_return_get_single_variant_results(self):
         # check get_single_variant_results
         tabix_results = TabixResultLongDao(
-            self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns
+            self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns, mock_sites_file_path
         )
         variant = Variant("1", "13670", "G", "A")
         results = tabix_results.get_single_variant_results(variant)
@@ -184,7 +186,7 @@ class TestTabixResultLongDao(unittest.TestCase):
         self.assertTrue(isinstance(results, (list, tuple)))
         self.assertEqual(results[0], variant)
         variant_results = results[1]
-        self.assertEqual(len(variant_results), 1)
+        self.assertEqual(len(variant_results), 4)
         self.assertTrue(
             len(self.pheno_list_data[0][variant_results[0].phenocode]) > 0
         )
@@ -192,7 +194,7 @@ class TestTabixResultLongDao(unittest.TestCase):
 
     def test_single_should_return_none_if_variant_not_found(self):
         tabix_results = TabixResultLongDao(
-            self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns
+            self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns, mock_sites_file_path
         )
         variant_not_found = Variant("1", "13668", "G", "C")
         results = tabix_results.get_single_variant_results(variant_not_found)
@@ -200,7 +202,7 @@ class TestTabixResultLongDao(unittest.TestCase):
 
     def test_variants_results_returns_empty_list_if_not_found(self):
         tabix_results = TabixResultLongDao(
-            self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns
+            self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns, mock_sites_file_path
         )
         variant_not_found = Variant("1", "13668", "G", "C")
         results = tabix_results.get_variants_results([variant_not_found])
@@ -208,14 +210,14 @@ class TestTabixResultLongDao(unittest.TestCase):
     
     def test_variant_range_returns_empty_list_if_not_found(self):
         tabix_results = TabixResultLongDao(
-            self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns
+            self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns, mock_sites_file_path
         )
         results = tabix_results.get_variant_results_range("1", 10000, 13667)
         self.assertEqual(results, [])
 
     def test_top_pheno_per_range_returns_empty_list_if_not_found(self):
         tabix_results = TabixResultLongDao(
-            self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns
+            self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns, mock_sites_file_path
         )
         results = tabix_results.get_top_per_pheno_variant_results_range("1", 13678, 13680)
         self.assertEqual(results, [])
@@ -224,7 +226,7 @@ class TestTabixResultLongDao(unittest.TestCase):
         """There are three variants for AB1_DIBTHERIA in the test data, and we
         want to make sure that the one with lowest p in the range is found"""
         tabix_results = TabixResultLongDao(
-            self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns
+            self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns, mock_sites_file_path
         )
         results = tabix_results.get_top_per_pheno_variant_results_range("1", 13668, 13675)
         phenocodes_found = set(res.assoc.phenocode for res in results)
@@ -244,7 +246,7 @@ class TestTabixResultLongDao(unittest.TestCase):
         var2 = Variant("1", "13677", "G", "A")
         no_results_var = Variant("1", "13680", "G", "A")
         tabix_results = TabixResultLongDao(
-            self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns
+            self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns, mock_sites_file_path
         )
         results = tabix_results.get_variants_results([var1, var2, no_results_var])
         self.assertEqual(len(results), 2)
@@ -252,15 +254,15 @@ class TestTabixResultLongDao(unittest.TestCase):
         self.assertIn(var2, [r[0] for r in results])
         for res in results:
             if res[0] == var1:
-                self.assertEqual(len(res[1]), 2)
+                self.assertEqual(len(res[1]), 4)
             elif res[0] == var2:
-                self.assertEqual(len(res[1]), 1)
+                self.assertEqual(len(res[1]), 4)
             else:
                 self.fail("Result variants don't match the input")
     
     def test_get_variant_range(self):
         tabix_results = TabixResultLongDao(
-            self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns
+            self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns, mock_sites_file_path
         )
         results = tabix_results.get_variant_results_range("1", 13669, 13680)
         self.assertEqual(len(results), 3)
@@ -283,7 +285,7 @@ class TestTabixResultLongDao(unittest.TestCase):
     
     def test_p_mlogp(self):
         tabix_results = TabixResultLongDao(
-            self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns
+            self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns, mock_sites_file_path
         )
         self.assertEqual(tabix_results.get_p_and_mlogp(None, None), (None, None))
         self.assertEqual(tabix_results.get_p_and_mlogp("0.01", "2"), ("0.01", "2"))
@@ -292,7 +294,7 @@ class TestTabixResultLongDao(unittest.TestCase):
     
     def test_add_extra_attr(self):
         tabix_results = TabixResultLongDao(
-            self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns
+            self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns, mock_sites_file_path
         )
         row = {
             "beta": 0,
@@ -314,3 +316,29 @@ class TestTabixResultLongDao(unittest.TestCase):
         self.assertEqual(phenoresult.extra_col2, "extra_value2")
         # Make sure standard columns are not added as extra attributes
         self.assertEqual(phenoresult.beta, 1.0)
+
+    def test_existing_variant_found(self):
+        variant = Variant("1", "14842", "G", "T")
+        dao = TabixResultLongDao(self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns, mock_sites_file_path)
+        self.assertTrue(dao.variant_exists(variant))
+    
+    def test_non_existing_variant_not_found(self):
+        variant = Variant("1", "14842", "G", "A")
+        dao = TabixResultLongDao(self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns,mock_sites_file_path)
+        self.assertFalse(dao.variant_exists(variant))
+    
+    def test_single_variant_in_sites_without_phenos_returns_placeholders(self):
+        variant = Variant("1", "14842", "G", "T")
+        dao = TabixResultLongDao(self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns, mock_sites_file_path)
+        results = dao.get_single_variant_results(variant)
+        self.assertEqual(results[0], variant)
+        self.assertEqual(len(results[1]), 4)
+        for res in results[1]:
+            self.assertEqual(res.mlogp, None)
+            self.assertEqual(res.pval, None)
+            self.assertEqual(res.beta, None)
+            self.assertEqual(res.sebeta, None)
+            self.assertEqual(res.maf, None)
+            self.assertEqual(res.maf_case, None)
+            self.assertEqual(res.maf_control, None)
+            

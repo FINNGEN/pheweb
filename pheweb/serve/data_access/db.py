@@ -760,11 +760,13 @@ class TabixGnomadDao(GnomadDB):
 
 
 class TabixResultLongDao(ResultDB):
-    def __init__(self, phenos, matrix_path, columns):
+    def __init__(self, phenos, matrix_path, columns, sites_path):
         self.matrix_path = matrix_path
         self.columns = columns
         self.header = gzip.open(self.matrix_path,'rt').readline().strip("\n").split("\t")
+        self.sites_header = gzip.open(sites_path,'rt').readline().strip("\n").split("\t")
         self.pheno_map = phenos(0)
+        self.sites_path = sites_path
     
     def get_p_and_mlogp(self, pval, mlogp):
         # TODO: change this to a match statement
@@ -783,7 +785,31 @@ class TabixResultLongDao(ResultDB):
         for key in row.keys():
             if key not in std_columns and not hasattr(phenoresult, key):
                 setattr(phenoresult, key, row[key])
-                
+    
+    def append_filtered_phenos(
+        self, variant_phenoresult: Tuple[Variant, PhenoResult]
+    ) -> Tuple[Variant, PhenoResult]:
+        '''For a single variant append phenotypes filtered in longformat matrix.
+           Populates missing summary stats with none'''
+
+        phenolist = variant_phenoresult[1]
+        var_phenocodes = [r.phenocode for r in phenolist]
+
+        for phenotype in self.pheno_map:
+            if phenotype not in var_phenocodes:
+                pr = self.get_placeholder_pheno_result(phenotype)
+                phenolist.append(pr)
+        return (variant_phenoresult[0], phenolist)
+    
+    def get_placeholder_pheno_result(self, phenotype):
+        m = self.pheno_map.get(phenotype, {})
+        return PhenoResult(
+            phenotype, m.get("phenostring"), m.get("category"),
+            m.get("category_index"), None, None, None, None,
+            None, None, m.get("num_cases", 0), m.get("num_controls", 0),
+            None, m.get("num_samples", "NA"),
+        )
+
     def get_variant_results_range(
         self, chrom, start, end
     ) -> List[Tuple[Variant, List[PhenoResult]]]:
@@ -859,6 +885,19 @@ class TabixResultLongDao(ResultDB):
                 variant_list.append(result)
         return variant_list
 
+    def variant_exists(self, variant : Variant):
+        header_index = {a:i for i,a in enumerate(self.sites_header)}
+        
+        with pysam.TabixFile(self.sites_path) as tbx_file:
+            tabix_iter = tbx_file.fetch(variant.chr, variant.pos - 1, variant.pos)
+            for line in tabix_iter:
+                split = line.split("\t")
+                ref = split[header_index["ref"]]
+                alt = split[header_index["alt"]]
+                if ref == variant.ref and alt == variant.alt:
+                    return True
+        return False
+
     def get_single_variant_results(
         self, variant: Variant
     ) -> Optional[Tuple[Variant, List[PhenoResult]]]:
@@ -869,7 +908,11 @@ class TabixResultLongDao(ResultDB):
         all_variants = self.get_variant_results_range(variant.chr, variant.pos, variant.pos)
         variant_list = list(filter(lambda res: res[0] == variant, all_variants))
         if len(variant_list) == 1:
-            return variant_list[0]
+            # add the non-significant phenoresults to the result before return
+            return self.append_filtered_phenos(variant_list[0])
+        elif len(variant_list) == 0 and self.variant_exists(variant):
+            # if the variant exists but has no significant phenotypes, return placeholders only
+            return self.append_filtered_phenos((variant, []))
         else:
             return None
 
@@ -1911,6 +1954,7 @@ class DataFactory(object):
         "MATRIX_PATH": common_filepaths["matrix"],
         "ANNOTATION_MATRIX_PATH": common_filepaths["annotation-matrix"],
         "GNOMAD_MATRIX_PATH": common_filepaths["gnomad-matrix"],
+        "SITES_PATH": common_filepaths["sites"],
     }
 
     def __init__(self, config):
