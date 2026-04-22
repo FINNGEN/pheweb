@@ -907,7 +907,7 @@ workflow import_pheweb {
     }
 
     File phenolist = select_first([get_phenolist.phenolist, matrix.phenolist])
-exec_cmd
+
 	call fix_json{
         input:
             pheno_json = phenolist,
