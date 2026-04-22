@@ -15,7 +15,7 @@ import numpy as np
 import pymysql
 from typing import List, Tuple, Dict, Union, Optional, Any
 from ...file_utils import MatrixReader, common_filepaths
-from ...utils import get_phenolist, get_gene_tuples, pvalue_to_mlogp, mlogp_to_pvalue, get_use_phenocode_pheno_map
+from ...utils import get_phenolist, get_gene_tuples, pvalue_to_mlogp, mlogp_to_pvalue, get_p_and_mlogp, get_use_phenocode_pheno_map
 from ..components.health.health_check import default_dao as health_default_dao, HealthSimpleDAO, HealthNotificationDAO, HealthTrivialDAO
 from pheweb.serve.components.autocomplete.sqlite_dao import GeneAliasesSqliteDAO
 from pheweb.serve.data_access.gene_info import NCBIGeneInfoDao
@@ -760,33 +760,25 @@ class TabixGnomadDao(GnomadDB):
 
 
 class TabixResultLongDao(ResultDB):
-    def __init__(self, phenos, matrix_path, columns, sites_path):
+    def __init__(self, phenos, matrix_path, columns, sites_gz_path=None):
         self.matrix_path = matrix_path
         self.columns = columns
         self.header = gzip.open(self.matrix_path,'rt').readline().strip("\n").split("\t")
-        self.sites_header = gzip.open(sites_path,'rt').readline().strip("\n").split("\t")
         self.pheno_map = phenos(0)
-        self.sites_path = sites_path
-    
-    def get_p_and_mlogp(self, pval, mlogp):
-        # TODO: change this to a match statement
-        if pval is None and mlogp is None:
-            return None, None
-        elif mlogp is not None and pval is not None:
-            return pval, mlogp
-        elif mlogp is not None:
-            return mlogp_to_pvalue(float(mlogp)), mlogp
-        elif pval is not None:
-            return pval, pvalue_to_mlogp(float(pval))
+        self.sites_gz_path = sites_gz_path
+        if sites_gz_path:
+            self.sites_header = gzip.open(sites_gz_path,'rt').readline().strip("\n").split("\t")
+        else:
+            print("WARNING: Sites file not provided to TabixResultLongDao. Non-Significant variants will not be shown.")
 
-    def add_extra_columns(self, row : Dict, phenoresult : PhenoResult):
+    def _add_extra_columns(self, row : Dict, phenoresult : PhenoResult):
         # Add any extra columns in row as additional attrributes to the object
         std_columns = ["pheno", "chr", "pos", "ref", "alt", "beta", "sebeta", "maf", "maf_cases", "maf_controls", "pval", "mlogp"]
         for key in row.keys():
             if key not in std_columns and not hasattr(phenoresult, key):
                 setattr(phenoresult, key, row[key])
     
-    def append_filtered_phenos(
+    def _append_filtered_phenos(
         self, variant_phenoresult: Tuple[Variant, PhenoResult]
     ) -> Tuple[Variant, PhenoResult]:
         '''For a single variant append phenotypes filtered in longformat matrix.
@@ -797,11 +789,11 @@ class TabixResultLongDao(ResultDB):
 
         for phenotype in self.pheno_map:
             if phenotype not in var_phenocodes:
-                pr = self.get_placeholder_pheno_result(phenotype)
+                pr = self._get_placeholder_pheno_result(phenotype)
                 phenolist.append(pr)
         return (variant_phenoresult[0], phenolist)
     
-    def get_placeholder_pheno_result(self, phenotype):
+    def _get_placeholder_pheno_result(self, phenotype):
         m = self.pheno_map.get(phenotype, {})
         return PhenoResult(
             phenotype, m.get("phenostring"), m.get("category"),
@@ -827,7 +819,7 @@ class TabixResultLongDao(ResultDB):
                 if phenotype not in self.pheno_map:
                     continue
                 variant = Variant(chrom, row['pos'], row['ref'], row['alt'])
-                pval, mlogp = self.get_p_and_mlogp(row.get("pval"), row.get("mlogp"))
+                pval, mlogp = get_p_and_mlogp(row.get("pval"), row.get("mlogp"))
                 phenoresult = PhenoResult(
                     phenotype,
                     self.pheno_map[phenotype]['phenostring'],
@@ -844,7 +836,7 @@ class TabixResultLongDao(ResultDB):
                     mlogp,
                     self.pheno_map[phenotype].get('num_samples')
                 )
-                self.add_extra_columns(row, phenoresult)
+                self._add_extra_columns(row, phenoresult)
                 results[variant].append(phenoresult)
             variant_list = []
             for result in results.keys():
@@ -885,16 +877,22 @@ class TabixResultLongDao(ResultDB):
                 variant_list.append(result)
         return variant_list
 
-    def variant_exists(self, variant : Variant):
+    def _variant_exists(self, variant : Variant):
+        """
+        Returns true/false if the given variant exists in the dataset,
+        regardless of the significance of the results
+        """
+        if self.sites_gz_path is None:
+            return False
         header_index = {a:i for i,a in enumerate(self.sites_header)}
-        
-        with pysam.TabixFile(self.sites_path) as tbx_file:
+        with pysam.TabixFile(self.sites_gz_path) as tbx_file:
             tabix_iter = tbx_file.fetch(variant.chr, variant.pos - 1, variant.pos)
             for line in tabix_iter:
                 split = line.split("\t")
                 ref = split[header_index["ref"]]
                 alt = split[header_index["alt"]]
-                if ref == variant.ref and alt == variant.alt:
+                pos = split[header_index["pos"]]
+                if ref == variant.ref and alt == variant.alt and pos == str(variant.pos):
                     return True
         return False
 
@@ -909,10 +907,10 @@ class TabixResultLongDao(ResultDB):
         variant_list = list(filter(lambda res: res[0] == variant, all_variants))
         if len(variant_list) == 1:
             # add the non-significant phenoresults to the result before return
-            return self.append_filtered_phenos(variant_list[0])
-        elif len(variant_list) == 0 and self.variant_exists(variant):
+            return self._append_filtered_phenos(variant_list[0])
+        elif len(variant_list) == 0 and self._variant_exists(variant):
             # if the variant exists but has no significant phenotypes, return placeholders only
-            return self.append_filtered_phenos((variant, []))
+            return self._append_filtered_phenos((variant, []))
         else:
             return None
 
@@ -1954,7 +1952,7 @@ class DataFactory(object):
         "MATRIX_PATH": common_filepaths["matrix"],
         "ANNOTATION_MATRIX_PATH": common_filepaths["annotation-matrix"],
         "GNOMAD_MATRIX_PATH": common_filepaths["gnomad-matrix"],
-        "SITES_PATH": common_filepaths["sites"],
+        "SITES_GZ_PATH": common_filepaths["sites_gz"],
     }
 
     def __init__(self, config):

@@ -6,8 +6,7 @@ from pheweb.serve.data_access.db import (
     Variant,
     PhenoResult,
     optional_float,
-    TabixResultLongDao,
-    AllVariantsSitesDao
+    TabixResultLongDao
 )
 import unittest
 
@@ -282,16 +281,7 @@ class TestTabixResultLongDao(unittest.TestCase):
                 self.assertEqual(len(res[1]), 1)
             else:
                 self.fail("Variant outside of the variant range found")
-    
-    def test_p_mlogp(self):
-        tabix_results = TabixResultLongDao(
-            self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns, mock_sites_file_path
-        )
-        self.assertEqual(tabix_results.get_p_and_mlogp(None, None), (None, None))
-        self.assertEqual(tabix_results.get_p_and_mlogp("0.01", "2"), ("0.01", "2"))
-        self.assertEqual(tabix_results.get_p_and_mlogp(None, "2"), (0.01, "2"))
-        self.assertEqual(tabix_results.get_p_and_mlogp("0.01", None), ("0.01", 2))
-    
+
     def test_add_extra_attr(self):
         tabix_results = TabixResultLongDao(
             self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns, mock_sites_file_path
@@ -311,7 +301,7 @@ class TestTabixResultLongDao(unittest.TestCase):
             "Test Phenostring",
             "Test Category",
             1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, None)
-        tabix_results.add_extra_columns(row, phenoresult)
+        tabix_results._add_extra_columns(row, phenoresult)
         self.assertEqual(phenoresult.extra_col1, "extra_value1")
         self.assertEqual(phenoresult.extra_col2, "extra_value2")
         # Make sure standard columns are not added as extra attributes
@@ -320,12 +310,22 @@ class TestTabixResultLongDao(unittest.TestCase):
     def test_existing_variant_found(self):
         variant = Variant("1", "14842", "G", "T")
         dao = TabixResultLongDao(self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns, mock_sites_file_path)
-        self.assertTrue(dao.variant_exists(variant))
+        self.assertTrue(dao._variant_exists(variant))
     
     def test_non_existing_variant_not_found(self):
         variant = Variant("1", "14842", "G", "A")
         dao = TabixResultLongDao(self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns,mock_sites_file_path)
-        self.assertFalse(dao.variant_exists(variant))
+        self.assertFalse(dao._variant_exists(variant))
+    
+    def test_variant_corner_cases(self):
+        one_before = Variant("1", "14841", "G", "A")
+        variant = Variant("1", "14842", "G", "T")
+        one_after = Variant("1", "14843", "G", "A")
+        
+        dao = TabixResultLongDao(self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns,mock_sites_file_path)
+        self.assertFalse(dao._variant_exists(one_before))
+        self.assertTrue(dao._variant_exists(variant))
+        self.assertFalse(dao._variant_exists(one_after))
     
     def test_single_variant_in_sites_without_phenos_returns_placeholders(self):
         variant = Variant("1", "14842", "G", "T")
