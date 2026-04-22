@@ -151,6 +151,10 @@ task annotation {
         header=$(head -1 ${variant_list})
         [[ "$header" =~ "rsids" ]] && [[ "$header" =~ "nearest_genes" ]] && mv pheweb/generated-by-pheweb/sites/sites-unannotated.tsv pheweb/generated-by-pheweb/sites/sites.tsv
 
+		# compress and tabix-index sites.tsv
+        cat pheweb/generated-by-pheweb/sites/sites.tsv |bgzip > pheweb/generated-by-pheweb/sites/sites.tsv.gz
+        tabix -s 1 -b 2 -e 2 pheweb/generated-by-pheweb/sites/sites.tsv.gz
+		
         cd pheweb
 
         [[ -z "${bed_file}" ]] && pheweb download-genes
@@ -166,6 +170,8 @@ task annotation {
 
         for url in ${sep="\t" output_url}; do
             /pheweb/scripts/copy_files.sh pheweb/generated-by-pheweb/sites/sites.tsv                $url/generated-by-pheweb/sites/sites.tsv
+			/pheweb/scripts/copy_files.sh pheweb/generated-by-pheweb/sites/sites.tsv.gz             $url/generated-by-pheweb/sites/sites.tsv.gz
+			/pheweb/scripts/copy_files.sh pheweb/generated-by-pheweb/sites/sites.tsv.gz.tbi         $url/generated-by-pheweb/sites/sites.tsv.gz.tbi
             /pheweb/scripts/copy_files.sh pheweb/generated-by-pheweb/resources/gene_aliases.sqlite3 $url/generated-by-pheweb/resources/gene_aliases.sqlite3
             /pheweb/scripts/copy_files.sh pheweb/generated-by-pheweb/sites/cpras-rsids.sqlite3      $url/generated-by-pheweb/sites/cpras-rsids.sqlite3
             /pheweb/scripts/copy_files.sh /root/.pheweb/cache/genes-b38-v${gene_version}.bed $url/cache/genes-b38-v${gene_version}.bed
@@ -173,10 +179,15 @@ task annotation {
         #copy bed file so that it's used as an output,
         #since cromwell often leaves inputs out even though they have been requested in the metadata.
         cp /root/.pheweb/cache/genes-b38-v${gene_version}.bed pheweb/genes-b38-v${gene_version}.bed
+        # compress and tabix-index sites.tsv
+        cat pheweb/generated-by-pheweb/sites/sites.tsv |bgzip > pheweb/generated-by-pheweb/sites/sites.tsv.gz
+        tabix -s 1 -b 2 -e 2 pheweb/generated-by-pheweb/sites/sites.tsv.gz
     >>>
 
     output {
         File sites_list = "pheweb/generated-by-pheweb/sites/sites.tsv"
+		File sites_gz = "pheweb/generated-by-pheweb/sites/sites.tsv.gz"
+		File sites_gz_tbi = "pheweb/generated-by-pheweb/sites/sites.tsv.gz.tbi"
         File gene_aliases_sqlite3 = "pheweb/generated-by-pheweb/resources/gene_aliases.sqlite3"
         File cpras_rsids_sqlite3 = "pheweb/generated-by-pheweb/sites/cpras-rsids.sqlite3"
         File bed_file_output = "pheweb/genes-b38-v${gene_version}.bed"
@@ -896,7 +907,7 @@ workflow import_pheweb {
     }
 
     File phenolist = select_first([get_phenolist.phenolist, matrix.phenolist])
-
+exec_cmd
 	call fix_json{
         input:
             pheno_json = phenolist,
