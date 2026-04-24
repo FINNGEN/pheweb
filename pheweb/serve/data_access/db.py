@@ -15,7 +15,7 @@ import numpy as np
 import pymysql
 from typing import List, Tuple, Dict, Union, Optional, Any
 from ...file_utils import MatrixReader, common_filepaths
-from ...utils import get_phenolist, get_gene_tuples, pvalue_to_mlogp, get_use_phenocode_pheno_map
+from ...utils import get_phenolist, get_gene_tuples, pvalue_to_mlogp, mlogp_to_pvalue, get_p_and_mlogp, get_use_phenocode_pheno_map
 from ..components.health.health_check import default_dao as health_default_dao, HealthSimpleDAO, HealthNotificationDAO, HealthTrivialDAO
 from pheweb.serve.components.autocomplete.sqlite_dao import GeneAliasesSqliteDAO
 from pheweb.serve.data_access.gene_info import NCBIGeneInfoDao
@@ -758,323 +758,27 @@ class TabixGnomadDao(GnomadDB):
 
         return annotations
 
-def extend_pheno_result(pr : PhenoResult,
-                        record_offset : int,
-                        field_offsets,
-                        row):
-    for key, offset in field_offsets.items():
-        if not hasattr(pr, key):
-            setattr(pr, key, row[record_offset+offset])
-    return pr
 
-class TabixResultCommonDao:
-    def __init__(self, pheno_map):
-        self.pheno_map = pheno_map
-
-    def get_variant_columns_using_header(self, values:list[str], header:list[str],columns:dict[str,str]):
-        hdi = {a:i for i,a in enumerate(header)}
-        phenotype = values[hdi[columns['pheno']]]
-        beta = values[hdi[columns['beta']]]
-        sebeta = values[hdi[columns['sebeta']]] if columns["sebeta"] in hdi else None
-        maf = values[hdi[columns['maf']]] if columns["maf"] in hdi else None
-        maf_case = values[hdi[columns['maf_cases']]] if columns["maf_cases"] in hdi else None
-        maf_control = values[hdi[columns['maf_controls']]] if columns["maf_controls"] in hdi else None
-        mlogp = values[hdi[columns['mlogp']]] if columns["mlogp"] in hdi else None
-        pval = values[hdi[columns['pval']]] if "pval" in hdi else None
-        return phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval
-
-    def get_variant_columns_using_header_offset(self, split, pheno, header_offset, columns):
-        phenotype = pheno[0] if pheno[0] else split[header_offset[columns["pheno"]]]
-        beta = split[pheno[1] + header_offset[columns["beta"]]]
-        sebeta = (
-            split[pheno[1] + header_offset[columns["sebeta"]]]
-            if "sebeta" in columns
-            else None
-        )
-        maf = (
-            split[pheno[1] + header_offset[columns["maf"]]]
-            if "maf" in columns
-            else None
-        )
-        maf_case = (
-            split[pheno[1] + header_offset[columns["maf_cases"]]]
-            if "maf_cases" in columns
-            else None
-        )
-        maf_control = (
-            split[pheno[1] + header_offset[columns["maf_controls"]]]
-            if "maf_controls" in columns
-            else None
-        )
-        mlogp = (
-            split[pheno[1] + header_offset[columns["mlogp"]]]
-            if "mlogp" in columns
-            else None
-        )
-        pval = (
-            split[pheno[1] + header_offset[columns["pval"]]]
-            if "pval" in columns
-            else None
-        )
-        return phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval
-
-    def get_variant_common_columns(self, split, pheno, header_offset, columns, header):
-        """Return the list of common columns phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval
-        """
-        if header_offset is None:
-            return self.get_variant_columns_using_header(split, header,columns)
-        else:
-            return self.get_variant_columns_using_header_offset(split, pheno, header_offset, columns)
-
-    def get_common_pheno_results(self, phenotype, pval, beta, sebeta, maf, maf_case, maf_control, mlogp):
-        """Return the list of PhenoResult
-        """
-        pr = PhenoResult(
-            phenotype,
-            self.pheno_map[phenotype]["phenostring"]
-            if phenotype in self.pheno_map and "phenostring" in self.pheno_map[phenotype]
-            else None,
-            self.pheno_map[phenotype]["category"]
-            if phenotype in self.pheno_map and "category" in self.pheno_map[phenotype]
-            else None,
-            self.pheno_map[phenotype]["category_index"]
-            if phenotype in self.pheno_map and "category_index" in self.pheno_map[phenotype]
-            else None,
-            pval,
-            beta,
-            sebeta,
-            maf,
-            maf_case,
-            maf_control,
-            (
-                self.pheno_map[phenotype]["num_cases"]
-                 if phenotype in self.pheno_map and "num_cases" in self.pheno_map[phenotype]
-                else 0
-            ),
-            (
-                self.pheno_map[phenotype]["num_controls"]
-                if phenotype in self.pheno_map and "num_controls" in self.pheno_map[phenotype]
-                else 0
-            ),
-            mlogp,
-            (
-                self.pheno_map[phenotype]["num_samples"]
-                if phenotype in self.pheno_map and "num_samples" in self.pheno_map[phenotype]
-                else "NA"
-            ),
-        )
-        return pr
-
-    def get_common_variant_results_range(self, chrom, start, end, matrix_path, header, columns, header_offset, phenos):
-        chrom = "23" if chrom == "X" else chrom
-        try:
-            tabix_iter = pysam.TabixFile(matrix_path, parser=None).fetch(
-                chrom, start - 1, end)
-        except ValueError:
-            print(
-                "No variants in the given range. {}:{}-{}".format(chrom, start - 1, end)
-            )
-            return []
-
-        chr_idx = [i for i,e in enumerate(header) if 'chr' in e][0]
-        result = {}
-        for variant_row in tabix_iter:
-            split = variant_row.split("\t")
-            chrom = (
-                split[chr_idx]
-                .replace("chr", "")
-                .replace("X", "23")
-                .replace("Y", "24")
-                .replace("MT", "25")
-            )
-            v = Variant(chrom, split[chr_idx+1], split[chr_idx+2], split[chr_idx+3])
-            for pheno in phenos:
-                # get the common variant columns
-                phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval = self.get_variant_common_columns(
-                    split, pheno, header_offset, columns, header
-                )
-                if mlogp is not None and mlogp is not "" and mlogp != "NA":
-                    if pval is None:
-                        pval = str(math.pow(10, -1 * float(mlogp)))
-                if pval is not None and not pval == "" and not pval == "NA":
-                    pr = self.get_common_pheno_results(
-                        phenotype, pval, beta, sebeta, maf, maf_case, maf_control, mlogp
-                    )
-                    if header_offset is not None:
-                        pr = extend_pheno_result(pr,pheno[1],header_offset,split)
-                    if v in result:
-                        result[v].append(pr)
-                    else:
-                        result[v] = [pr]
-        return result.items()
-
-class TabixResultDao(ResultDB):
-    def __init__(self, phenos, matrix_path, columns):
-
-        self.matrix_path = matrix_path
-        self.pheno_map = phenos(0)
-        self.columns = columns
-        self.header = gzip.open(self.matrix_path,'rt').readline().split("\t")
-        self.phenos = [
-            (h.split("@")[1], p_col_idx)
-            for p_col_idx, h in enumerate(self.header)
-            if h.startswith("pval")
-        ]
-        self.header_offset = {}
-        i = 0
-        for h in self.header:
-            s = h.split("@")
-            if "@" in h:
-                if p is not None and s[1] != p:
-                    break
-                self.header_offset[s[0]] = i
-                i = i + 1
-            p = s[1] if len(s) > 1 else None
-
-        self.tabix_result_common_dao = TabixResultCommonDao(self.pheno_map)
-
-    def get_variant_results_range(self, chrom, start, end):
-        variant_results = self.tabix_result_common_dao.get_common_variant_results_range(
-            chrom, start, end, self.matrix_path, self.header, self.columns, self.header_offset, self.phenos
-        )
-        return variant_results
-
-    def get_single_variant_results(
-        self, variant: Variant
-    ) -> Optional[Tuple[Variant, List[PhenoResult]]]:
-
-        res = self.get_variants_results([variant])
-        for r in res:
-            if r[0] == variant:
-                return r
-        return None
-
-    def get_variants_results(
-        self, variants: List[Variant]
-    ) -> List[Tuple[Variant, PhenoResult]]:
-        if type(variants) is not list:
-            variants = [variants]
-        results = []
-        for v in variants:
-            res = self.get_variant_results_range(v.chr, v.pos, v.pos)
-            for r in res:
-                if r[0] == v:
-                    results.append(r)
-        return results
-
-    def get_top_per_pheno_variant(self, chrom, start, end):
-        """Return the common pheno top per pheno variant
-        """
-        chrom = "23" if chrom == "X" else chrom
-        try:
-            tabix_iter = pysam.TabixFile(self.matrix_path, parser=None).fetch(
-                chrom, start - 1, end
-            )
-
-        except ValueError:
-            print(
-                "No variants in the given range. {}:{}-{}".format(chrom, start - 1, end)
-            )
-            return []
-        top = defaultdict(lambda: defaultdict(dict))
-
-        n_vars = 0
-        ind = [i for i,e in enumerate(self.header) if 'chr' in e][0]
-        for variant_row in tabix_iter:
-            n_vars = n_vars + 1
-            split = variant_row.split("\t")
-            for pheno in self.phenos:
-                # get the common variant columns
-                phenotype, beta, sebeta, maf, maf_case, maf_control, mlogp, pval = self.tabix_result_common_dao.get_variant_common_columns(
-                    split, pheno, self.header_offset, self.columns, self.header
-                )
-                # Pick the smaller of values.  First try using mlog which
-                # maybe absent in earlier releases.  In this case fall back
-                # to using pval to order.
-                if mlogp is not None and mlogp is not "" and mlogp != "NA":
-                    if pval is None:
-                        pval = str(math.pow(10, -1 * float(mlogp)))
-                    # have mlogp compare mlog
-                    is_less_than = (
-                        phenotype not in top or (float(mlogp)) > top[phenotype][1].mlogp
-                    )
-                else:
-                    # we don't have mlogp use pval
-                    is_less_than = (
-                        pval is not ""
-                        and pval != "NA"
-                        and (
-                            phenotype not in top or (float(pval)) < top[phenotype][1].pval
-                        )
-                    )
-                if is_less_than:
-                    pr = self.get_common_pheno_results(
-                        phenotype, pval, beta, sebeta, maf, maf_case, maf_control, mlogp
-                    )
-                    v = Variant(chrom, split[ind+1], split[ind+2], split[ind+3])
-                    top[phenotype] = (v, pr)
-
-        print(str(n_vars) + " variants iterated")
-
-        pheno_results = [
-            PhenoResults(pheno=self.pheno_map[pheno], assoc=dat, variant=v)
-            for pheno, (v, dat) in top.items()
-        ]
-
-        # A hack to handle missing mlogp
-        # as sort is stable it should return
-        # with the the pval order.
-        pheno_results.sort(key=lambda pheno: pheno.assoc.pval)
-        pheno_results.sort(key=lambda pheno: pheno.assoc.mlogp, reverse=True)
-
-        return pheno_results
-
-    def get_top_per_pheno_variant_results_range(self, chrom, start, end):
-        pheno_results = self.get_top_per_pheno_variant(chrom, start, end)
-        return pheno_results
-
-class TabixResultFiltDao(ResultDB):
-    def __init__(self, phenos, matrix_path, columns):
+class TabixResultLongDao(ResultDB):
+    def __init__(self, phenos, matrix_path, columns, sites_gz_path=None):
         self.matrix_path = matrix_path
         self.columns = columns
         self.header = gzip.open(self.matrix_path,'rt').readline().strip("\n").split("\t")
         self.pheno_map = phenos(0)
-        self.tabix_result_common_dao = TabixResultCommonDao(self.pheno_map)
+        self.sites_gz_path = sites_gz_path
+        if sites_gz_path:
+            self.sites_header = gzip.open(sites_gz_path,'rt').readline().strip("\n").split("\t")
+        else:
+            print("WARNING: Sites file not provided to TabixResultLongDao. Non-Significant variants will not be shown.")
 
-    def get_variant_results_range(self, chrom, start, end):
-        variant_results = self.tabix_result_common_dao.get_common_variant_results_range(
-            chrom, start, end, self.matrix_path, self.header, self.columns, None, [(None, 0)]
-        )
-        return variant_results
-
-    def get_single_variant_results(
-        self, variant: Variant
-    ) -> Optional[Tuple[Variant, List[PhenoResult]]]:
-        """
-        Returns all results and annotations for given variant.
-        """
-        res = self.get_variants_results([variant])
-        for r in res:
-            if r[0] == variant:
-                # if matrix is of longformat append rest of the phenotypes for which summary stats were filtered
-                r = self.append_filt_phenos(r)
-                return r
-        return None
-
-    def get_variants_results(
-        self, variants: List[Variant]
-    ) -> List[Tuple[Variant, PhenoResult]]:
-        if type(variants) is not list:
-            variants = [variants]
-        results = []
-        for v in variants:
-            res = self.get_variant_results_range(v.chr, v.pos, v.pos)
-            for r in res:
-                if r[0] == v:
-                    results.append(r)
-        return results
-
-    def append_filt_phenos(
+    def _add_extra_columns(self, row : Dict, phenoresult : PhenoResult):
+        # Add any extra columns in row as additional attrributes to the object
+        std_columns = ["pheno", "chr", "pos", "ref", "alt", "beta", "sebeta", "maf", "maf_cases", "maf_controls", "pval", "mlogp"]
+        for key in row.keys():
+            if key not in std_columns and not hasattr(phenoresult, key):
+                setattr(phenoresult, key, row[key])
+    
+    def _append_filtered_phenos(
         self, variant_phenoresult: Tuple[Variant, PhenoResult]
     ) -> Tuple[Variant, PhenoResult]:
         '''For a single variant append phenotypes filtered in longformat matrix.
@@ -1085,11 +789,59 @@ class TabixResultFiltDao(ResultDB):
 
         for phenotype in self.pheno_map:
             if phenotype not in var_phenocodes:
-                pr = self.tabix_result_common_dao.get_common_pheno_results(phenotype, 'NA', None, None, None, None, None, 'NA')
+                pr = self._get_placeholder_pheno_result(phenotype)
                 phenolist.append(pr)
-
         return (variant_phenoresult[0], phenolist)
+    
+    def _get_placeholder_pheno_result(self, phenotype):
+        m = self.pheno_map.get(phenotype, {})
+        return PhenoResult(
+            phenotype, m.get("phenostring"), m.get("category"),
+            m.get("category_index"), None, None, None, None,
+            None, None, m.get("num_cases", 0), m.get("num_controls", 0),
+            None, m.get("num_samples", "NA"),
+        )
 
+    def get_variant_results_range(
+        self, chrom, start, end
+    ) -> List[Tuple[Variant, List[PhenoResult]]]:
+        with pysam.TabixFile(self.matrix_path) as tbx_file:
+            tabix_iter = tbx_file.fetch(chrom, start - 1, end)
+            # reverse the columns to get a mapping from file to standard column names
+            columns_reverse = {v:k for k,v in self.columns.items()}
+            results = defaultdict(list)
+            for line in tabix_iter:
+                # create a dict with header as keys and line values as values
+                row = dict(zip(self.header, line.split("\t")))
+                # rename the keys in columns config, leave others as is
+                row = {columns_reverse.get(k, k): v for k, v in row.items()}
+                phenotype = row['pheno']
+                if phenotype not in self.pheno_map:
+                    continue
+                variant = Variant(chrom, row['pos'], row['ref'], row['alt'])
+                pval, mlogp = get_p_and_mlogp(row.get("pval"), row.get("mlogp"))
+                phenoresult = PhenoResult(
+                    phenotype,
+                    self.pheno_map[phenotype]['phenostring'],
+                    self.pheno_map[phenotype]['category'],
+                    self.pheno_map[phenotype]['category_index'],
+                    pval,
+                    row.get("beta"),
+                    row.get("sebeta"),
+                    row.get("maf"),
+                    row.get("maf_cases"),
+                    row.get("maf_controls"),
+                    self.pheno_map[phenotype]['num_cases'],
+                    self.pheno_map[phenotype]['num_controls'],
+                    mlogp,
+                    self.pheno_map[phenotype].get('num_samples')
+                )
+                self._add_extra_columns(row, phenoresult)
+                results[variant].append(phenoresult)
+            variant_list = []
+            for result in results.keys():
+                variant_list.append((result, results[result]))
+        return variant_list
 
     def get_top_per_pheno_variant_results_range(
         self, chrom, start, end
@@ -1097,90 +849,76 @@ class TabixResultFiltDao(ResultDB):
         """Retrieves top variant for each phenotype in a given range
         Returns: A list of PhenoResults "pheno" which contains a phenotype dict, and "assoc" containing PhenoResult object, 'variant' contains Variant object. The list is sorted by p-value.
         """
+        results = self.get_variant_results_range(chrom, start, end)
+        top_results = {}
+        for variant, pheno_results in results:
+            for pheno_result in pheno_results:
+                # replace the value in the dict for the phenocode if there is no previous value,
+                # or if the previous value is less significant (p-value) than the new.
+                if top_results.get(pheno_result.phenocode) is None or \
+                    (top_results[pheno_result.phenocode].assoc.mlogp is not None and
+                     top_results[pheno_result.phenocode].assoc.mlogp < pheno_result.mlogp):
+                    top_results[pheno_result.phenocode] = PhenoResults(
+                        pheno=self.pheno_map[pheno_result.phenocode],
+                        assoc=pheno_result,
+                        variant=variant)          
+        return list(top_results.values())
 
-        chrom = "23" if chrom == "X" else chrom
-        try:
-            tabix_iter = pysam.TabixFile(self.matrix_path,parser=None).fetch(
-                chrom, start - 1, end)
-        except:
-            print(
-                "No variants in the given range. {}:{}-{}".format(chrom, start - 1, end)
-            )
-        hdi = {a:i for i,a in enumerate(self.header)}
-        result_dict = {}
-        for variant_row in tabix_iter:
-            cols = variant_row.split("\t")
-            phenotype = cols[hdi["#pheno"]]
-            mlogp = cols[hdi["mlogp"]] if "mlogp" in hdi else None
-            pval = cols[hdi["pval"]] if "pval" in hdi else None
-            beta = cols[hdi["beta"]] if "beta" in hdi else None
-            sebeta = cols[hdi["sebeta"]] if "sebeta" in hdi else None
-            maf = cols[hdi["af_alt"]] if "af_alt" in hdi else None
-            maf_cases = cols[hdi["af_alt_cases"]] if "af_alt_cases" in hdi else None
-            maf_controls = cols[hdi["af_alt_controls"]] if "af_alt_controls" in hdi else None 
-            if mlogp is not None and mlogp is not "" and mlogp != "NA":
-                if pval is None:
-                    pval = str(math.pow(10, -1 * float(mlogp)))
-            else:
-                #convert pval to mlogp
-                try:
-                    mlogp = str(-math.log10(float(pval)))
-                except:
-                    continue
-            pr = PhenoResult(
-                phenotype,
-                self.pheno_map[phenotype]["phenostring"],
-                self.pheno_map[phenotype]["category"],
-                self.pheno_map[phenotype]["category_index"]
-                if "category_index" in self.pheno_map[phenotype]
-                else None,
-                pval,
-                beta,
-                sebeta,
-                maf,
-                maf_cases,
-                maf_controls,
-                self.pheno_map[phenotype]["num_cases"]
-                if "num_cases" in self.pheno_map[phenotype]
-                else 0,
-                self.pheno_map[phenotype]["num_controls"]
-                if "num_controls" in self.pheno_map[phenotype]
-                else 0,
-                mlogp,
-                self.pheno_map[phenotype]["num_samples"]
-                if "num_samples" in self.pheno_map[phenotype]
-                else "NA",
-            )
-            v = Variant(chrom,cols[hdi["pos"]],cols[hdi["ref"]],cols[hdi["alt"]])
-            #determine whether to save this in the result dict
-            if phenotype in result_dict:
-                #use mlogp
-                #all mlogps and pvals are guaranteed to be available, since values with neither are filtered out,
-                #and mlogp is calculated from pval and pval calculated from mlogp if one was missing
-                if not (mlogp is None or mlogp =="" or mlogp == "NA"):
-                    if float(mlogp) > result_dict[phenotype][1].mlogp:
-                        result_dict[phenotype] = (v,pr)
-                #pval
-                elif not (pval is None or pval =="" or pval =="NA"):
-                    if float(pval) < result_dict[phenotype][1].pval:
-                        result_dict[phenotype] = (v,pr)
-                #else: we can't compare, so nothing to do
-            else:
-                result_dict[phenotype] = (v,pr)
-            
+    def get_variants_results(
+        self, variants: List[Variant]
+    ) -> List[Tuple[Variant, List[PhenoResult]]]:
+        """
+        Returns all results and annotations for given variant list. Returns empty list if no results found
+        """
+        variant_list = []
+        for variant in variants:
+            result = self.get_single_variant_results(variant)
+            if result is not None:
+                variant_list.append(result)
+        return variant_list
+
+    def _variant_exists(self, variant : Variant):
+        """
+        Returns true/false if the given variant exists in the dataset,
+        regardless of the significance of the results
+        """
+        if self.sites_gz_path is None:
+            return False
+        header_index = {a:i for i,a in enumerate(self.sites_header)}
+        with pysam.TabixFile(self.sites_gz_path) as tbx_file:
+            tabix_iter = tbx_file.fetch(variant.chr, variant.pos - 1, variant.pos)
+            for line in tabix_iter:
+                split = line.split("\t")
+                ref = split[header_index["ref"]]
+                alt = split[header_index["alt"]]
+                pos = split[header_index["pos"]]
+                if ref == variant.ref and alt == variant.alt and pos == str(variant.pos):
+                    return True
+        return False
+
+    def get_single_variant_results(
+        self, variant: Variant
+    ) -> Optional[Tuple[Variant, List[PhenoResult]]]:
+        """
+        Returns all results and annotations for given variant. Returns tuple of Variant (including updated annotations if any) and phenotype results.
+        Returns None if variant does not exist.
+        """
+        all_variants = self.get_variant_results_range(variant.chr, variant.pos, variant.pos)
+        variant_list = list(filter(lambda res: res[0] == variant, all_variants))
+        if len(variant_list) == 1:
+            # add the non-significant phenoresults to the result before return
+            return self._append_filtered_phenos(variant_list[0])
+        elif len(variant_list) == 0 and self._variant_exists(variant):
+            # if the variant exists but has no significant phenotypes, return placeholders only
+            return self._append_filtered_phenos((variant, []))
+        else:
+            return None
 
 
-        #now we have data for each pheno in the data, then just order
-        pheno_results = [
-            PhenoResults(pheno=self.pheno_map[pheno], assoc=dat, variant=v)
-            for pheno, (v, dat) in result_dict.items()
-        ]
-
-        pheno_results.sort(key=lambda pheno: pheno.assoc.pval)
-        pheno_results.sort(key=lambda pheno: pheno.assoc.mlogp, reverse=True)
-
-        return pheno_results
-
+class TabixResultFiltDao(TabixResultLongDao):
+    def __init__(self, phenos, matrix_path, columns):
+        print("WARNING: TabixResultFiltDao is deprecated. Use TabixResultLongDao instead.")
+        super().__init__(phenos, matrix_path, columns)
 
 class ExternalMatrixResultDao(ExternalResultDB):
     def __init__(self, matrix, metadatafile):
@@ -2214,6 +1952,7 @@ class DataFactory(object):
         "MATRIX_PATH": common_filepaths["matrix"],
         "ANNOTATION_MATRIX_PATH": common_filepaths["annotation-matrix"],
         "GNOMAD_MATRIX_PATH": common_filepaths["gnomad-matrix"],
+        "SITES_GZ_PATH": common_filepaths["sites_gz"],
     }
 
     def __init__(self, config):

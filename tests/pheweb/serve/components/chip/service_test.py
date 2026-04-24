@@ -11,7 +11,7 @@ from werkzeug.exceptions import NotFound
 from pheweb.serve.components.chip.fs_storage import FileChipDAO
 from pheweb.serve.components.chip.model import JeevesContext, ChipDAO
 from pheweb.serve.components.chip.service import chip, development, get_dao
-from tests.pheweb.serve.components.chip.fs_storage_test import (
+from .fs_storage_test import (
     CHIP_CODING_FILE,
     PLOT_ROOT_DIRECTORY,
 )

@@ -50,6 +50,7 @@ common_filepaths = {
     "unanno": get_generated_path("sites/sites-unannotated.tsv"),
     "sites-rsids": get_generated_path("sites/sites-rsids.tsv"),
     "sites": get_generated_path("sites/sites.tsv"),
+    "sites_gz": get_generated_path("sites/sites.tsv.gz"),
     "cpra-to-rsids-trie": get_generated_path("sites/cpra_to_rsids_trie.marisa"),
     "rsid-to-cpra-trie": get_generated_path("sites/rsid_to_cpra_trie.marisa"),
     "matrix": get_generated_path("long.tsv.gz"),

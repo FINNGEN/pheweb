@@ -21,6 +21,7 @@ from pheweb.utils import (
     file_open,
     parse_chromosome,
     beta_to_m_log_p,
+    get_p_and_mlogp,
 )
 from pheweb.utils import round_sig, approx_equal, pad_gene
 
@@ -179,3 +180,10 @@ def test_beta_to_m_log_p() -> None:
     @return: None
     """
     assert beta_to_m_log_p(1.0, 1.0) == 0.4985155458279891
+
+def test_p_mlogp() -> None:
+    assert get_p_and_mlogp(None, None) == (None, None)
+    assert get_p_and_mlogp("0.01", "2") == ("0.01", "2")
+    assert get_p_and_mlogp(None, "2") == (0.01, "2")
+    assert get_p_and_mlogp("0.01", None) == ("0.01", 2)
+    
