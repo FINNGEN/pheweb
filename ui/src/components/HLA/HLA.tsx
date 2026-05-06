@@ -10,7 +10,7 @@ import ReactTooltip from "react-tooltip";
 import HLATable from "./HLATable";
 
 declare let window: ConfigurationWindow;
-const config: { [key: string]: any } = window?.config?.userInterface?.coding?.config || defaultConfig;
+const config: { [key: string]: any } = window?.config?.userInterface?.hla?.config || defaultConfig;
 
 const HLA = (props) => {
 
