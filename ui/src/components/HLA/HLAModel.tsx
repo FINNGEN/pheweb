@@ -20,7 +20,9 @@ export namespace HLAModel {
 
 export default HLAModel;
 
-export interface HLAConfiguration {}
+export interface HLAConfiguration {
+  config? : { [key: string]: any };
+}
 
 export namespace AutoCompleteModel {
     type PhenotypeSearchResultRow = {
