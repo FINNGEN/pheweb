@@ -153,7 +153,7 @@ task annotation {
 
 		# compress and tabix-index sites.tsv
         cat pheweb/generated-by-pheweb/sites/sites.tsv |bgzip > pheweb/generated-by-pheweb/sites/sites.tsv.gz
-        tabix -s 1 -b 2 -e 2 pheweb/generated-by-pheweb/sites/sites.tsv.gz
+        tabix -s 1 -S 1 -b 2 -e 2 pheweb/generated-by-pheweb/sites/sites.tsv.gz
 		
         cd pheweb
 
@@ -179,9 +179,6 @@ task annotation {
         #copy bed file so that it's used as an output,
         #since cromwell often leaves inputs out even though they have been requested in the metadata.
         cp /root/.pheweb/cache/genes-b38-v${gene_version}.bed pheweb/genes-b38-v${gene_version}.bed
-        # compress and tabix-index sites.tsv
-        cat pheweb/generated-by-pheweb/sites/sites.tsv |bgzip > pheweb/generated-by-pheweb/sites/sites.tsv.gz
-        tabix -s 1 -b 2 -e 2 pheweb/generated-by-pheweb/sites/sites.tsv.gz
     >>>
 
     output {

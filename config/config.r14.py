@@ -17,7 +17,7 @@ database_conf = (
                                               "gene_column" : "gene_most_severe" } } },
     #{"missing_variants": { "MissingVariantDao": { "missing_variant_path": "/mnt/nfs/pheweb/r12/release/variant_qc/combined_sorted_output_file.tsv.gz" }}},
     { "result": { 
-        "TabixResultLongDao": { 'const_arguments': [ ("phenos","PHEWEB_PHENOS"), ("matrix_path","MATRIX_PATH"), ("sites_path", "SITES_GZ_PATH") ], 
+        "TabixResultLongDao": { 'const_arguments': [ ("phenos","PHEWEB_PHENOS"), ("matrix_path","MATRIX_PATH"), ("sites_gz_path", "SITES_GZ_PATH") ], 
         "columns" : {"pheno": "#pheno", "mlogp": "mlogp", "beta": "beta", "sebeta": "sebeta", "maf": "af_alt", "maf_cases": "af_alt_cases", "maf_controls": "af_alt_controls"}  } 
     } },
     #{ "autocompleter" : {"AutocompleterMYSQLDAO":{ "const_arguments":[("phenos","PHEWEB_USE_PHENOS")],
