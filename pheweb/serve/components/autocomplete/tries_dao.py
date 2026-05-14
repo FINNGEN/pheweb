@@ -32,7 +32,7 @@ class AutocompleterTriesDAO(AutocompleterDAO):
         logger.info(f"cpra_to_rsids_trie:'{cpra_to_rsids_trie}'")
         logger.info(f"rsid_to_cpra_trie:'{rsid_to_cpra_trie}'")
         logger.info(f"gene_alias_trie:'{gene_alias_trie}'")
-        
+
         self._phenos = copy.deepcopy(phenos())
         self._preprocess_phenos()
 
@@ -145,7 +145,7 @@ class AutocompleterTriesDAO(AutocompleterDAO):
     def _autocomplete_phenocode(self, query):
         query = self._process_string(query)
         for phenocode, pheno in self._phenos.items():
-            if query in pheno['--spaced--phenocode']:
+            if query in pheno.get('--spaced--phenocode', ''):
                 yield {
                     "pheno": phenocode,
                     "display": "{} ({})".format(phenocode, pheno['phenostring']) if 'phenostring' in pheno else phenocode, # TODO: truncate phenostring intelligently
@@ -154,7 +154,7 @@ class AutocompleterTriesDAO(AutocompleterDAO):
     def _autocomplete_phenostring(self, query):
         query = self._process_string(query)
         for phenocode, pheno in self._phenos.items():
-            if query in pheno['--spaced--phenostring']:
+            if query in pheno.get('--spaced--phenostring', ''):
                 yield {
                     "pheno": phenocode,
                     "display": "{} ({})".format(pheno['phenostring'], phenocode),
@@ -215,4 +215,3 @@ class AutocompleterTriesDAO(AutocompleterDAO):
                             "pheno": phenocode,
                             "display": "{} (icd9 string; icd9 code: {}; phewas code: {})".format(icd9['icd9_string'], icd9['icd9_code'], phenocode),
                         }
-

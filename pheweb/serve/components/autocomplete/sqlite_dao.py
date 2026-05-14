@@ -31,7 +31,7 @@ def get_sqlite3_readonly_connection(filepath:str):
     connection = sqlite3.connect('file:{}?mode=ro'.format(urllib.parse.quote(filepath)), uri=True, check_same_thread=False)
     connection.row_factory = sqlite3.Row
     return connection
-    
+
 class GeneAliasesSqliteDAO:
     """
     A data access object (DAO) that provides methods for
@@ -80,8 +80,8 @@ class GeneAliasesSqliteDAO:
         aliases=set()
         with closing(self.connection.cursor()) as cursor:
             sql = """
-                SELECT name                                      
-                FROM key_name                                    
+                SELECT name
+                FROM key_name
                 WHERE key=? or key=upper(?)
                 """
             cursor.execute(sql, [gene, gene])
@@ -153,7 +153,7 @@ class AutocompleterSqliteDAO(AutocompleterDAO):
         # chrom-pos-ref-alt format
         query = query.replace(',', '')
         chrom, pos, ref, alt = parse_variant(query, default_chrom_pos = False)
-        
+
         if chrom is not None:
             key = '-'.join(str(e) for e in [chrom,pos,ref,alt] if e is not None)
             like = f'{key}%'
@@ -193,7 +193,7 @@ class AutocompleterSqliteDAO(AutocompleterDAO):
     def _autocomplete_phenocode(self, query:str) -> Iterator[Dict[str,str]]:
         query = self._process_string(query)
         for phenocode, pheno in self._phenos.items():
-            if query in pheno['--spaced--phenocode']:
+            if query in pheno.get('--spaced--phenocode', ''):
                 yield {
                     'pheno' : phenocode,
                     'display' : "{} ({})".format(phenocode, pheno['phenostring']) if 'phenostring' in pheno else phenocode, # TODO: truncate phenostring intelligently
@@ -202,7 +202,7 @@ class AutocompleterSqliteDAO(AutocompleterDAO):
     def _autocomplete_phenostring(self, query:str) -> Iterator[Dict[str,str]]:
         query = self._process_string(query)
         for phenocode, pheno in self._phenos.items():
-            if query in pheno['--spaced--phenostring']:
+            if query in pheno.get('--spaced--phenostring', ''):
                 yield {
                     'pheno' : phenocode,
                     'display' : "{} ({})".format(pheno['phenostring'], phenocode),
@@ -237,7 +237,7 @@ class AutocompleterSqliteDAO(AutocompleterDAO):
 
     def get_name(self,) -> str:
         return "autocomplete sqlite"
-    
+
     def get_status(self,) -> ComponentStatus:
         try:
             list(self._cpras_rsids_sqlite3.execute('SELECT cpra FROM cpras_rsids LIMIT 1'))

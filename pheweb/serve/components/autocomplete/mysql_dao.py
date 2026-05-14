@@ -49,7 +49,7 @@ class AutocompleterMYSQLDAO(AutocompleterDAO, MysqlDAO):
             return None
         query_tokens = query.strip().lower().split()
         return max(suggestions, key=lambda sugg: self._get_suggestion_quality(query_tokens, sugg['display']))
-    
+
     def _get_suggestion_quality(self, query_tokens:List[str], display:str) -> float:
         suggestion_tokens = display.lower().split()
         intersection_tokens = set(query_tokens).intersection(suggestion_tokens)
@@ -73,14 +73,14 @@ class AutocompleterMYSQLDAO(AutocompleterDAO, MysqlDAO):
         # chrom-pos-ref-alt format
         query = query.replace(',', '')
         chrom, pos, ref, alt = parse_variant(query, default_chrom_pos = False)
-        
+
         if chrom is not None:
             key : str = '-'.join(str(e) for e in [chrom,pos,ref,alt] if e is not None)
             with closing(self.get_connection()) as conn:
                 with conn.cursor(pymysql.cursors.DictCursor) as cursor:
                     sql = """
-                    SELECT cpra,rsid 
-                    FROM cpras_rsids 
+                    SELECT cpra,rsid
+                    FROM cpras_rsids
                     WHERE cpra LIKE %s
                     ORDER BY cpra
                     LIMIT %s
@@ -110,8 +110,8 @@ class AutocompleterMYSQLDAO(AutocompleterDAO, MysqlDAO):
                     for suffix in (''.join(digits) for digits in itertools.product('0123456789', repeat=suffix_length)):
                         with conn.cursor(pymysql.cursors.DictCursor) as cursor:
                             sql = """
-                            SELECT cpra,rsid 
-                            FROM cpras_rsids 
+                            SELECT cpra,rsid
+                            FROM cpras_rsids
                             WHERE rsid=%s
                             """
                             parameters = [f'{key}{suffix}']
@@ -128,10 +128,10 @@ class AutocompleterMYSQLDAO(AutocompleterDAO, MysqlDAO):
             with closing(self.get_connection()) as conn:
                 with conn.cursor(pymysql.cursors.DictCursor) as cursor:
                     sql = """
-                    SELECT cpra,rsid 
-                    FROM cpras_rsids 
+                    SELECT cpra,rsid
+                    FROM cpras_rsids
                     WHERE rsid LIKE %s
-                    ORDER BY length(rsid),rsid DESC 
+                    ORDER BY length(rsid),rsid DESC
                     LIMIT  %s
                     """
                     parameters = [f'{key}%', int(self._limit)]
@@ -145,16 +145,16 @@ class AutocompleterMYSQLDAO(AutocompleterDAO, MysqlDAO):
                             'variant' : cpra_display,
                             'display': display
                         }
-                        
+
     def _autocomplete_phenocode(self, query:str) -> Iterator[Dict[str,str]]:
         query = self._process_string(query)
         for phenocode, pheno in self._phenos.items():
-            if query in pheno['--spaced--phenocode']:
+            if query in pheno.get('--spaced--phenocode', ''):
                 if 'phenostring' in pheno:
                     display=f"{phenocode} {pheno['phenostring']}"
                 else:
                     display=phenocode
-                
+
                 yield {
                     'pheno' : phenocode,
                     'display' : display  # TODO: truncate phenostring intelligently
@@ -163,7 +163,7 @@ class AutocompleterMYSQLDAO(AutocompleterDAO, MysqlDAO):
     def _autocomplete_phenostring(self, query:str) -> Iterator[Dict[str,str]]:
         query = self._process_string(query)
         for phenocode, pheno in self._phenos.items():
-            if query in pheno['--spaced--phenostring']:
+            if query in pheno.get('--spaced--phenostring', ''):
                 yield {
                     'pheno' : phenocode,
                     'display' : f"{pheno['phenostring']} ({phenocode})"
@@ -175,8 +175,8 @@ class AutocompleterMYSQLDAO(AutocompleterDAO, MysqlDAO):
             with closing(self.get_connection()) as conn:
                 with conn.cursor(pymysql.cursors.DictCursor) as cursor:
                     sql = """
-                    SELECT gene_alias, canonicals_comma 
-                    FROM gene_aliases 
+                    SELECT gene_alias, canonicals_comma
+                    FROM gene_aliases
                     WHERE gene_alias LIKE %s
                     ORDER BY LENGTH(gene_alias),gene_alias
                     LIMIT %s
@@ -206,7 +206,7 @@ class AutocompleterMYSQLDAO(AutocompleterDAO, MysqlDAO):
 
     def get_name(self,) -> str:
         return "autocomplete mysql"
-    
+
     def get_status(self,) -> ComponentStatus:
         try:
             with closing(self.get_connection()) as conn:
