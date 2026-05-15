@@ -396,7 +396,7 @@ const idFilter = (filter, row) => row[filter.id] <= filter.value;
 const absoluteValueFilter = (filter, row) => Math.abs(row[filter.id]) > +filter.value
 const numberFilter = (filter, row) => row[filter.id] > +filter.value
 const numberGEFilter = (filter, row) => row[filter.id] >= +filter.value
-export const wordFilter = (filter, row) => row[filter.id].toString().toLowerCase().includes(filter.value.toString().toLowerCase())
+export const wordFilter = (filter, row) => String(row?.[filter.id] ?? "").toLowerCase().includes(String(filter?.value ?? "").toLowerCase())
 
 
 
