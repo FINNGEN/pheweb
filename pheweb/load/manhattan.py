@@ -48,6 +48,9 @@ def make_json_file(result_file, output_file, write_as_given=False):
     write_json(filepath=output_file, data=rv, write_as_given=write_as_given)
 
 def rounded_neglog10(pval, neglog10_pval_bin_size, neglog10_pval_bin_digits):
+    if pval == 0:
+        # this case should not happen
+        return round(math.floor(300 / neglog10_pval_bin_size) * neglog10_pval_bin_size, neglog10_pval_bin_digits)
     return round(math.floor(-math.log10(pval) / neglog10_pval_bin_size) * neglog10_pval_bin_size, neglog10_pval_bin_digits)
 
 def get_pvals_and_pval_extents(pvals, neglog10_pval_bin_size):
@@ -95,7 +98,7 @@ def bin_variants(variant_iterator, bin_length, neglog10_pval_bin_size, neglog10_
         
     # put most-significant variants into the priorityqueue and bin the rest
     hla_variant_pq =MaxPriorityQueue()
-    gw_sig_pq = MaxPriorityQueue()
+
     for variant in variant_iterator:
         if variant['chrom']=="6" and variant['pos'] > conf.hla_begin and variant['pos'] < conf.hla_end:
             hla_variant_pq.add(variant, variant['pval'])
