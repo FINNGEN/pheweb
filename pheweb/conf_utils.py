@@ -199,6 +199,7 @@ def _ensure_conf():
     conf.set_default_value("within_pheno_mask_around_peak", int(500e3))
     conf.set_default_value("between_pheno_mask_around_peak", int(1e6))
     conf.set_default_value("manhattan_num_unbinned", 2000)
+    conf.set_default_value("manhattan_max_num_unbinned", 10000)
     conf.set_default_value("manhattan_unbin_anyway_pval", 5e-8)
     conf.set_default_value("manhattan_hla_num_unbinned", 200)
     conf.set_default_value("hla_begin", 26000000)

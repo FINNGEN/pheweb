@@ -11,6 +11,7 @@ from ..file_utils import VariantFileReader, write_json, common_filepaths
 from .load_utils import MaxPriorityQueue, parallelize_per_pheno, timeit
 
 
+import math
 import numpy as np
 
 @timeit
@@ -39,7 +40,6 @@ def make_json_file(result_file, output_file, write_as_given=False):
             NEGLOG10_PVAL_BIN_SIZE,
             NEGLOG10_PVAL_BIN_DIGITS
         )
-    np_label(unbinned_variants)
 
     rv = {
         'variant_bins': variant_bins,
@@ -48,7 +48,10 @@ def make_json_file(result_file, output_file, write_as_given=False):
     write_json(filepath=output_file, data=rv, write_as_given=write_as_given)
 
 def rounded_neglog10(pval, neglog10_pval_bin_size, neglog10_pval_bin_digits):
-    return round(-math.log10(pval) // neglog10_pval_bin_size * neglog10_pval_bin_size, neglog10_pval_bin_digits)
+    if pval == 0:
+        # this case should not happen
+        return round(math.floor(300 / neglog10_pval_bin_size) * neglog10_pval_bin_size, neglog10_pval_bin_digits)
+    return round(math.floor(-math.log10(pval) / neglog10_pval_bin_size) * neglog10_pval_bin_size, neglog10_pval_bin_digits)
 
 def get_pvals_and_pval_extents(pvals, neglog10_pval_bin_size):
     # expects that NEGLOG10_PVAL_BIN_SIZE is the distance between adjacent bins.
@@ -89,13 +92,13 @@ def bin_variants(variant_iterator, bin_length, neglog10_pval_bin_size, neglog10_
             bins[(chrom_key, pos_bin)] = bin
         #TODO review with juha
         if 'mlogp' in variant:
-            bin["neglog10_pvals"].add(round(variant['mlogp'] // neglog10_pval_bin_size * neglog10_pval_bin_size, neglog10_pval_bin_digits))
+            bin["neglog10_pvals"].add(round(math.floor(variant['mlogp'] / neglog10_pval_bin_size) * neglog10_pval_bin_size, neglog10_pval_bin_digits))
         else:
             bin["neglog10_pvals"].add(rounded_neglog10(variant['pval'], neglog10_pval_bin_size, neglog10_pval_bin_digits))
-
+        
     # put most-significant variants into the priorityqueue and bin the rest
     hla_variant_pq =MaxPriorityQueue()
-    gw_sig_pq = MaxPriorityQueue()
+
     for variant in variant_iterator:
         if variant['chrom']=="6" and variant['pos'] > conf.hla_begin and variant['pos'] < conf.hla_end:
             hla_variant_pq.add(variant, variant['pval'])
@@ -114,9 +117,30 @@ def bin_variants(variant_iterator, bin_length, neglog10_pval_bin_size, neglog10_
 
     max_p = unbinned_variant_pq.peek()
     add_hla = list(hla_variant_pq.pop_all())
+    np_label_peaks(add_hla)
+    
+    unbinned_variants = unbinned_variant_pq._items.values()
+    
+    # label peaks in unbinned variants to be able to prioritize the peaks in unbinning
+    np_label_peaks(unbinned_variants)
+    
+    final_unbinned_variants = []
+    max_unbinned_variants = conf.manhattan_max_num_unbinned
+
+    # bin variants until we have at most max_unbinned_variants unbinned variants left
+    # any peaks are taken to unbinned list
+    while len(unbinned_variant_pq) > 0:
+        v = unbinned_variant_pq.pop()
+        if v.get('peak'):
+            final_unbinned_variants.append(v)
+            max_unbinned_variants -= 1
+        elif len(unbinned_variant_pq) < max_unbinned_variants:
+            final_unbinned_variants.append(v)
+        else:
+            bin_variant(v)
+    
     for v in filter(lambda x: x['pval']<=max_p['pval'], add_hla ):
-        unbinned_variant_pq.add(v, v['pval'])
-    unbinned_variants = list(unbinned_variant_pq.pop_all())
+        final_unbinned_variants.append(v)
 
     # unroll bins into simple array (preserving chromosomal order)
     binned_variants = []
@@ -129,14 +153,13 @@ def bin_variants(variant_iterator, bin_length, neglog10_pval_bin_size, neglog10_
                 del b['startpos']
                 binned_variants.append(b)
 
-    return binned_variants, unbinned_variants
+    return binned_variants, final_unbinned_variants
 
 
 @timeit
-def np_label(variants,check = False):
+def np_label_peaks(variants):
 
     chroms = {}
-    print(len(variants))
     for v in variants:
     #kind of like a defaultdict. if it's the first variant of the chromosome it initalizes an empty list.
     #Now that the value must be a list, we can just append the variant to the chrom specific variant list
@@ -151,7 +174,9 @@ def np_label(variants,check = False):
         pos_dict = {}
         for i,v in enumerate(vs):
             var_array[i] = v['pos'],v['pval']
-            pos_dict[v['pos']] = v
+            # if there are multiple variants on exact same position, keep the one with lowest p
+            if v['pos'] not in pos_dict or v['pval'] < pos_dict[v['pos']]['pval']:
+                pos_dict[v['pos']] = v
         while len(var_array):
             # work with arrays to check results are identical
             #returns best hit?
@@ -164,28 +189,3 @@ def np_label(variants,check = False):
             best_assoc = pos_dict[pos]
             best_assoc['peak'] = True
             peak_variants.append(best_assoc)
-
-    if check or len(variants) < 1000:
-        assert label_peaks(variants) == peak_variants
-        print('new method works')
-
-def label_peaks(variants):
-
-    chroms = {}
-    print(len(variants))
-    peak_variants = []
-    for v in variants:
-        #kind of like a defaultdict. if it's the first variant of the chromosome it initalizes an empty list.
-        #Now that the value must be a list, we can just append the variant to the chrom specific variant list
-        chroms.setdefault(v['chrom'], []).append(v)
-
-
-    for vs in chroms.values():
-        print(f"chrom:{vs[0]['chrom']}")
-        while vs:
-            best_assoc = min(vs, key=lambda assoc: assoc['pval'])
-            #best_assoc['peak'] = True
-            vs = [v for v in vs if abs(v['pos'] - best_assoc['pos']) > conf.within_pheno_mask_around_peak]
-            peak_variants.append(best_assoc)
-
-    return peak_variants
