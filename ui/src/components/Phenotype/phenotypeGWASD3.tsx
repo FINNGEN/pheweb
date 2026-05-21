@@ -220,7 +220,7 @@ const createGWASPlot = (phenotypeCode : string,
         const data = d.target.__data__ ;
         return mustacheText(template, reshape(data));
       })
-      .offset([-6, 0])
+      .offset([-2, 0])
 
     GWASSVG.call(pointTooltip);
 
@@ -264,7 +264,6 @@ const createGWASPlot = (phenotypeCode : string,
       .enter()
       .append('a')
       .attr('class', 'variant_point')
-      .attr('xlink:href', getLinkToLZ)
       .append('circle')
       .attr('id', function (d) {
         return `variant-point-${d.chrom}-${d.pos}-${d.ref}-${d.alt}`;
@@ -276,16 +275,10 @@ const createGWASPlot = (phenotypeCode : string,
         return y_scale(d.pScaled)
       })
       .attr('r', 2.3)
+      .attr('pointer-events', 'none') // let the hover ring capture mouse events, not the point itself
       .style('fill', function (d) {
         return color_by_chrom(d.chrom) as unknown as string; // TODO
       })
-      .on('mouseover', function (d) {
-        if (d.isDisabled !== true) {
-          //Note: once a tooltip has been explicitly placed once, it must be explicitly placed forever after.
-          pointTooltip.show(d, this)
-        }
-      })
-      .on('mouseout', pointTooltip.hide)
 
     // https://stackoverflow.com/questions/38233003/d3-js-v4-how-to-access-parent-groups-datum-index
     var bins = GWASPlot.append('g')
