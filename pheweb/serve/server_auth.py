@@ -5,20 +5,29 @@ import functools
 from .group_based_auth  import verify_membership
 from flask import g
 
+def _is_api_request() -> bool:
+    """Return True for fetch/XHR API calls that cannot follow OAuth redirects."""
+    return request.path.startswith('/api/')
+
+
 def before_request():
-    
+
     if not conf.authentication:
         print('anonymous visited {!r}'.format(request.path))
         return None
     elif getattr(g, 'is_test', None) == True:
         return None
     elif current_user is None or not hasattr(current_user, 'email'):
+        if _is_api_request():
+            return jsonify({'status': 'error', 'message': 'not authenticated'}), 401
         return redirect(url_for('get_authorized',
                                 _scheme='https',
                                 _external=True))
     elif not verify_membership(current_user.email):
         print('{} is unauthorized and visited {!r}'.format(current_user.email, request.path))
         session['original_destination'] = request.path
+        if _is_api_request():
+            return jsonify({'status': 'error', 'message': 'not authorized'}), 403
         return redirect(url_for('get_authorized',
                                 _scheme='https',
                                 _external=True))
