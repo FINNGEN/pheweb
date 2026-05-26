@@ -1,15 +1,14 @@
-from ..utils import get_phenolist, get_use_phenocode_pheno_map, get_gene_tuples, pad_gene
+from ..utils import get_phenolist, get_use_phenocode_pheno_map, pad_gene
 from ..conf_utils import conf
 from ..file_utils import common_filepaths
 from .server_utils import get_pheno_region
 from .auth import GoogleSignIn
-from ..version import version as pheweb_version
 from typing import Optional
 from flask import Blueprint
 from ..text_utils import text_to_boolean
 from .data_access.db import Variant
 
-from flask import Flask, jsonify, render_template, request, redirect, abort, flash, current_app, send_from_directory, send_file, session, url_for,make_response
+from flask import Flask, jsonify, render_template, request, redirect, abort, flash, send_from_directory, session, url_for,make_response
 from flask_compress import Compress
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user
 from prometheus_flask_exporter import PrometheusMetrics
@@ -20,23 +19,19 @@ import ipaddress
 import urllib
 import urllib.parse as urlparse
 from urllib.parse import urlencode
-import functools
 import importlib
 import re
 import math
 import traceback
-import json
 import os.path
-from .data_access import DataFactory
 from concurrent.futures import ThreadPoolExecutor
 
 from .server_jeeves  import ServerJeeves
 
-from collections import defaultdict
 from .encoder import FGJSONEncoder
 from .group_based_auth  import verify_membership
 
-from .server_auth import before_request, is_public, do_check_auth
+from .server_auth import is_public, do_check_auth
 
 from pheweb.serve.components.colocalization.view import colocalization
 from .components.chip.service import chip

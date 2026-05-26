@@ -13,8 +13,11 @@ const Logout = () => {
         getAuthentication(setCurrentUser)
     },[]);
 
-    const logoutHandler = (l : LogoutMessage) => { window.location.replace(logout_url.toString()) }
-    const clickHandler = () => doLogout(logoutHandler)
+    const logoutHandler = (_l : LogoutMessage) => { window.location.replace(logout_url.toString()) }
+    const clickHandler = (e : React.MouseEvent<HTMLAnchorElement>) => {
+        e.preventDefault()
+        doLogout(logoutHandler)
+    }
 
     const result = (currentUser === undefined)?
         <></>:
