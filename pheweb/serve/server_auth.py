@@ -1,9 +1,7 @@
-from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user
-from flask import Flask, jsonify, render_template, request, redirect, abort, flash, send_from_directory, send_file, session, url_for,make_response
+from flask_login import current_user
+from flask import jsonify, request, redirect, session, url_for, g
 from ..conf_utils import conf
-import functools
-from .group_based_auth  import verify_membership
-from flask import g
+from .group_based_auth import verify_membership
 
 def _is_api_request() -> bool:
     """Return True for fetch/XHR API calls that cannot follow OAuth redirects."""
