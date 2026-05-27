@@ -511,7 +511,7 @@ const Variant = (props : Props) => {
       {'results' in variantData && <VariantLavaaPlot variantData={variantDataPlots}/>}
       </div>
 
-      <div>
+      <div style={{ overflowX: 'auto'}}>
         {'results' in variantData && <VariantLocusZoom variantData={variantDataPlots}/>}
       </div>
 
