@@ -125,6 +125,7 @@ task annotation {
 
     File? rsids_file
     File? bed_file
+    File non_alt_loci_set
 
     File variant_list
 
@@ -145,6 +146,7 @@ task annotation {
         # TODO this file also appears : generated-by-pheweb/sites/dbSNP/dbsnp-b151-GRCh38.gz
         [[ -z "${rsids_file}" ]] || mv ${rsids_file} pheweb/generated-by-pheweb/sites/dbSNP/rsids-b38-dbsnp151.vcf.gz
         [[ -z "${bed_file}" ]] || mv ${bed_file} /root/.pheweb/cache/genes-b38-v${gene_version}.bed
+        mv ${non_alt_loci_set} pheweb/non_alt_loci_set.json
         
         zcat -f ${variant_list} > pheweb/generated-by-pheweb/sites/sites-unannotated.tsv
         # Check header if variant list is already annotated, then move it with appropriate name

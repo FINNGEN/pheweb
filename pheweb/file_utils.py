@@ -47,6 +47,7 @@ common_filepaths = {
     "rsids": get_cacheable_file_location(
         "sites/dbSNP", f'rsids-b{genome_build}-dbsnp{dbsnp_version}.vcf.gz'
     ),
+    "hgnc_non_alt_loci_set":os.path.join(conf.data_dir,"non_alt_loci_set.json"),
     "unanno": get_generated_path("sites/sites-unannotated.tsv"),
     "sites-rsids": get_generated_path("sites/sites-rsids.tsv"),
     "sites": get_generated_path("sites/sites.tsv"),
