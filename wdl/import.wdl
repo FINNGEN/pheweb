@@ -243,15 +243,9 @@ task pheno {
     File bed_file
 	Int gene_version
 
-    File? gnomad_filepath
-    File? annotation_filepath
-    File? gnomad_filepath_tbi = gnomad_filepath + ".tbi"
-    File? annotation_filepath_tbi = annotation_filepath + ".tbi"
-
     String base_name = sub(basename(pheno_file), file_affix, "")
     String pheno_name = sub(base_name, ".gz$", "")
 
-    Boolean annotate_manhattan = defined(gnomad_filepath) && defined(annotation_filepath) && defined(gnomad_filepath_tbi) && defined(annotation_filepath_tbi)
 	Boolean compress_manhattan = false
 
 	# translate manhattan flags
