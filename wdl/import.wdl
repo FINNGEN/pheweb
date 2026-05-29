@@ -288,9 +288,7 @@ task pheno {
         pheweb phenolist extract-phenocode-from-filepath --simple && \
         pheweb augment-phenos && \
         pheweb manhattan && \
-        ([[ -z "${gnomad_filepath}" ]] || \
-        [[ -z "${annotation_filepath}" ]] || \
-        pheweb annotate-manhattan --gnomad_filepath=${gnomad_filepath} --annotation_filepath=${annotation_filepath} --compress=${compress_flag}) && \
+        ([[ "${compress_flag}" == "false" ]] || gzip generated-by-pheweb/manhattan/${pheno_name}.json) && \
         pheweb qq && \
         pheweb bgzip-phenos &&
         find ./
