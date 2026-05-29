@@ -1,0 +1,4 @@
+{
+  "generate_manhattan.manhattan.docker": "europe-west1-docker.pkg.dev/phewas-development/fg-phewas-registry/pheweb:<docker image tag>",
+  "generate_manhattan.pheno_file_loc": "gs://path to a text file with all pheno file locations, one per line"
+}
