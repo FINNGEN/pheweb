@@ -34,11 +34,13 @@ const reshapeResult = (result: AutoCompleteModel.Row) => {
 const customStyles = {
     container: provided => ({
         ...provided,
-        width: 500
+        width: 500,
+        maxWidth: '90vw',
     }),
     control: provided => ({
         ...provided,
         width: 500,
+        maxWidth: '90vw',
         height: 10
     }),
 }
@@ -52,7 +54,7 @@ const Search = () => {
     )
     return (<form className="form-inline">
         <Select
-            placeholder={'Show all HLA results for a variant, gene, or phenotype'}
+            placeholder={'Search by variant, gene, or phenotype'}
             onChange={onChange}
             options={autoCompleteOptions}
             menuPosition="fixed"

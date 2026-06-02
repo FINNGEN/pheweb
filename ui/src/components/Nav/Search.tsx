@@ -43,11 +43,13 @@ const loadOptions = (query: string,callBack) => {
 const customStyles = {
   container: provided => ({
     ...provided,
-    width: 400
+    maxWidth: '95vw',
+    width: 400,
   }),
   control: provided => ({
     ...provided,
     width: 400,
+    maxWidth: '95vw',
     height: 10
   }),
 }

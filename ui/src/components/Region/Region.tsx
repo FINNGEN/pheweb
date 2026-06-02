@@ -23,7 +23,9 @@ const RegionContent = () => {
     <RegionSummary />
     <RegionSelection />
     <RegionMessage />
-    <RegionLocusZoom />
+    <div style={{ overflowX: 'auto', width: '100%' }}>
+      <RegionLocusZoom />
+    </div>
     <RegionColocalization />
   </div>
 
