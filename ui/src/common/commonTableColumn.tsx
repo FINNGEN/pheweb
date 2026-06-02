@@ -91,9 +91,9 @@ const betaVariantTableFormatter = (props) => {
     result =  (+props.value).toExponential(1);
   } else if (props.value === null ){
     result =  (
-      <p style={{ fontWeight: 'bold', minWidth: props.width * 3,
-                  textAlign: 'center', position: 'absolute',
-                  overflow: 'overlay'}}>Not significant. Click to see stats</p>
+      <p style={{ fontWeight: 'bold', whiteSpace: 'nowrap',
+                  textAlign: 'left',
+                }}>Not significant. Click to see stats</p>
     )
   } else {
     result = props.value;
@@ -1537,7 +1537,8 @@ const phenotypeColumns = {
     accessor: "beta",
     id: 'beta',
     minWidth: 5 * emsize ,
-    width: 5 * emsize
+    width: 5 * emsize,
+    style: { overflow: 'visible' },
   },
   phenocode: {
       Header: () => (<span title="phenocode" style={{ textDecoration: "underline" }}>phenocode</span>),
