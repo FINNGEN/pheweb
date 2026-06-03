@@ -824,7 +824,7 @@ class TabixResultLongDao(ResultDB):
                     phenotype,
                     self.pheno_map[phenotype]['phenostring'],
                     self.pheno_map[phenotype]['category'],
-                    self.pheno_map[phenotype]['category_index'],
+                    self.pheno_map[phenotype].get('category_index',0),
                     pval,
                     row.get("beta"),
                     row.get("sebeta"),

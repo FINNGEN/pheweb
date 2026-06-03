@@ -237,7 +237,7 @@ def pvalue_to_mlogp(p_value: float) -> float:
 def mlogp_to_pvalue(mlogp : float) -> float:
     return 10 ** (-mlogp)
 
-def get_p_and_mlogp(pval, mlogp):
+def get_p_and_mlogp(pval, mlogp) -> tuple[float|None,float|None]:
     """
     We might have either of the p and mlogp, both or none.
     This function returns both, if at least one is present.
@@ -249,7 +249,7 @@ def get_p_and_mlogp(pval, mlogp):
         return pval, mlogp
     elif mlogp is not None:
         return mlogp_to_pvalue(float(mlogp)), mlogp
-    elif pval is not None:
+    else:
         return pval, pvalue_to_mlogp(float(pval))
     
 def beta_to_m_log_p(beta: float, se_beta: float) -> float:
