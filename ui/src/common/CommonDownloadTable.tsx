@@ -59,6 +59,7 @@ const CommonDownloadTable = <TableData,RowType extends {}>
       }
     }
     const body = <div>
+      <div style={{ overflowX: 'auto', width: '100%' }}>
       <ReactTable
         ref={setReactTableRef}
         data={dataToTableRows(tableData)}
@@ -68,6 +69,7 @@ const CommonDownloadTable = <TableData,RowType extends {}>
         SubComponent={subComponent}
         getTrProps={getTrProps}
         {...tableProperties  } />
+      </div>
       <p>
 
       </p>

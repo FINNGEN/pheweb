@@ -13,7 +13,7 @@ const PhenotypeGWASPlot = () => {
   }, [phenotypeCode, phenotypeVariantData])
 
   return (
-    <div style={{ overflowX: 'auto'}}>
+    <div style={{ overflowX: 'auto', width: '100%' }}>
       <div id='manhattan_plot_container'/>
     </div>
   );

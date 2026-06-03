@@ -98,7 +98,7 @@ export const region_layout: (region: Region) => Layout = (region: Region) => {
 
 		width: width,
 		height: 800,
-		"min_width": width,
+		"min_width": 800,
 	    "min_height": 100,
 		responsive_resize: 'both',
 		"resizable": "responsive",
