@@ -7,12 +7,10 @@ interface Props {}
 
 const default_footer: string = `
 {{#selectedPhenotype}}
-<div class="row">
-    <div class="pheno-info col-xs-12">
-      <p style="margin-bottom: 0"><b>{{assoc.phenostring}}</b></p>
-          <p style="margin-bottom: 0"><b>{{assoc.n_case}}</b> cases, <b>{{assoc.n_control}}</b> controls</p>
-          <p style="margin-bottom: 0">{{assoc.category}}</p>
-    </div>
+<div class="pheno-info">
+  <p style="margin-bottom: 0"><b>{{assoc.phenostring}}</b></p>
+  <p style="margin-bottom: 0"><b>{{assoc.n_case}}</b> cases, <b>{{assoc.n_control}}</b> controls</p>
+  <p style="margin-bottom: 0">{{assoc.category}}</p>
 </div>
 {{/selectedPhenotype}}
 `

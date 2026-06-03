@@ -73,10 +73,8 @@ const CommonDownloadTable = <TableData,RowType extends {}>
       <p>
 
       </p>
-      <div className="row">
-        <div className="col-xs-12">
-          <div className="btn btn-primary" onClick={downloadHandler}>Download table</div>
-        </div>
+      <div>
+        <div className="btn btn-primary" onClick={downloadHandler}>Download table</div>
       </div>
 
       <CSVLink
