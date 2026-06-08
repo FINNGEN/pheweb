@@ -181,20 +181,15 @@ const ColocalizationList = (props : Props) => {
                          className="-striped -highlight"
                          useFlexLayout />
             <p></p>
-            <div className="row">
-                <div className="col-xs-12">
-                    <CSVLink
-                        headers={headers(listMetadata)}
-                        data={ colocFiltBySource.map(flatten) }
-                        separator={'\t'}
-                        enclosingCharacter={''}
-                        filename={`colocalization.tsv`}
-                        className="btn btn-primary"
-                        target="_blank">Download Table
-                    </CSVLink>
-                </div>
-
-            </div>
+            <CSVLink
+                headers={headers(listMetadata)}
+                data={ colocFiltBySource.map(flatten) }
+                separator={'\t'}
+                enclosingCharacter={''}
+                filename={`colocalization.tsv`}
+                className="btn btn-primary"
+                target="_blank">Download Table
+            </CSVLink>
         </div>);
     } else {
         return (<div>Loading ... </div>);

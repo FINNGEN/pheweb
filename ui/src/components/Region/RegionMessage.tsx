@@ -9,13 +9,11 @@ const p_threshold = config?.lz_configuration?.p_threshold;
 
 const RegionMessage =  (props : Props) => {
     if(p_threshold) {
-        return (<div className="row">
-                    <div className="col-xs-12">
-                        <p>Variants with a p-value smaller {p_threshold} than are shown</p>
-                    </div>
+        return (<div>
+                    <p>Variants with a p-value smaller {p_threshold} than are shown</p>
                 </div>);
     } else {
-        return (<div className="row"></div>);
+        return (<div></div>);
     }
 
 }

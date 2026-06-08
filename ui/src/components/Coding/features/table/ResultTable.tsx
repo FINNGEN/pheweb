@@ -646,6 +646,7 @@ export const ResultTable = () => {
           arrowColor="transparent"
           html={true}
         />
+        <div style={{ overflowX: 'auto', width: '100%' }}>
         <table className="codingTable" {...getTableProps()}>
           <thead>
             {headerGroups.map((headerGroup) => (
@@ -701,6 +702,7 @@ export const ResultTable = () => {
             })}
           </tbody>
         </table>
+        </div>
         <div className="pagination">
           <button onClick={() => gotoPage(0)} disabled={!canPreviousPage}>
             {"<<"}
