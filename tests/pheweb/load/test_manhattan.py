@@ -221,6 +221,18 @@ class TestHLAVariants:
         _, unbinned = _call(variants, manhattan_hla_num_unbinned=5)
         assert not any(v['pval'] == 0.1 for v in unbinned)
 
+    def test_hla_binned_correctly(self):
+        variants = [
+            _v('6', 26_500_000, 0.05, mlogp=1.5),   # HLA, more sig, stays in hla_pq, binned
+            _v('6', 27_000_000, 0.1, mlogp=1.0),    # HLA, less sig, binned
+            _v('6', 27_500_000, 0.001, mlogp=3.0),  # HLA, most sig, unbinned
+            _v('1', 1_000_000, 0.01, mlogp=2.0),    # non-HLA anchor
+        ]
+        binned, unbinned = _call(variants, manhattan_hla_num_unbinned=2)
+        # two of the HLA variants should be binned, one unbinned
+        assert len(binned) == 2
+        assert len(unbinned) == 2
+
     def test_chrom6_variant_outside_hla_region_treated_as_non_hla(self):
         # Variant on chrom 6 but position is before hla_begin
         variants = [
