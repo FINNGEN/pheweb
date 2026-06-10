@@ -139,8 +139,12 @@ def bin_variants(variant_iterator, bin_length, neglog10_pval_bin_size, neglog10_
         else:
             bin_variant(v)
     
-    for v in filter(lambda x: x['pval']<=max_p['pval'], add_hla ):
-        final_unbinned_variants.append(v)
+    # unbin hla variants if they are at least as significant as the least significant variant included. bin the rest
+    for v in add_hla:
+        if v['pval'] < max_p['pval']:
+            final_unbinned_variants.append(v)
+        else:
+            bin_variant(v)
 
     # unroll bins into simple array (preserving chromosomal order)
     binned_variants = []
