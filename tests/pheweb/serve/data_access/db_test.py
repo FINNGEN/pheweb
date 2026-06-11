@@ -185,7 +185,7 @@ class TestTabixResultLongDao(unittest.TestCase):
         self.assertTrue(isinstance(results, (list, tuple)))
         self.assertEqual(results[0], variant)
         variant_results = results[1]
-        self.assertEqual(len(variant_results), 4)
+        self.assertEqual(len(variant_results), 5)
         self.assertTrue(
             len(self.pheno_list_data[0][variant_results[0].phenocode]) > 0
         )
@@ -253,9 +253,9 @@ class TestTabixResultLongDao(unittest.TestCase):
         self.assertIn(var2, [r[0] for r in results])
         for res in results:
             if res[0] == var1:
-                self.assertEqual(len(res[1]), 4)
+                self.assertEqual(len(res[1]), 5)
             elif res[0] == var2:
-                self.assertEqual(len(res[1]), 4)
+                self.assertEqual(len(res[1]), 5)
             else:
                 self.fail("Result variants don't match the input")
     
@@ -332,7 +332,7 @@ class TestTabixResultLongDao(unittest.TestCase):
         dao = TabixResultLongDao(self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns, mock_sites_file_path)
         results = dao.get_single_variant_results(variant)
         self.assertEqual(results[0], variant)
-        self.assertEqual(len(results[1]), 4)
+        self.assertEqual(len(results[1]), 5)
         for res in results[1]:
             self.assertEqual(res.mlogp, None)
             self.assertEqual(res.pval, None)
@@ -341,4 +341,18 @@ class TestTabixResultLongDao(unittest.TestCase):
             self.assertEqual(res.maf, None)
             self.assertEqual(res.maf_case, None)
             self.assertEqual(res.maf_control, None)
-            
+    
+    def test_chromosome_X(self):
+        tabix_results = TabixResultLongDao(
+            self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns, mock_sites_file_path
+        )
+        results_x = tabix_results.get_variant_results_range("X", 10000, 20000)
+        assert len(results_x) == 1
+        assert results_x[0][0].chr == 23
+        results_23 = tabix_results.get_variant_results_range("23", 10000, 20000)
+        assert len(results_23) == 1
+        assert results_23[0][0].chr == 23
+        results_y = tabix_results.get_variant_results_range("Y", 10000, 20000)
+        assert len(results_y) == 0
+        results_24 = tabix_results.get_variant_results_range("24", 10000, 20000)
+        assert len(results_24) == 0
