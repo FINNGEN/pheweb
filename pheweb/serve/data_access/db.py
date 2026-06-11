@@ -15,7 +15,7 @@ import numpy as np
 import pymysql
 from typing import List, Tuple, Dict, Union, Optional, Any
 from ...file_utils import MatrixReader, common_filepaths
-from ...utils import get_phenolist, get_gene_tuples, pvalue_to_mlogp, mlogp_to_pvalue, get_p_and_mlogp, get_use_phenocode_pheno_map
+from ...utils import get_phenolist, get_gene_tuples, pvalue_to_mlogp, mlogp_to_pvalue, get_p_and_mlogp, get_use_phenocode_pheno_map, parse_chromosome
 from ..components.health.health_check import default_dao as health_default_dao, HealthSimpleDAO, HealthNotificationDAO, HealthTrivialDAO
 from pheweb.serve.components.autocomplete.sqlite_dao import GeneAliasesSqliteDAO
 from pheweb.serve.data_access.gene_info import NCBIGeneInfoDao
@@ -806,6 +806,8 @@ class TabixResultLongDao(ResultDB):
         self, chrom, start, end
     ) -> List[Tuple[Variant, List[PhenoResult]]]:
         with pysam.TabixFile(self.matrix_path) as tbx_file:
+            if isinstance(chrom, str):
+                chrom = parse_chromosome(chrom)
             tabix_iter = tbx_file.fetch(chrom, start - 1, end)
             # reverse the columns to get a mapping from file to standard column names
             columns_reverse = {v:k for k,v in self.columns.items()}
