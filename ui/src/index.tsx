@@ -19,6 +19,7 @@ import './assets/common.css'
 import './assets/react-style.css'
 import 'locuszoom/dist/locuszoom.css'
 import 'bootstrap/dist/css/bootstrap.min.css'
+import 'bootstrap/dist/js/bootstrap.bundle.min'
 import Nav from './components/Nav/Nav'
 
 const element = document.getElementById('root')

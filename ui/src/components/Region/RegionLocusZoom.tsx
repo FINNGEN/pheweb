@@ -25,14 +25,11 @@ const RegionLocusZoom =  (props : Props) => {
     },[locusZoomData, region, setLocusZoomContext]);
 
     if(region) {
-        return (<div className="row">
-            <div className="col-xs-12">
-                <div id="lz-1" className="lz-locuszoom-container lz-container-responsive" data-region={ locusToStr(region.region) }></div>
-            </div>
-        </div>);
-
+        return (
+            <div id="lz-1" className="lz-locuszoom-container lz-container-responsive" data-region={ locusToStr(region.region) } style={{ minWidth: '800px' }}></div>
+        );
     } else {
-        return (<div className="row"></div>);
+        return (<div></div>);
     }
 
 }

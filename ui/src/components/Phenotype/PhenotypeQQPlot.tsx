@@ -26,9 +26,9 @@ const PhenotypeQQPlot = () => {
       createQQPlot([{ maf_range: [0, 1], qq: qq.overall.qq, count: qq.overall.count }])
     }
     return <>
-      <div style={{ float: 'left' }}>
+      <div>
         <h3>QQ plot</h3>
-        <div id='qq_plot_container' style={{ width: '400px' }} />
+        <div id='qq_plot_container' style={{ width: '100%', maxWidth: '400px' }} />
         {qqTable}
       </div>
     </>;

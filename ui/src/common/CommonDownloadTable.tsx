@@ -59,6 +59,7 @@ const CommonDownloadTable = <TableData,RowType extends {}>
       }
     }
     const body = <div>
+      <div style={{ overflowX: 'auto', width: '100%' }}>
       <ReactTable
         ref={setReactTableRef}
         data={dataToTableRows(tableData)}
@@ -68,13 +69,12 @@ const CommonDownloadTable = <TableData,RowType extends {}>
         SubComponent={subComponent}
         getTrProps={getTrProps}
         {...tableProperties  } />
+      </div>
       <p>
 
       </p>
-      <div className="row">
-        <div className="col-xs-12">
-          <div className="btn btn-primary" onClick={downloadHandler}>Download table</div>
-        </div>
+      <div>
+        <div className="btn btn-primary" onClick={downloadHandler}>Download table</div>
       </div>
 
       <CSVLink

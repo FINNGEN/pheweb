@@ -61,7 +61,9 @@ const GeneContent = () => {
     }
     <div id={showTableOfContents ? tableOfContentsComponentIds['associationResults'] : null}>
       <GenePhenotypeAssociation/>
-      <GeneLocusZoom />
+      <div style={{ overflowX: 'auto', width: '100%' }}>
+        <GeneLocusZoom />
+      </div>
     </div>
     <div id={showTableOfContents ? tableOfContentsComponentIds['geneFunctionalVariants'] : null}>
       <GeneFunctionalVariants/>

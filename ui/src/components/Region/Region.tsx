@@ -17,13 +17,14 @@ type Props = RouteComponentProps<RegionParams>;
 const RegionContent = () => {
   const { error } = useRegionContext();
 
-  const content = <div id="b85c6b35-146e-438d-a38a-2a80cd3b46f6" className="container-fluid"
-       style={{ width: "95%" }}>
+  const content = <div>
     <RegionBanner />
     <RegionSummary />
     <RegionSelection />
     <RegionMessage />
-    <RegionLocusZoom />
+    <div style={{ overflowX: 'auto', width: '100%' }}>
+      <RegionLocusZoom />
+    </div>
     <RegionColocalization />
   </div>
 

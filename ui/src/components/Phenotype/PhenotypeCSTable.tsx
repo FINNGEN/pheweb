@@ -13,7 +13,7 @@ type LocusGroups =  [{ [locus_id: string]: LocusGroupEntry }];
 declare let window: ConfigurationWindow;
 const configuration = window?.config?.userInterface?.phenotype?.credibleSet;
 
-const defaultSorted = configuration?.table?.defaultSorted || [{ id: 'pval', desc: false }];
+const defaultSorted = configuration?.table?.defaultSorted || [{ id: 'cs_prob', desc: true }, { id: 'r2_to_lead', desc: true }];
 
 const r2leadThreshold = window?.config?.userInterface?.phenotype?.r2_to_lead_threshold;
 

@@ -12,7 +12,11 @@ const PhenotypeGWASPlot = () => {
     createGWASPlot(phenotypeCode, phenotypeVariantData.variant_bins, phenotypeVariantData.unbinned_variants);
   }, [phenotypeCode, phenotypeVariantData])
 
-  return <div id='manhattan_plot_container'/>;
+  return (
+    <div style={{ overflowX: 'auto', width: '100%' }}>
+      <div id='manhattan_plot_container'/>
+    </div>
+  );
 }
 
 export default PhenotypeGWASPlot;
