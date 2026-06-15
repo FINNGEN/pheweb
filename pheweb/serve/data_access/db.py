@@ -437,8 +437,10 @@ class FineMappingDB(object):
 
 class HLADB(object):
     @abc.abstractmethod
-    def get_top_results(self):
-        """Retrieve top HLA results (mlogp > 5)
+    def get_top_results(self, limit: int = 100, page: int = 1):
+        """Retrieve top HLA results (mlogp > 5), paginated.
+
+        Returns {"data": [...], "total": N, "page": page, "limit": limit, "pages": M}
         """
         return
 
@@ -449,20 +451,26 @@ class HLADB(object):
         return
 
     @abc.abstractmethod
-    def get_by_phenocode(self, phenocode):
-        """Retrieve all HLA data for a phenocode
-        """
-        return
-    
-    @abc.abstractmethod
-    def get_by_gene(self, gene):
-        """Retrieve all HLA data for a gene
+    def get_by_phenocode(self, phenocode, limit: int = 100, page: int = 1):
+        """Retrieve HLA data for a phenocode, paginated.
+
+        Returns {"data": [...], "total": N, "page": page, "limit": limit, "pages": M}
         """
         return
 
     @abc.abstractmethod
-    def get_by_variant(self, variant):
-        """Retrieve all HLA data for a variant
+    def get_by_gene(self, gene, limit: int = 100, page: int = 1):
+        """Retrieve HLA data for a gene, paginated.
+
+        Returns {"data": [...], "total": N, "page": page, "limit": limit, "pages": M}
+        """
+        return
+
+    @abc.abstractmethod
+    def get_by_variant(self, variant, limit: int = 100, page: int = 1):
+        """Retrieve HLA data for a variant, paginated.
+
+        Returns {"data": [...], "total": N, "page": page, "limit": limit, "pages": M}
         """
         return
 
@@ -1539,62 +1547,96 @@ class HLAMySQLDao(HLADB, MysqlDAO):
         result = phenocode_result + alt_result + gene_result
         return result if len(result) != 0 else []
 
-    def get_top_results(self):
+    @staticmethod
+    def _paginate(total: int, page: int, limit: int, data: list) -> dict:
+        import math
+        return {
+            "data": data,
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "pages": math.ceil(total / limit) if limit > 0 else 0,
+        }
+
+    def get_top_results(self, limit: int = 100, page: int = 1):
+        offset = (page - 1) * limit
         conn = self.get_connection()
         try:
             with conn.cursor(pymysql.cursors.DictCursor) as c:
+                c.execute("SELECT COUNT(*) AS cnt FROM hla WHERE mlogp > 5", [])
+                total = c.fetchone()["cnt"]
                 sql = """SELECT *,
                     CONCAT('HLA-', SUBSTRING_INDEX(alt, '*', 1)) AS gene
                     FROM hla WHERE mlogp > 5
+                    ORDER BY mlogp DESC
+                    LIMIT %s OFFSET %s
                     """
-                c.execute(sql, [])
-                result = c.fetchall()
+                c.execute(sql, [limit, offset])
+                data = list(c.fetchall())
         finally:
             conn.close()
-        return result if len(result) != 0 else []
+        return self._paginate(total, page, limit, data)
 
-    def get_by_phenocode(self, phenocode):
+    def get_by_phenocode(self, phenocode, limit: int = 100, page: int = 1):
+        offset = (page - 1) * limit
         conn = self.get_connection()
         try:
             with conn.cursor(pymysql.cursors.DictCursor) as c:
+                c.execute("SELECT COUNT(*) AS cnt FROM hla WHERE phenocode = %s", [phenocode])
+                total = c.fetchone()["cnt"]
                 sql = """SELECT *,
                     CONCAT('HLA-', SUBSTRING_INDEX(alt, '*', 1)) AS gene
                     FROM hla WHERE phenocode = %s
+                    ORDER BY mlogp DESC
+                    LIMIT %s OFFSET %s
                     """
-                c.execute(sql, [phenocode])
-                result = c.fetchall()
+                c.execute(sql, [phenocode, limit, offset])
+                data = list(c.fetchall())
         finally:
             conn.close()
-        return result if len(result) != 0 else []
-    
-    def get_by_gene(self, gene):
+        return self._paginate(total, page, limit, data)
+
+    def get_by_gene(self, gene, limit: int = 100, page: int = 1):
+        offset = (page - 1) * limit
         conn = self.get_connection()
         try:
             with conn.cursor(pymysql.cursors.DictCursor) as c:
+                c.execute(
+                    "SELECT COUNT(*) AS cnt FROM hla WHERE CONCAT('HLA-', SUBSTRING_INDEX(alt, '*', 1)) = %s",
+                    [gene],
+                )
+                total = c.fetchone()["cnt"]
                 sql = """SELECT *,
                     CONCAT('HLA-', SUBSTRING_INDEX(alt, '*', 1)) AS gene
                     FROM hla
                     WHERE CONCAT('HLA-', SUBSTRING_INDEX(alt, '*', 1)) = %s
+                    ORDER BY mlogp DESC
+                    LIMIT %s OFFSET %s
                     """
-                c.execute(sql, [gene])
-                result = c.fetchall()
+                c.execute(sql, [gene, limit, offset])
+                data = list(c.fetchall())
         finally:
             conn.close()
-        return result if len(result) != 0 else []
+        return self._paginate(total, page, limit, data)
 
-    def get_by_variant(self, variant):
+    def get_by_variant(self, variant, limit: int = 100, page: int = 1):
+        offset = (page - 1) * limit
         conn = self.get_connection()
         try:
             with conn.cursor(pymysql.cursors.DictCursor) as c:
+                c.execute("SELECT COUNT(*) AS cnt FROM hla WHERE alt = %s", [variant])
+                total = c.fetchone()["cnt"]
                 sql = """SELECT *,
                     CONCAT('HLA-', SUBSTRING_INDEX(alt, '*', 1)) AS gene
                     FROM hla WHERE alt = %s
+                    ORDER BY mlogp DESC
+                    LIMIT %s OFFSET %s
                     """
-                c.execute(sql, [variant])
-                result = c.fetchall()
+                c.execute(sql, [variant, limit, offset])
+                data = list(c.fetchall())
         finally:
             conn.close()
-        return result if len(result) != 0 else []
+        return self._paginate(total, page, limit, data)
 
 
 class LofMySQLDao(LofDB):
