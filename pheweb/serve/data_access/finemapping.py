@@ -24,7 +24,7 @@ def df_list(df):
 def finemap_lead_variant(region, path):
     df = parse_finemap(path)
     df = df[(df.chr == int(region['chr'])) & (df.position <= int(region['end'])) & (df.position >= int(region['start']))]
-    df = df.loc[df.groupby('cs')['prob'].idxmin()]
+    df = df.loc[df.groupby('cs')['prob'].idxmax()]
     result = df_list(df)
     return result
 
@@ -36,6 +36,8 @@ def conditional_lead_variant(region, path):
 
 def susie_lead_variant(region):
     data = parse_susie(region)
+    #aggregate per cs, get top PIP variant
+    data=data.iloc[data.groupby("cs")["prob"].idxmax()]
     data = df_list(data)
     return data
 
