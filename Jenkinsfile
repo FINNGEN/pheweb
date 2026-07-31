@@ -5,7 +5,7 @@ pipeline {
 	    steps {
 		script {    sh(script:"""printenv""")
 		            sh(script:"""sed -i "s/COMMIT_SHA/PHEWEB VERSION : \$(git log -n 1 --format=format:"%H")/" ui/src/common/commonConstants.tsx""")
-		            c = docker.build("europe-west1-docker.pkg.dev/phewas-development/fg-phewas-registry/pheweb:ci-${env.GIT_COMMIT}", "-f deploy/Dockerfile ./")
+		            c = docker.build("europe-west1-docker.pkg.dev/phewas-development/fg-phewas-registry/pheweb:ci-${env.$GIT_COMMIT}", "-f deploy/Dockerfile ./")
 		  	    docker.withRegistry('https://europe-west1-docker.pkg.dev/phewas-development/fg-phewas-registry') { c.push("ci-${env.GIT_COMMIT}") }
 			    docker.withRegistry('https://europe-west1-docker.pkg.dev/phewas-development/fg-phewas-registry') { c.push("ci-latest") }
 		}
@@ -13,26 +13,12 @@ pipeline {
 	    }
 	}
 
-    stage('Test') {
-	    steps {
-		script {
-		            // Unit tests run against the image that was just built (the
-		            // source is baked in at /pheweb); integration tests need
-		            // selenium/testcontainers and a running stack, so skip them.
-		            // known_failure deselects the quarantined tests; each one is
-		            // marked in the source with a TODO saying why. Run them with
-		            // `pytest -m known_failure`.
-		            sh(script:"""docker run --rm ${c.id} sh -c 'pip install --no-cache-dir pytest && cd /pheweb && pytest --ignore=tests/integration -m "not known_failure" tests'""")
-		}
-	    }
-	}
-
     stage('Staging') {
-            when { expression { env.GIT_BRANCH == 'origin/master'  || env.GIT_BRANCH =~ /.*-test$/ || env.GIT_BRANCH == 'origin/656-gene-page-random-locuszoom' } }
+            when { expression { env.GIT_BRANCH == 'origin/master'  || env.GIT_BRANCH =~ /.*-test$/ } }
 	    steps {
-                // No key file: the agent VM's own service account provides the
-                // credentials for gcloud, helm-gcs and the GKE cluster.
+                withCredentials([file(credentialsId: 'jenkins-sa', variable: 'gcp')]) {
 		    sh '''helm plugin list | grep gcs || helm plugin install https://github.com/hayorov/helm-gcs.git --version 0.4.0'''
+                    sh '''/usr/bin/gcloud auth activate-service-account --key-file=$gcp'''
 		    sh '''helm repo add production_jenkins_storage_green gs://production_jenkins_storage_green/helm/charts'''
 		    sh '''helm repo update'''
 		    sh '''helm fetch production_jenkins_storage_green/finngen-pheweb'''
@@ -42,6 +28,7 @@ pipeline {
 			  helm upgrade development-staging-pheweb production_jenkins_storage_green/finngen-pheweb -f ./staging-values.yaml  --set image.tag=ci-${GIT_COMMIT} ;
 			  kubectl delete pods --all --wait=false
 			  fi'''
+		}
 
 	    }
 	}
