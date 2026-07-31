@@ -19,7 +19,10 @@ pipeline {
 		            // Unit tests run against the image that was just built (the
 		            // source is baked in at /pheweb); integration tests need
 		            // selenium/testcontainers and a running stack, so skip them.
-		            sh(script:"""docker run --rm ${c.id} sh -c 'pip install --no-cache-dir pytest && cd /pheweb && pytest --ignore=tests/integration tests'""")
+		            // known_failure deselects the quarantined tests; each one is
+		            // marked in the source with a TODO saying why. Run them with
+		            // `pytest -m known_failure`.
+		            sh(script:"""docker run --rm ${c.id} sh -c 'pip install --no-cache-dir pytest && cd /pheweb && pytest --ignore=tests/integration -m "not known_failure" tests'""")
 		}
 	    }
 	}

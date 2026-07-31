@@ -179,7 +179,9 @@ def test_beta_to_m_log_p() -> None:
 
     @return: None
     """
-    assert beta_to_m_log_p(1.0, 1.0) == 0.4985155458279891
+    # rel=1e-12 absorbs last-bits drift in scipy.stats.norm.logsf across scipy
+    # versions while still catching any real change in the computation.
+    assert beta_to_m_log_p(1.0, 1.0) == pytest.approx(0.4985155458279891, rel=1e-12)
 
 def test_p_mlogp() -> None:
     assert get_p_and_mlogp(None, None) == (None, None)
