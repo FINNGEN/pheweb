@@ -13,7 +13,7 @@ import threading
 import pandas as pd
 import numpy as np
 import pymysql
-from typing import List, Tuple, Dict, Union, Optional, Any
+from typing import List, Tuple, Dict, Union, Optional, Any, Iterable, Final
 from ...file_utils import MatrixReader, common_filepaths
 from ...utils import get_phenolist, get_gene_tuples, pvalue_to_mlogp, mlogp_to_pvalue, get_p_and_mlogp, get_use_phenocode_pheno_map, parse_chromosome
 from ..components.health.health_check import default_dao as health_default_dao, HealthSimpleDAO, HealthNotificationDAO, HealthTrivialDAO
@@ -131,6 +131,9 @@ def optional_float(x):
         return float(x)
 
 class PhenoResult(JSONifiable):
+    # sorts a result with no p-value at all to the end of a significance ordering
+    _NO_SIGNIFICANCE: Final = float("inf")
+
     def __init__(
         self,
         phenocode,
@@ -181,6 +184,22 @@ class PhenoResult(JSONifiable):
             else:
                 self.mlogp = pvalue_to_mlogp(self.pval)
 
+    @property
+    def significance_key(self) -> Tuple[float, float]:
+        """Key ordering associations most significant first.
+
+        Sort ascending on this (no reverse=True) and the largest -log10(p) comes
+        first, ties fall back to the smallest p-value, and results with neither
+        come last. This reproduces the two-pass stable sort this replaced, so
+        results tied on both keep the order they were discovered in.
+        """
+        mlogp = self.mlogp
+        pval = self.pval
+        return (
+            -mlogp if mlogp is not None else self._NO_SIGNIFICANCE,
+            pval if pval is not None else self._NO_SIGNIFICANCE,
+        )
+
     def add_matching_result(self, resultname, result):
         self.matching_results[resultname] = result
 
@@ -207,6 +226,13 @@ class PhenoResults(JSONifiable):
     pheno = attr.ib(attr.validators.instance_of(Dict))
     assoc = attr.ib(attr.validators.instance_of(PhenoResult))
     variant = attr.ib(attr.validators.instance_of(List))
+
+    @staticmethod
+    def sort_by_significance(
+        results: Iterable["PhenoResults"],
+    ) -> List["PhenoResults"]:
+        """Order results most significant first, missing p-values last."""
+        return sorted(results, key=lambda result: result.assoc.significance_key)
 
     def json_rep(self):
         return self.__dict__
@@ -864,7 +890,7 @@ class TabixResultLongDao(ResultDB):
                         pheno=self.pheno_map[pheno_result.phenocode],
                         assoc=pheno_result,
                         variant=variant)          
-        return list(top_results.values())
+        return PhenoResults.sort_by_significance(top_results.values())
 
     def get_variants_results(
         self, variants: List[Variant]
