@@ -6,20 +6,20 @@ import { PhenotypeContext, PhenotypeState } from "./PhenotypeContext";
 import { Phenotype } from "./../../common/commonModel";
 
 interface Props {}
-const default_banner = `
+const banner = `
         <h2 style="marginTop: 0">
         {{phenostring}}
         </h2>
         <p>{{category}}</p>
 
-        {{#risteys}}
+        {{#risteysURL}}
         <p style="margin-bottom: 10px;">
-           <a href="https://risteys.finregistry.fi/phenocode/{{.}}"
+           <a href="{{.}}"
               target="_blank"
               class="risteys">RISTEYS
            </a>
         </p>
-        {{/risteys}}
+        {{/risteysURL}}
 
         <table class="column_spacing">
            <tbody>
@@ -36,7 +36,6 @@ const default_banner = `
 
 declare let window: ConfigurationWindow;
 const { config } = window;
-const banner: string = config?.userInterface?.phenotype?.banner || default_banner;
 
 const PhenotypeBanner = (props : Props) => {
   const { phenotype } = useContext<Partial<PhenotypeState>>(PhenotypeContext);

@@ -1,8 +1,11 @@
 import { Phenotype } from "./../../common/commonModel";
 import { compose, get, Handler } from "../../common/commonUtilities";
 import { CredibleSet, LocusGroupEntry, PhenotypeVariantData, QQ } from "./phenotypeModel";
-import { resolveURL } from "../Configuration/configurationModel";
-import { pValueSentinel } from "../../common/commonTableColumn";
+import { ConfigurationWindow, resolveURL } from "../Configuration/configurationModel";
+import { pValueSentinel, risteysURLFormatter } from "../../common/commonTableColumn";
+
+declare let window: ConfigurationWindow;
+const defaultRisteysURLPrefix = window?.config?.application?.risteysURLPrefix||'https://risteys.finregistry.fi/phenocode/';
 
 const reshapeManhattan = (phenotypeCode: string) =>(data : PhenotypeVariantData) : PhenotypeVariantData => {
   if(data === null || data === undefined) return data;
@@ -50,7 +53,12 @@ export const getManhattan= (phenotypeCode: string,
 }
 
 const addRisteys = (phenotype : Phenotype) => {
-  phenotype.risteys = phenotype.phenocode.replace('_EXMORE', '');
+  const phenocode=phenotype?.phenocode?.replace("_EXALLC", "").replace("_EXMORE", "");
+  const hasRisteys=(typeof(phenotype?.hasRisteys) === "boolean") ? phenotype?.hasRisteys         : true;
+  const risteysPhenocode=phenotype?.risteysPhenocode             ? phenotype?.risteysPhenocode   : phenocode;
+  const risteysURLPrefix=phenotype?.risteysURLPrefix             ? phenotype?.risteysURLPrefix   : defaultRisteysURLPrefix;
+  const risteysURL : string=phenotype?.risteysURL                ? phenotype?.risteysURL         : `${risteysURLPrefix}${risteysPhenocode}`;
+  phenotype.risteysURL = hasRisteys ? risteysURL : null;
   return phenotype;
 }
 
