@@ -165,6 +165,7 @@ export const risteysLinkFormatter = (risteysURL : string) => <a style={{
     }}
     href={risteysURL}>RISTEYS</a>
 
+
 /**
  * Formats a Risteys URL based on the provided props.
  *
@@ -172,8 +173,8 @@ export const risteysLinkFormatter = (risteysURL : string) => <a style={{
  * @param {string} props.value - return null if the phenocode should not have a Risteys link.
  */
 export const risteysURLFormatter = (props) => {
-    const phenocode=props?.value?.replace("_EXALLC", "").replace("_EXMORE", "");
     const row = props.row;
+    const phenocode=props?.phenocode?.replace("_EXALLC", "").replace("_EXMORE", "");
     const hasRisteys=(typeof(row?.hasRisteys) === "boolean") ? row?.hasRisteys         : true;
     const risteysPhenocode=row?.risteysPhenocode             ? row?.risteysPhenocode   : phenocode;
     const risteysURLPrefix=row?.risteysURLPrefix             ? row?.risteysURLPrefix   : defaultRisteysURLPrefix;

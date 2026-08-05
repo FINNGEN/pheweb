@@ -53,13 +53,8 @@ export const getManhattan= (phenotypeCode: string,
 }
 
 const addRisteys = (phenotype : Phenotype) => {
-  const phenocode=phenotype?.phenocode?.replace("_EXALLC", "").replace("_EXMORE", "");
-  const hasRisteys=(typeof(phenotype?.hasRisteys) === "boolean") ? phenotype?.hasRisteys         : true;
-  const risteysPhenocode=phenotype?.risteysPhenocode             ? phenotype?.risteysPhenocode   : phenocode;
-  const risteysURLPrefix=phenotype?.risteysURLPrefix             ? phenotype?.risteysURLPrefix   : defaultRisteysURLPrefix;
-  const risteysURL : string=phenotype?.risteysURL                ? phenotype?.risteysURL         : `${risteysURLPrefix}${risteysPhenocode}`;
-  phenotype.risteysURL = hasRisteys ? risteysURL : null;
-  return phenotype;
+  phenotype.risteysURL = risteysURLFormatter(phenotype);
+  return phenotype
 }
 
 export const getPhenotype = (phenotypeCode : string,
