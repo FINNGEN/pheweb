@@ -53,7 +53,7 @@ export const getManhattan= (phenotypeCode: string,
 }
 
 const addRisteys = (phenotype : Phenotype) => {
-  phenotype.risteysURL = risteysURLFormatter(phenotype);
+  phenotype.risteysURL = risteysURLFormatter({row: phenotype});
   return phenotype
 }
 

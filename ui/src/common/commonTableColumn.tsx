@@ -174,7 +174,7 @@ export const risteysLinkFormatter = (risteysURL : string) => <a style={{
  */
 export const risteysURLFormatter = (props) => {
     const row = props.row;
-    const phenocode=props?.phenocode?.replace("_EXALLC", "").replace("_EXMORE", "");
+    const phenocode=row?.phenocode?.replace("_EXALLC", "").replace("_EXMORE", "");
     const hasRisteys=(typeof(row?.hasRisteys) === "boolean") ? row?.hasRisteys         : true;
     const risteysPhenocode=row?.risteysPhenocode             ? row?.risteysPhenocode   : phenocode;
     const risteysURLPrefix=row?.risteysURLPrefix             ? row?.risteysURLPrefix   : defaultRisteysURLPrefix;
