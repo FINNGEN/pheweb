@@ -165,7 +165,6 @@ export const risteysLinkFormatter = (risteysURL : string) => <a style={{
     }}
     href={risteysURL}>RISTEYS</a>
 
-
 /**
  * Formats a Risteys URL based on the provided props.
  *
