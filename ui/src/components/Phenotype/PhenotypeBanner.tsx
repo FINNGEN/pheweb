@@ -15,8 +15,17 @@ const banner = `
         {{#risteysURL}}
         <p style="margin-bottom: 10px;">
            <a href="{{.}}"
-              target="_blank"
-              class="risteys">RISTEYS
+           style="
+            font-size: 1.25rem;
+            padding: .25rem .5rem;
+            background-color: #2779bd;
+            color: #fff;
+            border-radius: .25rem;
+            font-weight: 700;
+            box-shadow: 0 0 5px rgba(0,0,0,.5);"
+           target="_blank"
+           rel="noopener noreferrer"
+           target="_blank">RISTEYS
            </a>
         </p>
         {{/risteysURL}}
@@ -36,7 +45,6 @@ const banner = `
 
 declare let window: ConfigurationWindow;
 const { config } = window;
-
 const PhenotypeBanner = (props : Props) => {
   const { phenotype } = useContext<Partial<PhenotypeState>>(PhenotypeContext);
   const content = () => mustacheDiv<Phenotype>(banner, phenotype)
