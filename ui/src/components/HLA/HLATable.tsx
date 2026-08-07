@@ -30,7 +30,7 @@ const defaultSorted = [{
 
 const HLATable = (props) => {
   const prop: DownloadTableProps<HLAModel.Data, HLAModel.Row> = {
-    filename: 'hla.tsv',
+    filename: `${props.filename ?? 'hla.tsv'}`,
     tableData: props.data,
     dataToTableRows: (data) => data,
     tableColumns,

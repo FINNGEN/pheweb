@@ -25,12 +25,11 @@ const variant = window?.config?.userInterface?.phenotype?.variant;
 const quantitativeTableColumns : Column<PhenotypeVariantRow>[] = createTableColumns<PhenotypeVariantRow>(variant?.quantitative?.table?.columns) || phenotypeQuantitativeTableColumns as Column<PhenotypeVariantRow>[];
 const binaryTableColumns : Column<PhenotypeVariantRow>[] = createTableColumns<PhenotypeVariantRow>(variant?.binary?.table?.columns) || phenotypeBinaryTableColumns as Column<PhenotypeVariantRow>[];
 
-interface Props { phenotypeCode : string }
 const PhenotypeVariantTable = () => {
   const { phenotype , phenotypeCode , phenotypeVariantData } = useContext<Partial<PhenotypeState>>(PhenotypeContext);
   const tableData : PhenotypeVariantData | null = phenotypeVariantData || null;
   const tableColumns = phenotype.is_binary == false?quantitativeTableColumns : binaryTableColumns;
-  const filename : string = `${phenotypeCode}.tsv`
+  const filename : string = `${phenotypeCode}_variants.tsv`
   const props : DownloadTableProps<PhenotypeVariantData, PhenotypeVariantRow>  = {
     filename,
     tableData,

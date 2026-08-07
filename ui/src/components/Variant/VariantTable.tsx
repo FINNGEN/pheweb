@@ -65,7 +65,7 @@ const VariantTable = ({ variantData, getSumstats, activePage } : Props ) => {
       filename,
       tableData,
       dataToTableRows : dataToTableRows(colorByCategory),
-      tableColumns ,
+      tableColumns,
       tableProperties: activePage !== null ? { ...tableProperties, page: activePage }  : tableProperties,
       defaultSorted : defaultSorted,
       getTrProps: getTrProps

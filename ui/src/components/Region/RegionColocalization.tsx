@@ -13,7 +13,7 @@ const RegionColocalization =  (props : Props) => {
 
 
     if(config !== null && region) {
-        return (<ColocalizationList/>);
+        return (<ColocalizationList filename={`${region.phenotype.phenocode}_region_${['chromosome', 'start', 'stop'].map((d) => region.region[d]).join("_")}_colocalization.tsv`} />);
     } else {
         return (<div className="col-xs-12"></div>);
     }
