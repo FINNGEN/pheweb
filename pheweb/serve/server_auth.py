@@ -13,9 +13,10 @@ def before_request():
     if not conf.authentication:
         print('anonymous visited {!r}'.format(request.path))
         return None
-    elif getattr(g, 'is_test', None) == True:
+    elif getattr(g, 'is_test', None) is True:
         return None
-    elif current_user is None or not hasattr(current_user, 'email'):
+    elif current_user.is_anonymous:
+        session['original_destination'] = request.path
         if _is_api_request():
             return jsonify({'status': 'error', 'message': 'not authenticated'}), 401
         return redirect(url_for('get_authorized',

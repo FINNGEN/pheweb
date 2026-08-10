@@ -1,10 +1,20 @@
 from ..conf_utils import conf
+import logging
 import sys
 import threading
+import time
 from collections import defaultdict
 
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 from google.oauth2 import service_account
+
+# Google group membership rarely changes, but before_request() calls
+# verify_membership() on every request, so cache results per-process for
+# a while to avoid hitting the Admin SDK on every page load.
+_MEMBERSHIP_CACHE_TTL_SECONDS = 300
+_membership_cache = {}
+_membership_cache_lock = threading.Lock()
 
 if conf["authentication"]:
     group_names = conf.group_auth["GROUPS"]
@@ -47,17 +57,6 @@ def get_all_members(group_names):
     return members
 
 
-def get_member_status(username):
-    allmembers = get_all_members(group_names)
-
-    for m in allmembers:
-        user = m["email"]
-        if "gserviceaccount" in user:  # service accounts are excluded
-            continue
-        if user == username:
-            return m["status"]
-
-
 def verify_membership(username):
 
     if username in whitelist:
@@ -65,15 +64,33 @@ def verify_membership(username):
     # auth service .hasMember will only work for accounts of the domain
     elif not username.endswith("@finngen.fi"):
         return False
-    else:
-        for name in group_names:
+
+    now = time.monotonic()
+    with _membership_cache_lock:
+        cached = _membership_cache.get(username)
+    if cached is not None and now - cached[0] < _MEMBERSHIP_CACHE_TTL_SECONDS:
+        return cached[1]
+
+    result = _check_group_membership(username)
+
+    with _membership_cache_lock:
+        _membership_cache[username] = (now, result)
+    return result
+
+
+def _check_group_membership(username):
+    for name in group_names:
+        try:
             r = (
                 services[threading.get_ident()]
                 .members()
                 .hasMember(groupKey=name, memberKey=username)
                 .execute()
             )
-            if r["isMember"] is True:
-                return True
+        except HttpError:
+            logging.exception("membership check failed for %r in group %r", username, name)
+            continue
+        if r["isMember"] is True:
+            return True
     # default to false
     return False
