@@ -71,14 +71,22 @@ def verify_membership(username):
     if cached is not None and now - cached[0] < _MEMBERSHIP_CACHE_TTL_SECONDS:
         return cached[1]
 
-    result = _check_group_membership(username)
+    result, definitive = _check_group_membership(username)
 
-    with _membership_cache_lock:
-        _membership_cache[username] = (now, result)
+    # Only cache a definitive answer. If some group check errored out and we
+    # never found a match, we don't actually know the membership status, so
+    # don't let a transient API failure get cached as "not a member".
+    if definitive:
+        with _membership_cache_lock:
+            _membership_cache[username] = (now, result)
     return result
 
 
 def _check_group_membership(username):
+    """Returns (is_member, definitive). definitive is False if a group check
+    errored out without us finding a match, meaning the result is not known
+    for certain and should not be cached."""
+    definitive = True
     for name in group_names:
         try:
             r = (
@@ -89,8 +97,9 @@ def _check_group_membership(username):
             )
         except HttpError:
             logging.exception("membership check failed for %r in group %r", username, name)
+            definitive = False
             continue
         if r["isMember"] is True:
-            return True
+            return True, True
     # default to false
-    return False
+    return False, definitive

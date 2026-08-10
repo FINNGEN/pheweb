@@ -1,11 +1,12 @@
 
 from ..conf_utils import conf
 
-from flask import url_for, redirect, request
+from flask import url_for, redirect, request, session
 from rauth import OAuth2Service
 
 import requests
 import json
+import secrets
 
 # It seems like everything is working without these two lines, and I'm not sure why: (maybe because I installed `requests[security]`?)
 # import urllib3.contrib.pyopenssl
@@ -30,10 +31,13 @@ class GoogleSignIn(object):
         return r.json()
 
     def authorize(self):
+        state = secrets.token_urlsafe(32)
+        session['oauth_state'] = state
         return redirect(self.service.get_authorize_url(
             scope='email',
             response_type='code',
             prompt='select_account',
+            state=state,
             redirect_uri=self.get_callback_url())
         )
 
@@ -43,7 +47,13 @@ class GoogleSignIn(object):
                         _external=True)
 
     def callback(self):
+        expected_state = session.pop('oauth_state', None)
         if 'code' not in request.args:
+            return (None, None)
+        # Guards against CSRF: an attacker tricking a victim into completing
+        # the attacker's own OAuth flow, which would log the victim into the
+        # attacker's account.
+        if not expected_state or request.args.get('state') != expected_state:
             return (None, None)
         # The following two commands pass **kwargs to requests.
         oauth_session = self.service.get_auth_session(
