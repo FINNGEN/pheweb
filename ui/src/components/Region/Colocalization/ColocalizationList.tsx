@@ -51,7 +51,7 @@ const subComponent = (row : Row<Colocalization>) => {
 }
 
 
-interface Props {}
+interface Props {filename? : string}
 const ColocalizationList = (props : Props) => {
     const { locusZoomData,
             colocalization ,
@@ -186,7 +186,7 @@ const ColocalizationList = (props : Props) => {
                 data={ colocFiltBySource.map(flatten) }
                 separator={'\t'}
                 enclosingCharacter={''}
-                filename={`colocalization.tsv`}
+                filename={props?.filename ??`colocalization.tsv`}
                 className="btn btn-primary"
                 target="_blank">Download Table
             </CSVLink>

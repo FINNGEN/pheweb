@@ -20,7 +20,7 @@ const r2leadThreshold = window?.config?.userInterface?.phenotype?.r2_to_lead_thr
 const PhenotypeCSTable = () => {
   const {  credibleSets , phenotypeCode } = useContext<Partial<PhenotypeState>>(PhenotypeContext);
   const tableData : CredibleSet[] = credibleSets || [];
-  const filename : string = `${phenotypeCode}.tsv`
+  const filename : string = `${phenotypeCode}_credible_sets.tsv`
   const dataToTableRows : (d : CredibleSet[]) => CredibleSet[] = (x => x)
   const tableColumns :  Column<CredibleSet>[] = createTableColumns<CredibleSet>(configuration?.table?.columns) || csTableCols as Column<CredibleSet>[];
   const [locusGroups, setLocusGroups] = useState<LocusGroups>([{}]);

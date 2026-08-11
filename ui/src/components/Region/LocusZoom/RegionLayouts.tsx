@@ -142,7 +142,8 @@ export const region_layout: (region: Region) => Layout = (region: Region) => {
 						direction: 0.75,
 						group_position: "end" },
 					      { "type": "download",
-						"position": "right" }] },
+						"position": "right",
+						"filename": `${region.phenotype.phenocode}_region_${['chromosome', 'start', 'stop'].map((d) => region.region[d]).join("_")}_locuszoom.svg` }] },
 	    "panels": [] } }
 
 export const association_layout: (region: Region) => Layout = (region: Region) => {

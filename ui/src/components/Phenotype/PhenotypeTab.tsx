@@ -47,7 +47,7 @@ const PhenotypeTab = () => {
       { isNonEmptyArray(hlaData) &&
       <TabPanel>
         <div id='hla table' className='phenotype-tab'>
-          <HLATable {...{data: hlaData}}/>
+          <HLATable {...{data: hlaData, filename: `${phenotypeCode}_hla.tsv`}}/>
         </div>
       </TabPanel> }
     </Tabs>
