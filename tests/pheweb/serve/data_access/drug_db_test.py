@@ -61,7 +61,10 @@ def test_reshape_row_1() -> None:
     @return: None
     """
     assert not reshape_row({})
-    assert reshape_row({"approvedName": 1}) == {"approvedName": 1}
+    assert reshape_row({"drug": {"name": "aspirin"}}) == {
+        "prefName": "aspirin",
+        "approvedName": "aspirin",
+    }
 
 
 def test_reshape_row_2() -> None:
@@ -73,10 +76,6 @@ def test_reshape_row_2() -> None:
     assert extract_rows({}, "DBH") == []
 
 
-@pytest.mark.known_failure
-# TODO(FINNGEN/pheweb#619): query_endpoint asks Open Targets for a `knownDrugs` field
-# on `Target`, which no longer exists in their schema, so the query always fails.
-# Fix the query in pheweb/serve/data_access/drug_db.py, then drop this marker.
 def test_endpoint() -> None:
     """
     Test end point.
@@ -109,11 +108,10 @@ def test_reshape_row() -> None:
     row['disease'] = {'name': name, 'dbXRefs': [db_x_ref]}
     assert reshape_row(row) == {'diseaseName': name,
                                 'EFOInfo': db_x_ref}
-    drug = str(uuid.uuid4())
-    row['drug'] = { 'maximumClinicalTrialPhase' : drug }
+    row['drug'] = {'maximumClinicalStage': 'PHASE_3'}
     assert reshape_row(row) == {'diseaseName': name,
                                 'EFOInfo': db_x_ref,
-                                'maximumClinicalTrialPhase': drug}
+                                'maximumClinicalTrialPhase': 'Phase 3'}
 
 
 

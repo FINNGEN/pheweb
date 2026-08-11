@@ -60,12 +60,29 @@ def copy_attribute(name, src, dst):
     return dst
 
 
+def prettify_stage(stage):
+    """
+    Open Targets reports clinical stages as codes like
+    "PHASE_3" or "APPROVAL". Reformat those for display.
+
+    @param stage: raw stage code, or None
+    @return: human-readable stage, or None
+    """
+    return stage.replace('_', ' ').capitalize() if stage else stage
+
+
 def extract_rows(response, gene_name):
     """
+    The Open Targets schema reports known drugs as a list of
+    drug/target pairs (`drugAndClinicalCandidates`), each with its own
+    list of associated diseases, rather than one flat row per
+    drug-disease evidence entry. Flatten that back into one row per
+    (drug, disease) pair, carrying the target's overall target classes
+    along with each row since they're no longer reported per-drug.
 
     @param response:
     @param gene_name:
-    @return:
+    @return: flattened list of drug/disease rows
     """
     data = nvl_attribute('data', response, {})
     search = nvl_attribute('search', data, {})
@@ -73,8 +90,20 @@ def extract_rows(response, gene_name):
     hits = sorted(hits, key=lambda x: x['score'], reverse=True)
     hit = next((h for h in hits if h['name'] == gene_name), {})
     target = nvl_attribute('object', hit, {})
-    known_drugs = nvl_attribute('knownDrugs', target, {})
-    rows = nvl_attribute('rows', known_drugs, [])
+    target_classes = [tc['label'] for tc in nvl_attribute('targetClass', target, []) if tc]
+    candidates = nvl_attribute('drugAndClinicalCandidates', target, {})
+    candidate_rows = nvl_attribute('rows', candidates, [])
+
+    rows = []
+    for candidate in candidate_rows:
+        diseases = [d['disease'] for d in nvl_attribute('diseases', candidate, []) if d.get('disease')]
+        for disease in diseases or [None]:
+            rows.append({
+                'phase': candidate.get('maxClinicalStage'),
+                'targetClass': target_classes,
+                'drug': candidate.get('drug'),
+                'disease': disease,
+            })
     return rows
 
 
@@ -90,9 +119,9 @@ def reshape_row(row):
     diseaseName: string
     drugId: string
     drugType: string
-    maximumClinicalTrialPhase: number
+    maximumClinicalTrialPhase: string
     mechanismOfAction: string
-    phase: number
+    phase: string
     prefName: string
     targetClass: array[string]
 
@@ -101,7 +130,7 @@ def reshape_row(row):
     @return: reshaped row
     """
     result = {}
-    if 'disease' in row:
+    if row.get('disease'):
         disease = row['disease']
         if 'name' in disease:
             result['diseaseName'] = disease['name']
@@ -109,18 +138,25 @@ def reshape_row(row):
         efo_info = next((d for d in db_xrefs if d.startswith('EFO:')), None)
         if efo_info:
             result['EFOInfo'] = efo_info
-    if 'drug' in row:
+    if row.get('drug'):
         drug = row['drug']
-        copy_attribute('maximumClinicalTrialPhase', drug, result)
-    names = ['approvedName',
-             'drugId',
-             'drugType',
-             'mechanismOfAction',
-             'phase',
-             'prefName',
-             'targetClass']
-    for name in names:
-        copy_attribute(name, row, result)
+        if 'id' in drug:
+            result['drugId'] = drug['id']
+        if 'name' in drug:
+            # the new schema no longer distinguishes a separate "preferred
+            # name" from the drug's generic name, so both map to it.
+            result['prefName'] = drug['name']
+            result['approvedName'] = drug['name']
+        copy_attribute('drugType', drug, result)
+        if drug.get('maximumClinicalStage'):
+            result['maximumClinicalTrialPhase'] = prettify_stage(drug['maximumClinicalStage'])
+        moa_rows = nvl_attribute('rows', nvl_attribute('mechanismsOfAction', drug, {}), [])
+        mechanisms = [m['mechanismOfAction'] for m in moa_rows if m.get('mechanismOfAction')]
+        if mechanisms:
+            result['mechanismOfAction'] = '; '.join(dict.fromkeys(mechanisms))
+    if row.get('phase'):
+        result['phase'] = prettify_stage(row['phase'])
+    copy_attribute('targetClass', row, result)
     return result
 
 
@@ -131,7 +167,10 @@ def query_endpoint(gene_name):
     @return:
     """
     # see : https://platform-docs.opentargets.org/data-access/graphql-api
-    # Build query string
+    # `knownDrugs` was removed from the schema; known drugs are now reported
+    # per drug/target pair via `drugAndClinicalCandidates`, each with its own
+    # list of associated diseases (see extract_rows for the flattening back
+    # into drug/disease rows).
     query_string = """
             query search($gene_name: String!) {
               search( queryString : $gene_name , entityNames:["target"] ) {
@@ -142,26 +181,21 @@ def query_endpoint(gene_name):
                     __typename ... on Target { id
                     approvedSymbol
                         approvedName
-                        knownDrugs { rows {
-                                            # evidence.drug2clinic.clinical_trial_phase.label
-                                            phase
-                                            # target.target_class
-                                            targetClass
-                                            # evidence.target2drug.action_type
-                                            drugType
-                                            drugId
-                                            prefName
-                                            approvedName
-                                            mechanismOfAction
-                                            # disease.efo_info.label
-                                            disease { dbXRefs , name }
+                        targetClass { label }
+                        drugAndClinicalCandidates { rows {
+                                            # overall clinical stage reached by this drug against this target
+                                            maxClinicalStage
                                             drug {
-                                                   # evidence.drug2clinic.max_phase_for_disease.label
-                                                   maximumClinicalTrialPhase ,
-                                                   # drug
+                                                   id
                                                    name
-
-                        } } }
+                                                   drugType
+                                                   maximumClinicalStage
+                                                   mechanismsOfAction { rows { mechanismOfAction } }
+                                            }
+                                            diseases {
+                                                disease { dbXRefs , name }
+                                            }
+                        } }
                     }
 
                   }
