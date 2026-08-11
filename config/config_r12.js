@@ -128,7 +128,7 @@ const userInterface = {
   desc: true
 }] } }, 
 	gene: { 
-            geneColocalizations: {},
+            geneColocalizations: null,
             tableOfContentsTitles: {
 	        "associationResults": "Disease associations within gene region",
 	        "geneFunctionalVariants": "Coding variant associations",
@@ -141,7 +141,7 @@ const userInterface = {
 					       { type : "pValue" },
 					       { type : "or" } ] },
 	    lz_config : { ld_panel_version : "sisu42" } ,
-	     pqtlColocalizations : {}  },
+	     pqtlColocalizations : null  },
   phenotype: {
       variant : { table : { columns : [ { type : "chrom" },
                                         { type : "pos" },
