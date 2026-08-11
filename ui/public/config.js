@@ -48,26 +48,6 @@ const userInterface = {
   hla: {},
   about: { banner: aboutBanner },
   phenotype: {
-    banner: `
-    <h2 style="margin-top: 0;">
-        {{phenostring}}
-       </h2>
-        <p>{{category}}</p>
-        <p style="margin-bottom: 10px;">
-        <a style="
-        font-size: 1.25rem;
-        padding: .25rem .5rem;
-        background-color: #2779bd;
-        color: #fff;
-        border-radius: .25rem;
-        font-weight: 700;
-    box-shadow: 0 0 5px rgba(0,0,0,.5);"
-           rel="noopener noreferrer"
-           href="https://risteys.finregistry.fi/phenocode/{{risteys}}"
-           target="_blank">RISTEYS
-        </a>
-      </p>
-    `,
     r2_to_lead_threshold: 0.6,
   },
   index: {

@@ -213,7 +213,10 @@ export interface Phenotype {
   num_gw_significant?: number
   phenocode: string
   phenostring: string
-  risteys?: string
+  hasRisteys?: string
+  risteysURL?: string
+  risteysPhenocode?: string
+  risteysURLPrefix?: string
   is_binary?: boolean
 }
 

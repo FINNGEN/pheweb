@@ -1,48 +1,28 @@
 import { useContext } from "react";
 import { isLoading } from "../../common/CommonLoading";
-import { mustacheDiv } from "../../common/commonUtilities"
-import { ConfigurationWindow } from "../Configuration/configurationModel"
 import { PhenotypeContext, PhenotypeState } from "./PhenotypeContext";
-import { Phenotype } from "./../../common/commonModel";
+import React from "react";
+import { risteysLinkFormatter } from "../../common/commonTableColumn";
 
 interface Props {}
-const default_banner = `
-        <h2 style="marginTop: 0">
-        {{phenostring}}
-        </h2>
-        <p>{{category}}</p>
-
-        {{#risteys}}
-        <p style="margin-bottom: 10px;">
-           <a href="https://risteys.finregistry.fi/phenocode/{{.}}"
-              target="_blank"
-              class="risteys">RISTEYS
-           </a>
-        </p>
-        {{/risteys}}
-
-        <table class="column_spacing">
-           <tbody>
-              {{#num_cases}}
-              <tr><td><b>{{.}}</b> cases</td></tr>
-              {{/num_cases}}
-
-              {{#num_controls}}
-              <tr><td><b>{{.}}</b> controls</td></tr>
-              {{/num_controls}}
-           </tbody>
-        </table>
-  `
-
-declare let window: ConfigurationWindow;
-const { config } = window;
-const banner: string = config?.userInterface?.phenotype?.banner || default_banner;
 
 const PhenotypeBanner = (props : Props) => {
   const { phenotype } = useContext<Partial<PhenotypeState>>(PhenotypeContext);
-  const content = () => mustacheDiv<Phenotype>(banner, phenotype)
-  return isLoading(phenotype === null || phenotype === undefined,content);
-
+  const content = () => (
+   <div><h2 style={{marginTop: 0}}>
+        {phenotype?.phenostring}
+    </h2>
+        <p>{phenotype?.category}</p>
+   {risteysLinkFormatter(phenotype.risteysURL)}
+   <table className="column_spacing">
+           <tbody>
+              <tr><td><b>{phenotype?.num_cases}</b> cases</td></tr>
+              <tr><td><b>{phenotype?.num_controls}</b> controls</td></tr>
+           </tbody>
+        </table>
+   </div>
+  )
+  return isLoading(phenotype === null || phenotype === undefined, content);
 }
 
 export default PhenotypeBanner

@@ -154,7 +154,7 @@ const variantCell = (value : string) => {
  * @param {string} risteysURL - The URL to be linked.
  * @returns {JSX.Element} A styled anchor element pointing to the provided URL.
  */
-export const risteysLinkFormatter = (risteysURL : string) => <a style={{
+export const risteysLinkFormatter = (risteysURL : string) => risteysURL ? <a style={{
         fontSize: "1.25rem",
         padding: ".25rem .5rem",
         backgroundColor: "#2779bd",
@@ -163,7 +163,7 @@ export const risteysLinkFormatter = (risteysURL : string) => <a style={{
         fontWeight: 700,
         boxShadow: "0 0 5px rgba(0,0,0,.5)"
     }}
-    href={risteysURL}>RISTEYS</a>
+    href={risteysURL}>RISTEYS</a> : <></>
 
 /**
  * Formats a Risteys URL based on the provided props.
@@ -172,13 +172,14 @@ export const risteysLinkFormatter = (risteysURL : string) => <a style={{
  * @param {string} props.value - return null if the phenocode should not have a Risteys link.
  */
 export const risteysURLFormatter = (props) => {
-    const phenocode=props?.value?.replace("_EXALLC", "").replace("_EXMORE", "");
-    const row = props.row;
-    const hasRisteys=(typeof(row?.hasRisteys) === "boolean") ? row?.hasRisteys         : true;
-    const risteysPhenocode=row?.risteysPhenocode             ? row?.risteysPhenocode   : phenocode;
-    const risteysURLPrefix=row?.risteysURLPrefix             ? row?.risteysURLPrefix   : defaultRisteysURLPrefix;
-    const risteysURL : string=row?.risteysURL                ? row?.risteysURL         : `${risteysURLPrefix}${risteysPhenocode}`;
-    return hasRisteys?risteysURL:null;
+    // to avoid adding the hidden helper columns into the table, let's read them from 'original' field
+    const row = props.original ?? props.row;
+    const phenocode=row?.phenocode?.replace("_EXALLC", "").replace("_EXMORE", "");
+    const hasRisteys=(typeof(row.hasRisteys) === "boolean") ? row.hasRisteys : true;
+    const risteysPhenocode = row.risteysPhenocode ?? phenocode;
+    const risteysURLPrefix = row.risteysURLPrefix  ?? defaultRisteysURLPrefix;
+    const risteysURL = row.risteysURL ?? `${risteysURLPrefix}${risteysPhenocode}`;
+    return hasRisteys ? risteysURL : null;
 }
 
 /**
@@ -199,7 +200,7 @@ export const risteysURLFormatter = (props) => {
  */
 export const risteysLinkCell = (props) => {
     const risteysURL=risteysURLFormatter(props)
-    return risteysURL?risteysLinkFormatter(risteysURL):<></>;
+    return risteysLinkFormatter(risteysURL)
 }
 
 interface FunctionalVariantFinnGen {
