@@ -284,7 +284,7 @@ const VariantLocusZoom = ({ variantData } : Props ) => {
         },
         dashboard: {
           components: [
-            {type: "download", position: "right", filename: `${['chr','pos','ref','alt'].map((d) => variantData.variant[d]).join("_")}_locuszoom.svg`},
+            {type: "download", position: "right", filename: `${['chr','pos','ref','alt'].map((d) => variantData.variant[d]).join("_")}_phewas_plot.svg`},
           ]
         },
         //height: 200, // doesn't work?
