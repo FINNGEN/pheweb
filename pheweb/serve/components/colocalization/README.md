@@ -5,6 +5,8 @@ DuckDB database, enriching it with parsed and cleaned fields for
 analysis.  Instructions for loading data to the previous version
 can be found [here](README.v1.md).
 
+
+
 ## Prerequisites
 
 Ensure the following tools are available:
@@ -13,6 +15,7 @@ Ensure the following tools are available:
 - Bash shell
 - Compressed TSV input files
 - mysql client
+- python 3
 
 Assuming you're using Linux and using the mysql client:
 
@@ -79,13 +82,94 @@ echo "CREDSET_DATA_PATH : $CREDSET_DATA_PATH"
 zcat $CREDSET_DATA_PATH | head -n 1
 ```
 
+## Preprocess data for ingestion
+
+In R14, some changes were made into the colocalization data:
+1. dataset column was separated into dataset, quant, tissue in both the colocQC and credset data  
+2. hit1_info and hit2_info was separated into hit1_beta, hit1_p, hit2_beta, hit2_p
+3. new eQTL Catalog data had non-numerical credible set ids.
+This means that the dataset+trait+region+cs columns are no longer a unique identifier for a colocalization resource.  
+To make the data work with the schema used in pheweb, a new dataset_key column was created by joining dataset, tissue, quant columns, which is used as the "dataset" column in the database. Dataset, tissue and quant columns are then used as the dataset_label, dataset_sample, dataset_methods columns.
+
+Here are preprocessing scripts for processing the data into ingestable form:  
+process.py
+```python
+import gzip
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("input")
+parser.add_argument("output")
+args = parser.parse_args()
+
+with gzip.open(args.input,"rt",encoding="utf-8") as f, gzip.open(args.output,"wt",encoding="utf-8") as of:
+    input_header = f.readline().strip().split("\t")
+    input_hdi = {a:i for i,a in enumerate(input_header)}
+    output_header = ["dataset1","dataset2","tissue1","tissue2","quant1","quant2","trait1","trait2","region1","region2","cs1","cs2","nsnps","hit1","hit2","PP.H0.abf","PP.H1.abf","PP.H2.abf","PP.H3.abf","PP.H4.abf","low_purity1","low_purity2","nsnps1","nsnps2","cs1_log10bf","cs2_log10bf","clpp","clpa","cs1_size","cs2_size","cs_overlap","topInOverlap","probmass_1","probmass_2","hit1_beta","hit1_p","hit2_beta","hit2_p","colocRes"]
+    of.write("\t".join(output_header+["dataset_key1","dataset_key2"])+"\n")
+    cs_count = 0
+    for i,line in enumerate(f):
+        cols = line.strip().split("\t")
+        #fix cs
+        if cols[input_hdi["cs2"]].startswith(f"{cols[input_hdi['trait2']]}_L"):
+            cols[input_hdi["cs2"]] = cols[input_hdi["cs2"]].replace(f"{cols[input_hdi['trait2']]}_L","")
+            cs_count +=1
+        #write outputs
+        key1 = f"{cols[input_hdi['dataset1']]}--{cols[input_hdi['tissue1']]}--{cols[input_hdi['quant1']]}"
+        key2 = f"{cols[input_hdi['dataset2']]}--{cols[input_hdi['tissue2']]}--{cols[input_hdi['quant2']]}"
+        out_line = [cols[input_hdi[a]] for a in output_header]
+        of.write("\t".join(out_line+[key1,key2])+"\n")
+        if i%100000 == 0:
+            print(f"{i} lines processed, {cs_count} cs fixed")
+```
+
+process_cs.py
+```python
+import gzip
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("input")
+parser.add_argument("output")
+args = parser.parse_args()
+
+with gzip.open(args.input,"rt",encoding="utf-8") as f, gzip.open(args.output,"wt",encoding="utf-8") as of:
+    input_header = f.readline().strip().split("\t")
+    input_hdi = {a:i for i,a in enumerate(input_header)}
+    output_header = ["trait","region","rsid","cs","low_purity","p","beta","se","mlogp","cs_specific_prob","dataset","tissue","quant"]
+    of.write("\t".join(output_header+["dataset_key"])+"\n")
+    cs_count = 0
+    for i,line in enumerate(f):
+        cols = line.strip().split("\t")
+        # check credset
+        if cols[input_hdi["cs"]].startswith(f"{cols[input_hdi['trait']]}_L"):
+            cols[input_hdi["cs"]] = cols[input_hdi["cs"]].replace(f"{cols[input_hdi['trait']]}_L","")
+            cs_count +=1
+        #write outputs
+        key = f"{cols[input_hdi['dataset']]}--{cols[input_hdi['tissue']]}--{cols[input_hdi['quant']]}"
+        out_line = [cols[input_hdi[a]] for a in output_header]
+        of.write("\t".join(out_line+[key])+"\n")
+        if i%100000 == 0:
+            print(f"{i} lines processed, {cs_count} cs fixed")
+```
+
+parse datasets:
+```sh
+export PROCESSED_COLOC=${WORK_DIRECTORY}/processed_coloc_${TABLE_VERSION}.tsv.gz
+export PROCESSED_CS=${WORK_DIRECTORY}/processed_cs_${TABLE_VERSION}.tsv.gz
+
+python3 process.py ${COLOC_DATA_PATH} ${PROCESSED_COLOC}
+python3 process_cs.py ${COLOC_DATA_PATH} ${PROCESSED_COLOC}
+
+```
+
 ## Cloud settings
 
 If you are working in a GCP environment set these variables to reflect
 your environment.
 
 ```bash
-export GS_PATH="gs://r13-data-green/pheweb/coloc_susie"
+export GS_PATH="gs://r14-data-green/pheweb/colocalization"
 export INSTANCE_NAME="production-releases-pheweb-database"
 ```
 
@@ -95,7 +179,7 @@ Define the environment variables:
 
 ```bash
 export DB_PATH="${WORK_DIRECTORY}/colocalization.db"
-export DUCKDB_CMD="env COLOC_DATA_PATH=${COLOC_DATA_PATH} CREDSET_DATA_PATH=${CREDSET_DATA_PATH} duckdb $DB_PATH"
+export DUCKDB_CMD="env COLOC_DATA_PATH=${PROCESSED_COLOC} CREDSET_DATA_PATH=${PROCESSED_CS} duckdb $DB_PATH"
 export CONNECTION_STRING="user=${MYSQL_USER} port=${MYSQL_PORT} database=${MYSQL_DATABASE} password=${MYSQL_PASSWORD} host=${MYSQL_HOST}"
 
 echo "CONNECTION_STRING : $CONNECTION_STRING"
@@ -128,239 +212,165 @@ mysql --defaults-group-suffix=${GROUP_SUFFIX} <<EOF
 select 1
 EOF
 ```
+
+
+
 ## Import Data into DuckDB
 
 This command creates a duckdb table colocalization from the compressed TSV
-file with additional cleaned columns.
+file with additional cleaned columns. Note that as dataset column was separated to its own columns and type was not included in columns, dataset1_collection will be hardcoded as GWAS and dataset2_collection will be left blank.
 
 ```bash
 $DUCKDB_CMD <<EOF
 DROP TABLE IF EXISTS colocalization;
-
 CREATE TABLE colocalization AS
-        SELECT
-		
-            row_number() OVER () AS colocalization_id,
+  SELECT
+    row_number() OVER () AS colocalization_id,
+    dataset1 AS dataset1_label,
+    dataset_key1 AS dataset1,
+    tissue1 AS dataset1_sample,
+    quant1 AS dataset1_methods,
+    'GWAS' AS dataset1_collection,
 
-            dataset1,
+    dataset2 AS dataset2_label,
+    dataset_key2 AS dataset2,
+    tissue2 AS dataset2_sample,
+    quant2 AS dataset2_methods,
+    '' AS dataset2_collection,
+    trait1,
+    trait2,
+    region1,
+    CASE WHEN regexp_extract(region1, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'X' THEN 23
+        WHEN regexp_extract(region1, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'Y' THEN 24
+        WHEN regexp_extract(region1, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'MT' THEN 25
+        ELSE CAST(regexp_extract(region1, 'chr(\w+):-?(\d+)-(\d+)', 1) AS TINYINT)
+    END AS region1_chromosome,
+    CAST(regexp_extract(region1, 'chr(\w+):-?(\d+)-(\d+)', 2) AS BIGINT) AS region1_start,
+    CAST(regexp_extract(region1, 'chr(\w+):-?(\d+)-(\d+)', 3) AS BIGINT) AS region1_end,
+    region2,
+    CASE WHEN regexp_extract(region2, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'X' THEN 23
+      WHEN regexp_extract(region2, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'Y' THEN 24
+      WHEN regexp_extract(region2, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'MT' THEN 25
+      ELSE CAST(regexp_extract(region2, 'chr(\w+):-?(\d+)-(\d+)', 1) AS TINYINT)
+    END AS region2_chromosome,
+    CAST(regexp_extract(region2, 'chr(\w+):-?(\d+)-(\d+)', 2) AS BIGINT) AS region2_start,
+    CAST(regexp_extract(region2, 'chr(\w+):-?(\d+)-(\d+)', 3) AS BIGINT) AS region2_end,
+    cs1,
+    cs2,
+    nsnps,
+    hit1,
+    CASE WHEN hit1 ILIKE 'chr%' THEN
+      CASE WHEN UPPER(regexp_replace(split_part(hit1, '_', 1), '(?i)^chr', '')) = 'X'  THEN 23
+        WHEN UPPER(regexp_replace(split_part(hit1, '_', 1), '(?i)^chr', '')) = 'Y'  THEN 24
+        WHEN UPPER(regexp_replace(split_part(hit1, '_', 1), '(?i)^chr', '')) = 'MT' THEN 25
+        ELSE CAST(regexp_replace(split_part(hit1, '_', 1), '(?i)^chr', '') AS INTEGER)
+      END
+      ELSE NULL
+    END AS hit1_chromosome,
+    CASE WHEN hit1 ILIKE 'chr%' THEN CAST(split_part(hit1, '_', 2) AS INTEGER)
+      ELSE NULL
+    END AS hit1_position,
+    CASE WHEN hit1 ILIKE 'chr%' THEN split_part(hit1, '_', 3)
+      ELSE NULL
+    END AS hit1_ref,
+    CASE WHEN hit1 ILIKE 'chr%' THEN split_part(hit1, '_', 4)
+      ELSE NULL
+    END AS hit1_alt,
 
-	        REPLACE(list_extract(split(dataset1, '--'), 1), '_', ' ') AS dataset1_label,
+    CAST(hit1_beta AS DOUBLE) as hit1_beta,
+    CAST(hit1_p AS DOUBLE) as hit1_pvalue,
 
-	        CASE WHEN dataset1 LIKE '%--%--%--%' THEN REPLACE(split_part(split_part(dataset1, '--', 2), '--', 2), '_', ' ')
-                 ELSE NULL
-            END AS dataset1_sample,
-
-			CASE WHEN dataset1 LIKE '%--%--%--%'
-                 THEN REPLACE(split_part(dataset1, '--', 3), '_', ' ')   -- the 3rd segment between '--'
-                 ELSE NULL
-            END AS dataset1_methods,
-
-	        REPLACE(reverse(split_part(reverse(dataset1), '--', 1)), '_', ' ') AS dataset1_collection,
-
-	        REPLACE(list_extract(split(dataset1, '--'), 1), '_', ' ') AS dataset1_label,
-
-            dataset2,
-			
-	        REPLACE(list_extract(split(dataset2, '--'), 1), '_', ' ') AS dataset2_label,
-
-	        CASE WHEN dataset2 LIKE '%--%--%--%' THEN REPLACE(split_part(split_part(dataset2, '--', 2), '--', 2), '_', ' ')
-                 ELSE NULL
-            END AS dataset2_sample,
-
-			CASE WHEN dataset2 LIKE '%--%--%--%'
-                 THEN REPLACE(split_part(dataset2, '--', 3), '_', ' ')   -- the 3rd segment between '--'
-                 ELSE NULL
-            END AS dataset2_methods,
-
-	        REPLACE(reverse(split_part(reverse(dataset2), '--', 1)), '_', ' ') AS dataset2_collection,
-
-	        REPLACE(list_extract(split(dataset2, '--'), 1), '_', ' ') AS dataset2_label,
-
-            trait1,
-            trait2,
-
-	    region1,
-
-            CASE WHEN regexp_extract(region1, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'X' THEN 23
-                WHEN regexp_extract(region1, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'Y' THEN 24
-                WHEN regexp_extract(region1, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'MT' THEN 25
-                ELSE CAST(regexp_extract(region1, 'chr(\w+):-?(\d+)-(\d+)', 1) AS TINYINT)
-            END AS region1_chromosome,
-
-            CAST(regexp_extract(region1, 'chr(\w+):-?(\d+)-(\d+)', 2) AS BIGINT) AS region1_start,
-            CAST(regexp_extract(region1, 'chr(\w+):-?(\d+)-(\d+)', 3) AS BIGINT) AS region1_end,
-
-	    region2,
-
-            CASE WHEN regexp_extract(region2, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'X' THEN 23
-                WHEN regexp_extract(region2, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'Y' THEN 24
-                WHEN regexp_extract(region2, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'MT' THEN 25
-                ELSE CAST(regexp_extract(region2, 'chr(\w+):-?(\d+)-(\d+)', 1) AS TINYINT)
-            END AS region2_chromosome,
-
-            CAST(regexp_extract(region2, 'chr(\w+):-?(\d+)-(\d+)', 2) AS BIGINT) AS region2_start,
-            CAST(regexp_extract(region2, 'chr(\w+):-?(\d+)-(\d+)', 3) AS BIGINT) AS region2_end,
-
-            cs1,
-            cs2,
-
-            nsnps,
-
-	    hit1,
-
-        CASE WHEN hit1 ILIKE 'chr%' THEN
-             CASE WHEN UPPER(regexp_replace(split_part(hit1, '_', 1), '(?i)^chr', '')) = 'X'  THEN 23
-                  WHEN UPPER(regexp_replace(split_part(hit1, '_', 1), '(?i)^chr', '')) = 'Y'  THEN 24
-                  WHEN UPPER(regexp_replace(split_part(hit1, '_', 1), '(?i)^chr', '')) = 'MT' THEN 25
-                  ELSE CAST(regexp_replace(split_part(hit1, '_', 1), '(?i)^chr', '') AS INTEGER)
-             END
-             ELSE NULL
-        END AS hit1_chromosome,
-
-	    CASE WHEN hit1 ILIKE 'chr%' THEN CAST(split_part(hit1, '_', 2) AS INTEGER)
-             ELSE NULL
-        END AS hit1_position,
-
-        CASE WHEN hit1 ILIKE 'chr%' THEN split_part(hit1, '_', 3)
-             ELSE NULL
-        END AS hit1_ref,
-
-        CASE WHEN hit1 ILIKE 'chr%' THEN split_part(hit1, '_', 4)
-             ELSE NULL
-        END AS hit1_alt,
-
-	    CASE WHEN split_part(hit1_info, ',', 1) == 'NA' THEN null
-                 ELSE CAST(split_part(hit1_info, ',', 1) AS DOUBLE)
-            END AS hit1_beta,
-		
-	    CASE WHEN split_part(hit1_info, ',', 2) == 'NA' THEN null
-                 ELSE CAST(split_part(hit1_info, ',', 2) AS DOUBLE)
-            END AS hit1_pvalue,
-
-	    hit2,
-
-        CASE WHEN hit2 ILIKE 'chr%' THEN
-             CASE WHEN UPPER(regexp_replace(split_part(hit2, '_', 1), '(?i)^chr', '')) = 'X'  THEN 23
-                  WHEN UPPER(regexp_replace(split_part(hit2, '_', 1), '(?i)^chr', '')) = 'Y'  THEN 24
-                  WHEN UPPER(regexp_replace(split_part(hit2, '_', 1), '(?i)^chr', '')) = 'MT' THEN 25
-                  ELSE CAST(regexp_replace(split_part(hit2, '_', 1), '(?i)^chr', '') AS INTEGER)
-             END
-             ELSE NULL
-        END AS hit2_chromosome,
-
-	    CASE WHEN hit2 ILIKE 'chr%' THEN CAST(split_part(hit2, '_', 2) AS INTEGER)
-             ELSE NULL
-        END AS hit2_position,
-
-        CASE WHEN hit2 ILIKE 'chr%' THEN split_part(hit2, '_', 3)
-             ELSE NULL
-        END AS hit2_ref,
-
-        CASE WHEN hit2 ILIKE 'chr%' THEN split_part(hit2, '_', 4)
-             ELSE NULL
-        END AS hit2_alt,
-
-	    CASE WHEN hit2_info = 'NA' OR split_part(hit2_info, ',', 1) == 'NA' THEN null
-                 ELSE CAST(split_part(hit2_info, ',', 1) AS DOUBLE)
-            END AS hit2_beta,
-			
-	    CASE WHEN hit2_info = 'NA' OR split_part(hit2_info, ',', 2) == 'NA' OR split_part(hit2_info, ',', 2) == '' THEN null
-                  ELSE CAST(split_part(hit2_info, ',', 2) AS DOUBLE)
-            END AS hit2_pvalue,
-
-	    "PP.H0.abf" AS PPH0abf,
-	    "PP.H1.abf" AS PPH1abf,
-	    "PP.H2.abf" AS PPH2abf,
-	    "PP.H3.abf" AS PPH3abf,
-        "PP.H4.abf" AS PPH4abf,
-
-	    low_purity1,
-            low_purity2,
-
-	    nsnps1,
-	    nsnps2,
-
-	    cs1_log10bf,
-	    cs2_log10bf,
-
-            CASE WHEN clpp == 'NA' THEN null
-                ELSE CAST(clpp AS DOUBLE)
-            END AS clpp,
-
-            CASE WHEN clpa == 'NA' THEN null
-                ELSE CAST(clpa AS DOUBLE)
-            END AS clpa,
-
-	    cs1_size,
-        cs2_size,
-
-        cs_overlap,
-	    topInOverlap,
-
-	    probmass_1,
-	    probmass_2,
-
-	    hit1_info,
-	    hit2_info,
-
-	    colocRes
-
-        FROM read_csv(
-            getenv('COLOC_DATA_PATH'),
-            delim='\t',
-            sample_size=-1
-        );
-
-
+    hit2,
+    CASE WHEN hit2 ILIKE 'chr%' THEN
+      CASE WHEN UPPER(regexp_replace(split_part(hit2, '_', 1), '(?i)^chr', '')) = 'X'  THEN 23
+          WHEN UPPER(regexp_replace(split_part(hit2, '_', 1), '(?i)^chr', '')) = 'Y'  THEN 24
+          WHEN UPPER(regexp_replace(split_part(hit2, '_', 1), '(?i)^chr', '')) = 'MT' THEN 25
+          ELSE CAST(regexp_replace(split_part(hit2, '_', 1), '(?i)^chr', '') AS INTEGER)
+      END
+      ELSE NULL
+    END AS hit2_chromosome,
+  CASE WHEN hit2 ILIKE 'chr%' THEN CAST(split_part(hit2, '_', 2) AS INTEGER)
+    ELSE NULL
+  END AS hit2_position,
+  CASE WHEN hit2 ILIKE 'chr%' THEN split_part(hit2, '_', 3)
+        ELSE NULL
+  END AS hit2_ref,
+  CASE WHEN hit2 ILIKE 'chr%' THEN split_part(hit2, '_', 4)
+        ELSE NULL
+  END AS hit2_alt,
+  CAST(hit2_beta AS DOUBLE) as hit2_beta,
+  CAST(hit2_p AS DOUBLE) as hit2_pvalue,
+  "PP.H0.abf" AS PPH0abf,
+  "PP.H1.abf" AS PPH1abf,
+  "PP.H2.abf" AS PPH2abf,
+  "PP.H3.abf" AS PPH3abf,
+  "PP.H4.abf" AS PPH4abf,
+  low_purity1,
+  low_purity2,
+  nsnps1,
+  nsnps2,
+  cs1_log10bf,
+  cs2_log10bf,
+  CASE WHEN clpp == 'NA' THEN null
+      ELSE CAST(clpp AS DOUBLE)
+  END AS clpp,
+  CASE WHEN clpa == 'NA' THEN null
+      ELSE CAST(clpa AS DOUBLE)
+  END AS clpa,
+  cs1_size,
+    cs2_size,
+    cs_overlap,
+  topInOverlap,
+  probmass_1,
+  probmass_2,
+  colocRes
+FROM read_csv(
+    getenv('COLOC_DATA_PATH'),
+    delim='\t',
+    sample_size=-1
+);
 EOF
 ```
 
 Parse and aggregates variant-level information from credible set data
 into a structured JSON array per `(dataset, region, trait, cs)`
 combination. It creates a new DuckDB table named
-`colocalization_variants`.
+`colocalization_variants`.  
+Note that in R14, some of the inputs had low_purity as NA, so it was changed to use try_cast instead of cast.
 
 ```bash
 $DUCKDB_CMD <<EOF
 DROP TABLE IF EXISTS colocalization_variants;
-
 CREATE TABLE colocalization_variants AS
 SELECT
-    --- Parse chromosome from region string
-    CASE WHEN regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'X' THEN 23
-         WHEN regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'Y' THEN 24
-         WHEN regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'MT' THEN 25
-         ELSE CAST(regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 1) AS TINYINT)
-    END AS region_chromosome,
-
-    --- Parse start and end coordinates
-    CAST(regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 2) AS BIGINT) AS region_start,
-    CAST(regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 3) AS BIGINT) AS region_end,
-
-    dataset,
-    trait,
-	cs::TINYINT AS cs,
-    --- Aggregate variant-level data into a JSON array
-    to_json(ARRAY_AGG(JSON_OBJECT(
-        'rsid', rsid,
-        'position', CAST(REGEXP_EXTRACT(rsid, 'chr(\w+)_([0-9]+)', 2) AS UBIGINT),
-        'cs', CAST(cs AS TINYINT),
-        'low_purity',
-            CASE WHEN low_purity = 0 THEN FALSE
-                 WHEN low_purity = 1 THEN TRUE
-                 ELSE ERROR('Invalid value in col: must be 0 or 1')
-            END,
-        'p',    CASE WHEN p == 'NA'    THEN null ELSE CAST(p    AS FLOAT) END,
-        'beta', CASE WHEN beta == 'NA' THEN null ELSE CAST(beta AS FLOAT) END,
-        'se',   CASE WHEN se == 'NA'   THEN null ELSE CAST(se   AS FLOAT) END,
-        'cs_specific_prob', CAST(cs_specific_prob AS FLOAT)
-    ))) AS variants
-
-FROM read_csv('${CREDSET_DATA_PATH}',
-              delim='\t',
-              sample_size=-1)
-
-GROUP BY dataset, region, trait, cs;
+  --- Parse chromosome from region string
+  CASE WHEN regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'X' THEN 23
+    WHEN regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'Y' THEN 24
+    WHEN regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 1) = 'MT' THEN 25
+    ELSE CAST(regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 1) AS TINYINT)
+  END AS region_chromosome,
+  --- Parse start and end coordinates
+  CAST(regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 2) AS BIGINT) AS region_start,
+  CAST(regexp_extract(region, 'chr(\w+):-?(\d+)-(\d+)', 3) AS BIGINT) AS region_end,
+  dataset_key as dataset,
+  trait,
+  cs::TINYINT AS cs,
+  --- Aggregate variant-level data into a JSON array
+  to_json(ARRAY_AGG(JSON_OBJECT(
+    'rsid', rsid,
+    'position', CAST(REGEXP_EXTRACT(rsid, 'chr(\w+)_([0-9]+)', 2) AS UBIGINT),
+    'cs', CAST(cs AS TINYINT),
+    'low_purity', TRY_CAST(low_purity AS BOOLEAN),
+    'p',    CAST(p    AS FLOAT),
+    'beta', CAST(beta AS FLOAT),
+    'se',   CAST(se   AS FLOAT),
+    'cs_specific_prob', CAST(cs_specific_prob AS FLOAT)
+  ))) AS variants
+FROM read_csv('/mnt/disks/data/r14/coloc/v2/coloc.credsets.processed.tsv.gz',
+  delim='\t',
+  sample_size=-1,
+  nullstr='NA')
+GROUP BY dataset_key, region, trait, cs;
 EOF
 ```
 
@@ -423,7 +433,7 @@ SET trait2 = (
   FROM somalogic_annotation AS s
   WHERE s.Probe = colocalization.trait2
 )
-WHERE dataset2 = 'FIN-R12-Somascan--Plasma-Proteomics';
+WHERE dataset2 = 'FIN-R12-Somascan--plasma--protein';
 EOF
 ```
 
@@ -446,6 +456,7 @@ a tsv file.
 
 ```bash
 $DUCKDB_CMD <<EOF
+DROP TABLE IF EXISTS colocalization.colocalization_stage;
 CREATE TABLE colocalization.colocalization_stage AS
 SELECT
   colocalization_id,
@@ -500,15 +511,12 @@ SELECT
   topInOverlap,
   probmass_1,
   probmass_2,
-  hit1_info,
-  hit2_info,
   hit1_beta,
   hit1_pvalue,
   hit2_beta,
   hit2_pvalue,
   colocRes
 FROM colocalization.colocalization;
-
 COPY(SELECT 
   colocalization_id,
   dataset1, dataset1_label, dataset1_sample, dataset1_methods, dataset1_collection,
@@ -531,7 +539,6 @@ COPY(SELECT
   cs_overlap,
   topInOverlap,
   probmass_1, probmass_2,
-  hit1_info, hit2_info,
   hit1_beta, hit1_pvalue,
   hit2_beta, hit2_pvalue,
   colocRes
@@ -548,6 +555,7 @@ This step exports `colocalization_variants` data from DuckDB to tsv.
 
 ```bash
 $DUCKDB_CMD <<EOF
+DROP TABLE IF EXISTS colocalization.colocalization_variants_stage;
 CREATE TABLE colocalization.colocalization_variants_stage AS
 SELECT
   region_chromosome, region_start, region_end,
@@ -588,41 +596,32 @@ DROP TABLE IF EXISTS colocalization_${TABLE_VERSION};
 
 CREATE TABLE colocalization_${TABLE_VERSION} (
   colocalization_id             INTEGER,
-
   dataset1                VARCHAR(100)  NULL,
   dataset1_label          VARCHAR(100)  NULL,
   dataset1_sample         VARCHAR(100)  NULL,
   dataset1_methods        VARCHAR(100)  NULL, 
   dataset1_collection     VARCHAR(100)  NULL,
-
   dataset2                VARCHAR(100)  NULL,
   dataset2_label          VARCHAR(100)  NULL,
   dataset2_sample         VARCHAR(100)  NULL,
   dataset2_methods        VARCHAR(100)  NULL, 
   dataset2_collection     VARCHAR(100)  NULL,
-
   trait1             VARCHAR(100)  NULL,
   trait2             VARCHAR(100)  NULL,
-
   region_chromosome         TINYINT       NULL,
   region_start              BIGINT        NULL,
   region_end                BIGINT        NULL,
-
   region1            VARCHAR(100)  NULL,
   region1_chromosome TINYINT       NULL,
   region1_start      BIGINT        NULL,
   region1_end        BIGINT        NULL,
-
   region2            VARCHAR(100)  NULL,
   region2_chromosome TINYINT       NULL,
   region2_start      BIGINT        NULL,
   region2_end        BIGINT        NULL,
-
   cs1                BIGINT        NULL,
   cs2                BIGINT        NULL,
-
   nsnps              BIGINT        NULL,
-
   hit1               VARCHAR(500)  NOT NULL,
   hit1_chromosome    TINYINT  NOT NULL,
   hit1_position      BIGINT  NOT NULL,
@@ -640,39 +639,33 @@ CREATE TABLE colocalization_${TABLE_VERSION} (
   PPH2abf            DOUBLE        NULL,
   PPH3abf            DOUBLE        NULL,
   PPH4abf            DOUBLE        NULL,
-
+  
   low_purity1        BIGINT        NULL,
   low_purity2        BIGINT        NULL,
-
   nsnps1             BIGINT        NULL,
   nsnps2             BIGINT        NULL,
-
+  
   cs1_log10bf        DOUBLE        NULL,
   cs1_log10bf_is_infinite BOOLEAN,
   cs2_log10bf        DOUBLE,
   cs2_log10bf_is_infinite BOOLEAN,
-
+  
   clpp               DOUBLE,
   clpa               DOUBLE,
-
+  
   cs1_size           BIGINT,
   cs2_size           BIGINT,
-
   cs_overlap         BIGINT,
   topInOverlap       VARCHAR(100),
-
+  
   probmass_1         DOUBLE,
   probmass_2         DOUBLE,
 
-  hit1_info          VARCHAR(100),
-  hit2_info          VARCHAR(100),
-
   hit1_beta          DOUBLE,
   hit1_pvalue        DOUBLE,
-
   hit2_beta          DOUBLE,
   hit2_pvalue        DOUBLE,
-
+  
   colocRes           VARCHAR(500)  NULL
 );
 EOF
@@ -823,7 +816,7 @@ EOF
 
 Create the views for pheweb to query:
 
-```
+```bash
 mysql --defaults-group-suffix=${GROUP_SUFFIX} <<EOF
 drop view if exists colocalization_phenotype_${TABLE_VERSION};
 create view colocalization_phenotype_${TABLE_VERSION} as
@@ -833,6 +826,8 @@ drop view if exists colocalization_region_${TABLE_VERSION};
 create view colocalization_region_${TABLE_VERSION} as
 SELECT c.dataset1_label AS dataset1,
        c.dataset2_label AS dataset2,
+       c.dataset2_sample as dataset2_sample,
+       c.dataset2_methods as dataset2_methods,
        c.region_chromosome,
        c.region_start,
        c.region_end,
