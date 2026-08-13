@@ -119,6 +119,17 @@ def test_before_request_authorized_member_allowed(app, monkeypatch):
         assert before_request() is None
 
 
+def test_before_request_authorized_member_api_request_allowed(app, monkeypatch):
+    monkeypatch.setattr(server_auth, "current_user", _authenticated_user())
+    monkeypatch.setattr(server_auth, "verify_membership", lambda email: True)
+    with app.test_request_context("/api/drugs/ABC"):
+        # a logged-in, authorized member's API request should pass straight
+        # through: no redirect, no error response, and no destination stashed
+        # in the session since there's nothing to send them back to.
+        assert before_request() is None
+        assert "original_destination" not in session
+
+
 # --- is_public / do_check_auth ---------------------------------------------
 
 def test_is_public_marks_function_and_returns_it_unchanged():
