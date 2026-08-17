@@ -1181,7 +1181,7 @@ const phenotypeColumns = {
     },
     disease: {
       Header: () => (<span style={{ textDecoration: "underline" }}>disease</span>),
-      accessor: "disease",
+      accessor: "diseaseName",
       filterMethod: (filter, row) => row[filter.id] <= filter.value,
       Cell: textCellFormatter
     },
@@ -1196,7 +1196,7 @@ const phenotypeColumns = {
       accessor: "drugId",
       filterMethod: (filter, row) => row[filter.id] <= filter.value,
       Cell: props => props.value === "NA" ? props.value : (
-        <a href={`https://www.ebi.ac.uk/chembl/g/#search_results/all/query=${props.value}`}
+        <a href={`https://www.ebi.ac.uk/chembl/explore/compound/${props.value}`}
            target="_blank" rel="noopener noreferrer">
           {props.value}
         </a>
