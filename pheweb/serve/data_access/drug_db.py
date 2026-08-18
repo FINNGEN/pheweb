@@ -114,7 +114,7 @@ class DrugDao(DrugDB):
             return []
 
         target = hit.get('object') or {}
-        target_classes = [tc['label'] for tc in target.get('targetClass', []) if tc]
+        target_classes = [tc['label'] for tc in target.get('targetClass', [])]
         candidates = target['drugAndClinicalCandidates']['rows']
 
         rows = []

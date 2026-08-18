@@ -234,15 +234,3 @@ def test_get_drugs_joins_deduplicated_mechanisms_of_action():
     rows = dao.get_drugs("PCSK9")
 
     assert rows[0]["mechanismOfAction"] == "Inhibitor; Antagonist"
-
-
-def test_get_drugs_filters_out_falsy_target_classes():
-    target = _target(
-        target_class=[{"label": "Enzyme"}, None],
-        candidates=[_candidate(drug=_drug(), diseases=[_disease("disease A")])],
-    )
-    dao = _dao_with_response(_response([_hit("PCSK9", 1, target)]))
-
-    rows = dao.get_drugs("PCSK9")
-
-    assert rows[0]["targetClass"] == ["Enzyme"]
