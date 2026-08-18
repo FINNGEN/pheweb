@@ -114,38 +114,35 @@ class DrugDao(DrugDB):
             return []
 
         target = hit.get('object') or {}
-        target_classes = [tc['label'] for tc in target.get('targetClass', [])]
-        candidates = target.get('drugAndClinicalCandidates', {}).get('rows', [])
+        target_classes = [tc['label'] for tc in target.get('targetClass', []) if tc]
+        candidates = target['drugAndClinicalCandidates']['rows']
 
         rows = []
         for candidate in candidates:
             drug = candidate.get('drug')
-            # If the candidate has no drug, skip it
-            if not drug:
-                continue
-            mechanisms = [
-                m['mechanismOfAction']
-                for m in drug.get('mechanismsOfAction', {}).get('rows', [])
-                if m.get('mechanismOfAction')
-            ]
-            diseases = [d['disease'] for d in candidate.get('diseases', []) if d.get('disease')]
+            if drug:
+                mechanisms = [
+                    m['mechanismOfAction']
+                    for m in drug.get('mechanismsOfAction', {}).get('rows', [])
+                ]
+                diseases = [d['disease'] for d in candidate['diseases'] if d.get('disease')]
 
-            # deduplicate the diseases here by name, because the API seems to give duplicates on some diseases
-            seen = set()
-            diseases = [d for d in diseases if d['name'] not in seen and not seen.add(d['name'])]
+                # deduplicate the diseases here by name, because the API seems to give duplicates on some diseases
+                seen = set()
+                diseases = [d for d in diseases if d['name'] not in seen and not seen.add(d['name'])]
 
-            for disease in diseases or [{}]:
-                db_xrefs = disease.get('dbXRefs', [])
-                rows.append({
-                    'approvedName': drug.get('name'),
-                    'diseaseName': disease.get('name'),
-                    'EFOInfo': next((x for x in db_xrefs if x.startswith('EFO:')), None),
-                    'drugId': drug.get('id'),
-                    'drugType': drug.get('drugType'),
-                    'maximumClinicalTrialPhase': self._prettify_stage(drug.get('maximumClinicalStage')),
-                    'mechanismOfAction': '; '.join(dict.fromkeys(mechanisms)) or None,
-                    'phase': self._prettify_stage(candidate.get('maxClinicalStage')),
-                    'prefName': drug.get('name'),
-                    'targetClass': target_classes,
-                })
+                for disease in diseases or [{}]:
+                    db_xrefs = disease.get('dbXRefs', [])
+                    rows.append({
+                        'approvedName': drug.get('name'),
+                        'diseaseName': disease.get('name'),
+                        'EFOInfo': next(filter(lambda x: x.startswith("EFO:"),db_xrefs), None),
+                        'drugId': drug.get('id'),
+                        'drugType': drug.get('drugType'),
+                        'maximumClinicalTrialPhase': self._prettify_stage(drug.get('maximumClinicalStage')),
+                        'mechanismOfAction': '; '.join(dict.fromkeys(mechanisms)) or None,
+                        'phase': self._prettify_stage(candidate.get('maxClinicalStage')),
+                        'prefName': drug.get('name'),
+                        'targetClass': target_classes,
+                    })
         return rows
