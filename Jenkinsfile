@@ -1,33 +1,50 @@
 pipeline {
   agent { label 'docker' }
 
+  options {
+    timeout(time: 60, unit: 'MINUTES')
+    timestamps()
+    buildDiscarder(logRotator(numToKeepStr: '30'))
+    disableConcurrentBuilds()
+  }
+
+  environment {
+    REGISTRY = 'europe-west1-docker.pkg.dev/phewas-development/fg-phewas-registry'
+    IMAGE    = "${REGISTRY}/pheweb"
+    TAG      = "ci-${env.GIT_COMMIT}"
+  }
+
   stages {
     stage('Build') {
       steps {
+        sh "sed -i 's|COMMIT_SHA|PHEWEB VERSION : ${env.GIT_COMMIT}|' ui/src/common/commonConstants.tsx"
         script {
-          sh(script: """printenv""")
-          sh(script: """sed -i "s/COMMIT_SHA/PHEWEB VERSION : \$(git log -n 1 --format=format:"%H")/" ui/src/common/commonConstants.tsx""")
-          c = docker.build("europe-west1-docker.pkg.dev/phewas-development/fg-phewas-registry/pheweb:ci-${env.GIT_COMMIT}", "-f deploy/Dockerfile ./")
+          docker.build("${IMAGE}:${TAG}", "--pull -f deploy/Dockerfile ./")
         }
       }
     }
 
     stage('Test') {
       steps {
-        script {
-          sh(script: """docker run --rm ${c.id} sh -c 'pip install --no-cache-dir pytest && cd /pheweb && pytest --ignore=tests/integration -m "not known_failure" tests'""")
-        }
+        sh """
+          mkdir -p test-results && chmod 777 test-results
+          docker run --rm -v \$PWD/test-results:/out ${IMAGE}:${TAG} sh -c \\
+            'pip install --no-cache-dir "pytest==8.*" && cd /pheweb && pytest --ignore=tests/integration -m "not known_failure" --junitxml=/out/pytest.xml tests'
+        """
+      }
+      post {
+        always { junit allowEmptyResults: true, testResults: 'test-results/pytest.xml' }
       }
     }
 
     stage('Push') {
       steps {
-        // No credentialsId: the agent's service account (jenkins-gce-agent) holds
-        // roles/artifactregistry.writer and the image ships the gcloud
-        // credHelper config for europe-west1-docker.pkg.dev.
         script {
-          docker.withRegistry('https://europe-west1-docker.pkg.dev/phewas-development/fg-phewas-registry') { c.push("ci-${env.GIT_COMMIT}") }
-          docker.withRegistry('https://europe-west1-docker.pkg.dev/phewas-development/fg-phewas-registry') { c.push("ci-latest") }
+          docker.withRegistry("https://${REGISTRY}") {
+            def image = docker.image("${IMAGE}:${TAG}")
+            image.push(env.TAG)
+            if (env.GIT_BRANCH == 'origin/master') { image.push('ci-latest') }
+          }
         }
       }
     }
@@ -39,18 +56,27 @@ pipeline {
         }
       }
       steps {
-        // helm-gcs itself is baked; `helm repo add` stays here because it
-        // authenticates against the bucket, which is a per-build concern.
-        sh '''helm repo add production_jenkins_storage_green gs://production_jenkins_storage_green/helm/charts'''
-        sh '''helm repo update'''
-        sh '''helm fetch production_jenkins_storage_green/finngen-pheweb'''
-        sh '''gcloud container clusters get-credentials development-staging-pheweb --zone europe-west1-b'''
-        sh '''if helm ls | grep development-staging > /dev/null ; then
-              helm get values development-staging-pheweb | grep -v USER-SUPPLIED > ./staging-values.yaml ;
-              helm upgrade development-staging-pheweb production_jenkins_storage_green/finngen-pheweb -f ./staging-values.yaml --set image.tag=ci-${GIT_COMMIT} ;
-              kubectl delete pods --all --wait=false
-              fi'''
+        sh '''set -eu
+          helm repo add production_jenkins_storage_green gs://production_jenkins_storage_green/helm/charts
+          helm repo update
+          gcloud container clusters get-credentials development-staging-pheweb --zone europe-west1-b
+
+          if ! helm status development-staging-pheweb >/dev/null 2>&1; then
+            echo "release development-staging-pheweb not found - refusing to deploy" >&2
+            exit 1
+          fi
+
+          helm upgrade development-staging-pheweb production_jenkins_storage_green/finngen-pheweb \\
+            --reuse-values --set image.tag=ci-${GIT_COMMIT} --wait --timeout 10m
+        '''
       }
+    }
+  }
+
+  post {
+    always {
+      sh "docker rmi ${IMAGE}:${TAG} || true"
+      cleanWs()
     }
   }
 }
