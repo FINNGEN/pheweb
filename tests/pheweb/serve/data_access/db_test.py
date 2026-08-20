@@ -209,6 +209,14 @@ class TestTabixResultLongDao(unittest.TestCase):
         results = tabix_results.get_variants_results([variant_not_found])
         self.assertEqual(results, [])
     
+    def test_variants_results_returns_empty_list_if_chromosome_not_found(self):
+        tabix_results = TabixResultLongDao(
+            self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns, mock_sites_file_path
+        )
+        variant_not_found = Variant("25", "13668", "G", "C")
+        results = tabix_results.get_variants_results([variant_not_found])
+        self.assertEqual(results, [])
+
     def test_variant_range_returns_empty_list_if_not_found(self):
         tabix_results = TabixResultLongDao(
             self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns, mock_sites_file_path
@@ -336,6 +344,11 @@ class TestTabixResultLongDao(unittest.TestCase):
         dao = TabixResultLongDao(self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns,mock_sites_file_path)
         self.assertFalse(dao._variant_exists(variant))
     
+    def test_non_existing_chromosome_returns_false(self):
+        variant = Variant("25", "14842", "G", "T")
+        dao = TabixResultLongDao(self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns,mock_sites_file_path)
+        self.assertFalse(dao._variant_exists(variant))
+
     def test_variant_corner_cases(self):
         one_before = Variant("1", "14841", "G", "A")
         variant = Variant("1", "14842", "G", "T")
@@ -360,12 +373,9 @@ class TestTabixResultLongDao(unittest.TestCase):
             self.assertEqual(res.maf, None)
             self.assertEqual(res.maf_case, None)
             self.assertEqual(res.maf_control, None)
-    
-    @pytest.mark.known_failure
-    # TODO: the X/23 range queries return the wrong number of rows against
-    # tests/mocked-data/sites_mocked.tsv.gz. Either chromosome normalisation in
-    # TabixResultLongDao is wrong for X, or the mocked data lacks the X rows.
-    def test_chromosome_X(self):
+
+    def test_chromosome_X_Y(self):
+        # This tests the translations from letter to numbers in chromosome names. X exists in the data, Y does not.
         tabix_results = TabixResultLongDao(
             self.mocked_pheno_list_data, test_data_file_path, test_mocked_columns, mock_sites_file_path
         )
