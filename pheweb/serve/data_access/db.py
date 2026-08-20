@@ -2,7 +2,7 @@
 import abc
 import attr
 import copy
-import importlib
+from importlib import import_module
 from collections import defaultdict
 from elasticsearch import Elasticsearch
 import json
@@ -12,9 +12,9 @@ import pandas as pd
 import numpy as np
 import pymysql
 from typing import List, Tuple, Dict, Union, Optional, Any, Iterable, Final
-from ...file_utils import common_filepaths
-from ...utils import get_phenolist, get_gene_tuples, pvalue_to_mlogp, get_p_and_mlogp, get_use_phenocode_pheno_map, parse_chromosome
-from ..components.health.health_check import default_dao as health_default_dao
+from ...file_utils import MatrixReader, common_filepaths
+from ...utils import get_phenolist, get_gene_tuples, pvalue_to_mlogp, mlogp_to_pvalue, get_p_and_mlogp, get_use_phenocode_pheno_map, parse_chromosome
+from ..components.health.health_check import default_dao as health_default_dao, HealthSimpleDAO, HealthNotificationDAO, HealthTrivialDAO
 from pheweb.serve.components.autocomplete.sqlite_dao import GeneAliasesSqliteDAO
 from pheweb.serve.data_access.gene_info import NCBIGeneInfoDao
 from collections import namedtuple
@@ -25,10 +25,20 @@ import time
 import os
 import sys
 import logging
+from pheweb.serve.components.colocalization.model_orm_db import ColocalizationDAO
+from pheweb.serve.components.colocalization.model_sql_db import ColocalizationV2DAO
+from .variant_phenotype import  VariantPhenotypeDao
+from ..components.chip.fs_storage import FileChipDAO
+from ..components.coding.fs_storage import FileCodingDAO
 from pathlib import Path
-from .drug_db import DrugDao
+from .drug_db import DrugDB, DrugDao
+from ..components.autocomplete.tries_dao import AutocompleterTriesDAO
+from ..components.autocomplete.sqlite_dao import AutocompleterSqliteDAO
+from ..components.autocomplete.mysql_dao import AutocompleterMYSQLDAO
+from pheweb.serve.data_access.file import FilePathResultDao, ManhattanFileResultDao, ManhattanCompressedResultDao
 from pheweb.serve.data_access.db_util import MysqlDAO
 
+from .pqtl_colocalization import PqtlColocalisationDao
 from ...load_source.load_source import load_source
 
 logger = logging.getLogger(__name__)
