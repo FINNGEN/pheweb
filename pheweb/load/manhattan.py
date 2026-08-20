@@ -10,26 +10,63 @@ from ..conf_utils import conf
 from ..file_utils import VariantFileReader, write_json, common_filepaths
 from .load_utils import MaxPriorityQueue, parallelize_per_pheno, timeit
 
-
+import argparse
 import math
 import numpy as np
+import pysam
+
+
+class AnnotationTabixReader:
+    # Looks up a variant from a tabix-indexed annotation file
+
+    def __init__(self, filepath):
+        self._tabix_file = pysam.TabixFile(filepath, parser=None)
+        headers = self._tabix_file.header[0].split('\t')
+        self._col_idx = {header: i for i, header in enumerate(headers)}
+
+    def get_annotation(self, chrom, pos, ref, alt):
+        for row in self._tabix_file.fetch(chrom, pos - 1, pos, parser=None):
+            fields = row.split('\t')
+            if fields[self._col_idx['ref']] == ref and fields[self._col_idx['alt']] == alt:
+                return {
+                    'info': fields[self._col_idx['INFO']],
+                    'gene_most_severe': fields[self._col_idx['gene_most_severe']],
+                    'most_severe': fields[self._col_idx['most_severe']],
+                    'exome_enrichment_nfe': fields[self._col_idx['EXOME_enrichment_nfe']],
+                    'genome_enrichment_nfe': fields[self._col_idx['GENOME_enrichment_nfe']],
+                    #'nearest_gene': fields[self._col_idx['nearest_gene']],
+                }
+        return None
+
+
+def annotate_variants(variants, annotation_reader):
+    for variant in variants:
+        annotation = annotation_reader.get_annotation(variant['chrom'], variant['pos'], variant['ref'], variant['alt'])
+        if annotation is not None:
+            variant.update(annotation)
+
 
 @timeit
 def run(argv):
+    parser = argparse.ArgumentParser(description='create manhattan plot json files')
+    parser.add_argument('--annotation_filepath', type=str, default=None,
+                         help='optional bgzipped, tabix-indexed annotation file used to add INFO/AF to unbinned variants')
+    args = parser.parse_args(argv)
+
     parallelize_per_pheno(
         get_input_filepaths = lambda pheno: common_filepaths['pheno'](pheno['phenocode']),
         get_output_filepaths = lambda pheno: common_filepaths['manhattan'](pheno['phenocode']),
-        convert = create_manhattan,
+        convert = lambda pheno: create_manhattan(pheno, annotation_filepath=args.annotation_filepath),
         cmd = 'manhattan',
     )
 
 
 @timeit
-def create_manhattan(pheno):
-    make_json_file(common_filepaths['pheno'](pheno['phenocode']), common_filepaths['manhattan'](pheno['phenocode']))
+def create_manhattan(pheno, annotation_filepath=None):
+    make_json_file(common_filepaths['pheno'](pheno['phenocode']), common_filepaths['manhattan'](pheno['phenocode']), annotation_filepath=annotation_filepath)
 
 @timeit
-def make_json_file(result_file, output_file, write_as_given=False):
+def make_json_file(result_file, output_file, write_as_given=False, annotation_filepath=None):
     BIN_LENGTH = int(3e6)
     NEGLOG10_PVAL_BIN_SIZE = 0.05 # Use 0.05, 0.1, 0.15, etc
     NEGLOG10_PVAL_BIN_DIGITS = 2 # Then round to this many digits
@@ -40,6 +77,9 @@ def make_json_file(result_file, output_file, write_as_given=False):
             NEGLOG10_PVAL_BIN_SIZE,
             NEGLOG10_PVAL_BIN_DIGITS
         )
+
+    if annotation_filepath is not None:
+        annotate_variants(unbinned_variants, AnnotationTabixReader(annotation_filepath))
 
     rv = {
         'variant_bins': variant_bins,
