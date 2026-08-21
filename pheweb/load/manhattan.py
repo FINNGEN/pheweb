@@ -33,8 +33,7 @@ class AnnotationTabixReader:
                     'gene_most_severe': fields[self._col_idx['gene_most_severe']],
                     'most_severe': fields[self._col_idx['most_severe']],
                     'exome_enrichment_nfe': fields[self._col_idx['EXOME_enrichment_nfe']],
-                    'genome_enrichment_nfe': fields[self._col_idx['GENOME_enrichment_nfe']],
-                    #'nearest_gene': fields[self._col_idx['nearest_gene']],
+                    'genome_enrichment_nfe': fields[self._col_idx['GENOME_enrichment_nfe']]
                 }
         return None
 
