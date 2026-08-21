@@ -1,7 +1,28 @@
 """Unit tests for the bin_variants function in pheweb/load/manhattan.py."""
 from unittest.mock import patch, MagicMock
 
-from pheweb.load.manhattan import bin_variants, np_label_peaks
+from pheweb.load.manhattan import bin_variants, np_label_peaks, AnnotationTabixReader, annotate_variants
+
+ANNOTATION_HEADERS = [
+    '#variant', 'chr', 'pos', 'ref', 'alt', 'INFO', 'AF', 'AC_Het', 'AC_Hom',
+    'most_severe', 'gene_most_severe', 'rsid', 'EXOME_enrichment_nfe', 'GENOME_enrichment_nfe', 'index',
+]
+
+
+def _annotation_row(variant='1:13668:G:A', chrom='1', pos='13668', ref='G', alt='A', info='0.297', af='0.001',
+                     ac_het='1450', ac_hom='2', most_severe='intron_variant', gene='WASH7P', rsid='rs1',
+                     exome_enrichment='0.3', genome_enrichment='0.35', index='0'):
+    return '\t'.join([variant, chrom, pos, ref, alt, info, af, ac_het, ac_hom, most_severe, gene, rsid,
+                       exome_enrichment, genome_enrichment, index])
+
+
+def _make_reader(rows, headers=ANNOTATION_HEADERS):
+    mock_tabix_file = MagicMock()
+    mock_tabix_file.header = ['\t'.join(headers)]
+    mock_tabix_file.fetch.return_value = iter(rows)
+    with patch('pheweb.load.manhattan.pysam.TabixFile', return_value=mock_tabix_file):
+        reader = AnnotationTabixReader('fake_path.tsv.gz')
+    return reader, mock_tabix_file
 
 BIN_LENGTH = 1_000_000
 NEG_BIN_SIZE = 0.05
@@ -399,3 +420,91 @@ def test_integration_all_parameters():
     # v_gw3 (0.009, a peak) kept despite having the highest pval in the queue
     assert 0.008 not in unbinned_pvals  # binned — not a peak
     assert 0.007 in unbinned_pvals      # kept — most significant remaining non-peak
+
+
+class TestAnnotationTabixReader:
+    def test_init_parses_header_into_col_idx(self):
+        reader, _ = _make_reader([])
+        assert reader._col_idx['ref'] == ANNOTATION_HEADERS.index('ref')
+        assert reader._col_idx['alt'] == ANNOTATION_HEADERS.index('alt')
+        assert reader._col_idx['GENOME_enrichment_nfe'] == ANNOTATION_HEADERS.index('GENOME_enrichment_nfe')
+
+    def test_get_annotation_returns_expected_fields_on_match(self):
+        row = _annotation_row(ref='G', alt='A', info='0.297', gene='WASH7P', most_severe='intron_variant',
+                               exome_enrichment='0.3', genome_enrichment='0.35')
+        reader, _ = _make_reader([row])
+        annotation = reader.get_annotation('1', 13668, 'G', 'A')
+        assert annotation == {
+            'info': '0.297',
+            'gene_most_severe': 'WASH7P',
+            'most_severe': 'intron_variant',
+            'exome_enrichment_nfe': '0.3',
+            'genome_enrichment_nfe': '0.35',
+        }
+
+    def test_get_annotation_fetches_using_zero_based_start(self):
+        reader, mock_tabix_file = _make_reader([])
+        reader.get_annotation('1', 13668, 'G', 'A')
+        mock_tabix_file.fetch.assert_called_once_with('1', 13667, 13668, parser=None)
+
+    def test_get_annotation_returns_none_when_fetch_is_empty(self):
+        reader, _ = _make_reader([])
+        assert reader.get_annotation('1', 13668, 'G', 'A') is None
+
+    def test_get_annotation_returns_none_when_alt_does_not_match(self):
+        row = _annotation_row(ref='G', alt='A')
+        reader, _ = _make_reader([row])
+        assert reader.get_annotation('1', 13668, 'G', 'T') is None
+
+    def test_get_annotation_returns_none_when_ref_does_not_match(self):
+        row = _annotation_row(ref='G', alt='A')
+        reader, _ = _make_reader([row])
+        assert reader.get_annotation('1', 13668, 'C', 'A') is None
+
+    def test_get_annotation_picks_correct_row_among_multiple_alleles(self):
+        # multiple alt alleles reported at the same position (multiallelic site)
+        rows = [
+            _annotation_row(ref='G', alt='A', gene='GENE_A'),
+            _annotation_row(ref='G', alt='T', gene='GENE_T'),
+        ]
+        reader, _ = _make_reader(rows)
+        annotation = reader.get_annotation('1', 13668, 'G', 'T')
+        assert annotation['gene_most_severe'] == 'GENE_T'
+
+
+class TestAnnotateVariants:
+    def _v(self, chrom='1', pos=13668, ref='G', alt='A'):
+        return {'chrom': chrom, 'pos': pos, 'ref': ref, 'alt': alt, 'pval': 0.01}
+
+    def test_variant_updated_with_annotation_fields_on_match(self):
+        variant = self._v()
+        mock_reader = MagicMock()
+        mock_reader.get_annotation.return_value = {'info': '0.5', 'gene_most_severe': 'GENE1'}
+        annotate_variants([variant], mock_reader)
+        assert variant['info'] == '0.5'
+        assert variant['gene_most_severe'] == 'GENE1'
+        # original fields are preserved, not overwritten
+        assert variant['pval'] == 0.01
+
+    def test_variant_unchanged_when_no_annotation_found(self):
+        variant = self._v()
+        mock_reader = MagicMock()
+        mock_reader.get_annotation.return_value = None
+        annotate_variants([variant], mock_reader)
+        assert variant == self._v()
+
+    def test_get_annotation_called_with_variant_fields(self):
+        variant = self._v(chrom='2', pos=5000, ref='C', alt='T')
+        mock_reader = MagicMock()
+        mock_reader.get_annotation.return_value = None
+        annotate_variants([variant], mock_reader)
+        mock_reader.get_annotation.assert_called_once_with('2', 5000, 'C', 'T')
+
+    def test_multiple_variants_annotated_independently(self):
+        v1 = self._v(pos=1)
+        v2 = self._v(pos=2)
+        mock_reader = MagicMock()
+        mock_reader.get_annotation.side_effect = [{'info': 'info1'}, None]
+        annotate_variants([v1, v2], mock_reader)
+        assert v1['info'] == 'info1'
+        assert 'info' not in v2

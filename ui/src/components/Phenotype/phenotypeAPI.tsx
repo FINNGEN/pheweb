@@ -26,17 +26,8 @@ const reshapeManhattan = (phenotypeCode: string) =>(data : PhenotypeVariantData)
       delete variant.af_alt_controls
     }
     variant.phenocode = phenotypeCode
-    if (!variant.gnomad) {
-      variant.fin_enrichment = -1
-    } else if (+variant.gnomad.AF_fin === 0) {
-      variant.fin_enrichment = 0
-    } else if (+variant.gnomad['AC_nfe_nwe'] + +variant.gnomad['AC_nfe_onf'] + +variant.gnomad['AC_nfe_seu'] === 0) {
-      variant.fin_enrichment = 1e6
-    } else {
-      variant.fin_enrichment = +variant.gnomad['AC_fin'] / +variant.gnomad['AN_fin'] /
-        ((+variant.gnomad['AC_nfe_nwe'] + +variant.gnomad['AC_nfe_onf'] + +variant.gnomad['AC_nfe_seu']) / (+variant.gnomad['AN_nfe_nwe'] + +variant.gnomad['AN_nfe_onf'] + +variant.gnomad['AN_nfe_seu']))
-    }
-  });
+    variant.fin_enrichment = parseFloat(variant.exome_enrichment_nfe) || parseFloat(variant.genome_enrichment_nfe) || Infinity
+  })
   return data;
 }
 
