@@ -26,7 +26,7 @@ const reshapeManhattan = (phenotypeCode: string) =>(data : PhenotypeVariantData)
       delete variant.af_alt_controls
     }
     variant.phenocode = phenotypeCode
-    variant.fin_enrichment = parseFloat(variant.exome_enrichment_nfe) || parseFloat(variant.genome_enrichment_nfe)
+    variant.fin_enrichment = parseFloat(variant.exome_enrichment_nfe) || parseFloat(variant.genome_enrichment_nfe) || Infinity
   })
   return data;
 }
