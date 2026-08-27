@@ -66,6 +66,8 @@ export interface UnbinnedVariant {
   beta: number
   chrom: string
   fin_enrichment? : number
+  exome_enrichment_nfe? : string
+  genome_enrichment_nfe? : string
   info?: string
   maf? : number
   maf_cases? : number
@@ -73,6 +75,7 @@ export interface UnbinnedVariant {
   mlogp: number
   pScaled? : number
   most_severe? : string
+  gene_most_severe? : string
   n_het_cases: number
   n_het_controls: number
   n_hom_cases: number

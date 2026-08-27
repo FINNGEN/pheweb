@@ -1,4 +1,6 @@
 {
-  "generate_manhattan.manhattan.docker": "europe-west1-docker.pkg.dev/phewas-development/fg-phewas-registry/pheweb:<docker image tag>",
-  "generate_manhattan.pheno_file_loc": "gs://path to a text file with all pheno file locations, one per line"
+  "generate_manhattan.manhattan.docker": "europe-west1-docker.pkg.dev/phewas-development/fg-phewas-registry/pheweb:docker_image_id",
+  "generate_manhattan.pheno_file_loc": "gs://pheno_file_locations.txt",
+  "generate_manhattan.annotation_filepath": "gs://r13-data-green/annotation/R13_annotated_variants_v0.small.gz",
+  "generate_manhattan.annotation_tbi_filepath": "gs://r13-data-green/annotation/R13_annotated_variants_v0.small.gz.tbi"
 }
