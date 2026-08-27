@@ -43,9 +43,9 @@ RUN curl -LO https://github.com/samtools/htslib/releases/download/1.9/htslib-1.9
     ./configure && make && make install && cd .. && rm -rf htslib-1.9*
 
 # install gsutil
-RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | \
+RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | \
     tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
-    gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg && apt-get update -y && apt-get install google-cloud-sdk -y
+    gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg && apt-get update -y && apt-get install google-cloud-cli -y
 
 # install python packages and perquisites
 RUN apt-get update && apt-get install default-libmysqlclient-dev git python3-pip python3-venv libffi-dev libz-dev  libbz2-dev liblzma-dev libssl-dev rustc --yes --fix-missing
