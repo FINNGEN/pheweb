@@ -369,7 +369,7 @@ export const createBioBankURL = (v : CommonVariantModel | undefined) => (rsidMap
   const rsid = rsidMapping.rsid;
 
   if(v && mapping && rsid){
-    const url : string = `http://pheweb.sph.umich.edu/SAIGE-UKB/variant/${mapping.seq_region_name}-${mapping.start}-${v.reference}-${v.alternate}`
+    const url : string = `https://pheweb.org/UKB-TOPMed/variant/${mapping.seq_region_name}-${mapping.start}-${v.reference}-${v.alternate}`
     bioBankURL = { rsid , url};
   } else {
     bioBankURL = undefined;
