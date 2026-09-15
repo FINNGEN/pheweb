@@ -106,9 +106,8 @@ performance of the phenotype page. However, this increases the size of
 the files, so enabling compression is recommended.  Below are the
 recommended settings.
 
-  "import\_pheweb.pheno.gnomad_filepath" the gnomad annotation file
-  "import\_pheweb.pheno.annotation_filepath" the annotation file path
-  "import\_pheweb.pheno.annotation_indexes" : the list of tabix index files for the above files
+  "import\_pheweb.annotation_filepath" : a bgzipped, tabix-indexed annotation file with `ref`, `alt`, `INFO`, `gene_most_severe`, `most_severe`, `EXOME_enrichment_nfe` and `GENOME_enrichment_nfe` columns, used to add these fields to the unbinned variants in the Manhattan JSON
+  "import\_pheweb.annotation_tbi_filepath" : the tabix index file (.tbi) for the above file
   "import\_pheweb.pheno.compress_manhattan" : true, to enable compression
 
 *NOTE* This requires the following settings in the pheweb configuration

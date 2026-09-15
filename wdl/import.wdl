@@ -245,6 +245,10 @@ task pheno {
     File bed_file
 	Int gene_version
 
+    File? annotation_filepath
+    File? annotation_tbi_filepath
+    String annotation_flag = if defined(annotation_filepath) then "--annotation_filepath=${annotation_filepath}" else ""
+
     String base_name = sub(basename(pheno_file), file_affix, "")
     String pheno_name = sub(base_name, ".gz$", "")
 
@@ -283,7 +287,7 @@ task pheno {
         pheweb phenolist glob generated-by-pheweb/parsed/* && \
         pheweb phenolist extract-phenocode-from-filepath --simple && \
         pheweb augment-phenos && \
-        pheweb manhattan && \
+        pheweb manhattan ${annotation_flag} && \
         ([[ "${compress_flag}" == "false" ]] || gzip generated-by-pheweb/manhattan/${pheno_name}.json) && \
         pheweb qq && \
         pheweb bgzip-phenos &&
@@ -803,6 +807,9 @@ workflow import_pheweb {
     File? bed_file
     File? rsids_file
 
+    File? annotation_filepath
+    File? annotation_tbi_filepath
+
     # for merging sumstats files into a long format file
     Float pval_thres
 
@@ -850,7 +857,9 @@ workflow import_pheweb {
                 pheno_file = pheno_file,
                 file_affix = file_affix,
                 docker = docker,
-                output_url = output_url
+                output_url = output_url,
+                annotation_filepath = annotation_filepath,
+                annotation_tbi_filepath = annotation_tbi_filepath
         }
 	}
 
