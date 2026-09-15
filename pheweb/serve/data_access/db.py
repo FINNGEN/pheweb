@@ -43,7 +43,7 @@ from ...load_source.load_source import load_source
 
 logger = logging.getLogger(__name__)
 
-class JSONifiable(object):
+class JSONifiable(abc.ABC):
     @abc.abstractmethod
     def json_rep(self):
         """
@@ -235,7 +235,7 @@ class PhenoResults(JSONifiable):
         return self.__dict__
 
 
-class ExternalResultDB(object):
+class ExternalResultDB(abc.ABC):
     @abc.abstractmethod
     def get_matching_results(
         self, phenotype: str, var_list: List[Variant]
@@ -277,7 +277,7 @@ class ExternalResultDB(object):
         """
 
 
-class AnnotationDB(object):
+class AnnotationDB(abc.ABC):
     @abc.abstractmethod
     def add_variant_annotations(self, variants: List[Variant], cpra) -> List[Variant]:
         """Retrieve variant annotations given a list of Variants.
@@ -310,7 +310,7 @@ class AnnotationDB(object):
         raise NotImplementedError
 
 
-class GnomadDB(object):
+class GnomadDB(abc.ABC):
     @abc.abstractmethod
     def get_variant_annotations(self, id_list):
         """Retrieve variant annotations given variant id list.
@@ -327,7 +327,7 @@ class GnomadDB(object):
         return
 
 
-class LofDB(object):
+class LofDB(abc.ABC):
     @abc.abstractmethod
     def get_all_lofs(self, p_threshold):
         """Retrieve all loss of function burden test results
@@ -343,7 +343,7 @@ class LofDB(object):
         return
 
 
-class AutorepVariantDB(object):
+class AutorepVariantDB(abc.ABC):
     @abc.abstractmethod
     def get_group_variants(self, phenotype, locus_id):
         """Retrieve a given locuses variants for a given phenotype
@@ -358,7 +358,7 @@ class AutorepVariantDB(object):
         """
 
 
-class KnownHitsDB(object):
+class KnownHitsDB(abc.ABC):
     @abc.abstractmethod
     def get_hits_by_loc(self, chr, start, stop):
         """Retrieve known hits in GWAS catalog and UKBB for a region
@@ -369,7 +369,7 @@ class KnownHitsDB(object):
         """
 
 
-class ResultDB(metaclass=abc.ABCMeta):
+class ResultDB(abc.ABC):
     @abc.abstractmethod
     def get_variant_results_range(
         self, chrom, start, end
@@ -408,7 +408,7 @@ class ResultDB(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
 
-class CodingDB(object):
+class CodingDB(abc.ABC):
     @abc.abstractmethod
     def get_coding(self):
         """Retrieve coding variant data
@@ -416,7 +416,7 @@ class CodingDB(object):
         """
         return
 
-class MissingVariantDB(object):
+class MissingVariantDB(abc.ABC):
     @abc.abstractmethod
     def get_missing_variant(self, variant: Variant) -> Optional[Dict[str,Any]]:
         """Retrieve missing qc variant data
@@ -424,7 +424,7 @@ class MissingVariantDB(object):
         """
         return
 
-class ChipDB(object):
+class ChipDB(abc.ABC):
     @abc.abstractmethod
     def get_chip(self):
         """Retrieve chip GWAS results
@@ -433,7 +433,7 @@ class ChipDB(object):
         return
 
 
-class FineMappingDB(object):
+class FineMappingDB(abc.ABC):
     @abc.abstractmethod
     def get_regions(self, variant: Variant):
         """Retrieve conditional/fine-mapped regions based on variant position
@@ -458,7 +458,7 @@ class FineMappingDB(object):
         """
         return
 
-class HLADB(object):
+class HLADB(abc.ABC):
     @abc.abstractmethod
     def get_top_results(self):
         """Retrieve top HLA results (mlogp > 5)
