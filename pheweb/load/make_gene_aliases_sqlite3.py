@@ -22,10 +22,11 @@ def get_gene_tuples_with_ensg() -> Iterator[Tuple[str,int,int,str,str]]:
 
 def get_genenamesorg_ensg_aliases_map(ensgs_to_consider: Iterable[str]) -> Dict[str, List[str]]:
     ensgs_to_consider = set(ensgs_to_consider)
-    r = urllib.request.urlopen('http://ftp.ebi.ac.uk/pub/databases/genenames/out_of_date_hgnc/json/non_alt_loci_set.json')
-    data = r.read().decode('utf-8')
+    genenames_map_path = get_filepath('hgnc_non_alt_loci_set')
+    with open(genenames_map_path,"rt",encoding="utf-8" ) as f:
+        data = json.load(f)
     ensg_to_aliases = {}
-    for row in json.loads(data)['response']['docs']:
+    for row in data['response']['docs']:
         try:
             if not row.get('ensembl_gene_id',None) or row['ensembl_gene_id'] not in ensgs_to_consider: continue
             assert re.match(r'^ENSG[R0-9\.]+$', row['ensembl_gene_id']), row
