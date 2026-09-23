@@ -153,10 +153,6 @@ task annotation {
         header=$(head -1 ${variant_list})
         [[ "$header" =~ "rsids" ]] && [[ "$header" =~ "nearest_genes" ]] && mv pheweb/generated-by-pheweb/sites/sites-unannotated.tsv pheweb/generated-by-pheweb/sites/sites.tsv
 
-		# compress and tabix-index sites.tsv
-        cat pheweb/generated-by-pheweb/sites/sites.tsv |bgzip > pheweb/generated-by-pheweb/sites/sites.tsv.gz
-        tabix -s 1 -S 1 -b 2 -e 2 pheweb/generated-by-pheweb/sites/sites.tsv.gz
-		
         cd pheweb
 
         [[ -z "${bed_file}" ]] && pheweb download-genes
@@ -165,6 +161,11 @@ task annotation {
             df -h && pheweb add-rsids
             [[ -z "${bed_file}" ]] && pheweb add-genes || pheweb add-genes --genes-filepath /root/.pheweb/cache/genes-b38-v${gene_version}.bed
         fi
+
+		# compress and tabix-index sites.tsv
+        cat generated-by-pheweb/sites/sites.tsv | bgzip > generated-by-pheweb/sites/sites.tsv.gz
+        tabix -s 1 -S 1 -b 2 -e 2 generated-by-pheweb/sites/sites.tsv.gz
+
         df -h && pheweb make-cpras-rsids-sqlite3
         df -h && pheweb make-gene-aliases-sqlite3
         cd ..

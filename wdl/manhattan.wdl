@@ -34,7 +34,7 @@ task manhattan {
     runtime {
         docker: "${docker}"
         cpu: 2
-        memory: "4 GB"
+        memory: "8 GB"
         bootDiskSizeGb: 30
         disks: "local-disk 70 HDD"
         zones: "europe-west1-b"

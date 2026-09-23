@@ -1,6 +1,6 @@
 {
-  "generate_manhattan.manhattan.docker": "europe-west1-docker.pkg.dev/phewas-development/fg-phewas-registry/pheweb:docker_image_id",
-  "generate_manhattan.pheno_file_loc": "gs://pheno_file_locations.txt",
+  "generate_manhattan.manhattan.docker": "europe-west1-docker.pkg.dev/phewas-development/fg-phewas-registry/pheweb:ci-de450a039aabc37758404541e05188ffb0be9710",
+  "generate_manhattan.pheno_file_loc": "gs://topi-green/manhattan/all_mvp_ukbb_r13_phenos.txt",
   "generate_manhattan.annotation_filepath": "gs://r13-data-green/annotation/R13_annotated_variants_v0.small.gz",
   "generate_manhattan.annotation_tbi_filepath": "gs://r13-data-green/annotation/R13_annotated_variants_v0.small.gz.tbi"
 }
