@@ -603,7 +603,8 @@ task filter_sumstat {
     # input:  a (gzipped) tab-delimited sumstat uri
     # output: a headerless p-value filtered bgzipped sumstat file
     #
-    # filters the sumstat to p-values below the given threshold (threshold can be 1 for no filtering)
+    # filters the sumstat on the mlogp (-log10 p-value) column to p-values below
+    # the given threshold (threshold can be 1 for no filtering)
     # sort order in the output will be chromosome, position, alleles and pheno
     #
     # possible chr prefix will be removed, possible 23 will be changed to X
@@ -616,8 +617,11 @@ task filter_sumstat {
         zcat -f ${sumstat} | awk -v pheno=${pheno_name} -v col=${pheno_col} 'BEGIN {FS=OFS="\t"} NR==1 {print col,$0} NR>1 {print pheno,$0}'
     }
 
-    catcmd | awk -v columns='${sep=" " columns}' '
-    BEGIN {FS=OFS="\t"}
+    catcmd | awk -v columns='${sep=" " columns}' -v pval_thres=${pval_thres} '
+    BEGIN {
+        FS=OFS="\t"
+        mlogp_thres = -log(pval_thres)/log(10) - 1e-9
+    }
     NR==1 {
         for(i=1;i<=NF;i++) {
             h[$i]=i;
@@ -627,7 +631,7 @@ task filter_sumstat {
     NR>1 {
         split($0, col_arr, "\t");
         split(columns, select_columns, " ");
-        if ( col_arr[h["pval"]] <= ${pval_thres} ) {
+        if ( col_arr[h["mlogp"]] >= mlogp_thres ) {
 
             chr=$h["#chrom"];
             sub("^chr", "", chr);
