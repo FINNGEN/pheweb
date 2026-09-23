@@ -620,7 +620,7 @@ task filter_sumstat {
     catcmd | awk -v columns='${sep=" " columns}' -v pval_thres=${pval_thres} '
     BEGIN {
         FS=OFS="\t"
-        mlogp_thres = -log(pval_thres)/log(10) - 1e-9
+        mlogp_thres = -log(pval_thres)/log(10)
     }
     NR==1 {
         for(i=1;i<=NF;i++) {
