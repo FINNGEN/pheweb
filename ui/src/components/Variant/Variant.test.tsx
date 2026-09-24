@@ -72,7 +72,7 @@ test('createBioBankURL', () => {
 	const rsid = "rs534125149";
 	const variant = {chromosome: 16, position: 20341705, reference: 'C', alternate: 'CA'};
 	expect(createBioBankURL(null)({rsid,mapping})).toStrictEqual(undefined);
-	expect(createBioBankURL(variant)({rsid,mapping})).toStrictEqual({"rsid": "rs534125149", "url": "http://pheweb.sph.umich.edu/SAIGE-UKB/variant/16-20353028-C-CA"});
+	expect(createBioBankURL(variant)({rsid,mapping})).toStrictEqual({"rsid": "rs534125149", "url": "https://pheweb.org/UKB-TOPMed/variant/16-20353028-C-CA"});
 });
 
 test('summaryRSIDS', () => {
@@ -174,7 +174,7 @@ test('regression test generate', async () => {
 	const testCases :TestGenerate[] = [
 		{ data : with_rsid ,
 			variant : "16-20341705-C-CA",
-			expected : [{"rsid": "rs35830321", "url": "http://pheweb.sph.umich.edu/SAIGE-UKB/variant/16-20353028-C-CA"}]
+			expected : [{"rsid": "rs35830321", "url": "https://pheweb.org/UKB-TOPMed/variant/16-20353028-C-CA"}]
 		},
 		{ data : with_rsid ,
 			variant : "",
