@@ -6,14 +6,19 @@ paths with gzip encoding.
 
 Classes:
     - FilePathResultDao: Base class for managing file path resources
-      and their associated headers.  
+      and their associated headers. When `gcs_root` is set, the resource
+      is streamed from "{gcs_root}/{basename of the resolved file path}"
+      via smart_open instead of the local filesystem.
     - ManhattanFileResultDao: Subclass for handling file results with
       a default JSON content type.
     - ManhattanCompressedResultDao: Subclass for handling compressed
       file results with gzip encoding and JSON content type.
 """
+import io
+import os
 from typing import Optional, Dict
 from flask import send_file
+from smart_open import open as smart_open
 from pheweb.file_utils import common_filepaths
 
 class FilePathResultDao():
@@ -24,13 +29,19 @@ class FilePathResultDao():
     :param file_template: A template string for the file path, default is None.
     :type file_template: str, an optional python format string to generate the
                          file path.
-    :param headers: A dictionary of http headers to include in the response, 
+    :param headers: A dictionary of http headers to include in the response,
                     default is None.
     :type headers: Optional[Dict[str, str]], optional
+    :param gcs_root: Optional gs:// prefix. When set, the resource is read
+                     from "{gcs_root}/{basename of the resolved file path}"
+                     instead of the local filesystem path. When None
+                     (default), the file_path is used as-is.
+    :type gcs_root: Optional[str]
     """
     def __init__(self,
                  file_template : str=None,
-                 headers: Optional[Dict[str,str]] = None):
+                 headers: Optional[Dict[str,str]] = None,
+                 gcs_root: Optional[str] = None):
         """
         Initialize the FilePathResultDao with a file template and headers.
 
@@ -38,9 +49,13 @@ class FilePathResultDao():
         :type file_template: str, optional
         :param headers: A dictionary of headers to include in the response, default is None.
         :type headers: Optional[Dict[str, str]], optional
+        :param gcs_root: Optional gs:// prefix; the resource is read from
+                         "{gcs_root}/{basename of the resolved file path}".
+        :type gcs_root: Optional[str], optional
         """
         self.file_template = file_template
         self.headers=headers
+        self.gcs_root = gcs_root.rstrip('/') if gcs_root else None
 
     def get_resource(self,
                      key : str,
@@ -59,8 +74,18 @@ class FilePathResultDao():
             file_path=key
         else:
             file_path=self.file_template.format(key, **parameters)
-        print(f"{file_path}")
-        response = send_file(file_path)
+        if self.gcs_root is None:
+            # we could use smart open for both, but this allows streaming
+            # the file to user from the filesystem, which is more efficient
+            response = send_file(file_path)
+        else:
+            resolved_path = f"{self.gcs_root}/{os.path.basename(file_path)}"
+            # disable smart_open's automatic gzip decompression-by-extension
+            with smart_open(resolved_path, "rb", compression="disable") as f:
+                data = f.read()
+            response = send_file(io.BytesIO(data),
+                                 mimetype="application/octet-stream",
+                                 download_name=os.path.basename(resolved_path))
         if self.headers is not None:
             for header_name,header_value in self.headers.items():
                 response.headers[header_name] = header_value
@@ -76,10 +101,14 @@ class ManhattanFileResultDao(FilePathResultDao):
     :param headers: A dictionary of headers to include in the response, default is None.
                     If not provided, it defaults to {'Content-Type': 'application/json'}.
     :type headers: Optional[Dict[str, str]], optional
+    :param gcs_root: Optional gs:// prefix; the resource is read from
+                     "{gcs_root}/{basename of the resolved file path}".
+    :type gcs_root: Optional[str], optional
     """
     def __init__(self,
                  file_template : str=None,
-                 headers: Optional[Dict[str,str]] = None):
+                 headers: Optional[Dict[str,str]] = None,
+                 gcs_root: Optional[str] = None):
         """
         Initialize the ManhattanFileResultDao with a file template and
         headers. If no headers are provided, the default Content-Type
@@ -90,10 +119,14 @@ class ManhattanFileResultDao(FilePathResultDao):
         :param headers: A dictionary of headers to include in the response, default is None.
                         If not provided, it defaults to {'Content-Type': 'application/json'}.
         :type headers: Optional[Dict[str, str]], optional
+        :param gcs_root: Optional gs:// prefix; the resource is read from
+                         "{gcs_root}/{basename of the resolved file path}".
+        :type gcs_root: Optional[str], optional
         """
         default_headers={ 'Content-Type' : 'application/json' }
         super().__init__(file_template,
-                         default_headers if headers is None else headers)
+                         default_headers if headers is None else headers,
+                         gcs_root)
 
 class ManhattanCompressedResultDao(FilePathResultDao):
     """
@@ -104,15 +137,20 @@ class ManhattanCompressedResultDao(FilePathResultDao):
     :param file_template: A template string for the file path, default is "{}.gzip".
     :type file_template: str, optional
     :param headers: A dictionary of headers to include in the response, default is None.
-                    If not provided, it defaults to 
+                    If not provided, it defaults to
                     {'Content-Encoding': 'gzip',
                      'Content-Type': 'application/json'}.
     :type headers: Optional[Dict[str, str]], optional
+    :param gcs_root: Optional gs:// prefix; the compressed manhattan file is
+                     read from "{gcs_root}/{phenocode}.json.gz".
+    :type gcs_root: Optional[str], optional
     """
     def __init__(self,
                  file_template : str = common_filepaths['compressed-manhattan'],
-                 headers: Optional[Dict[str,str]] = None):
+                 headers: Optional[Dict[str,str]] = None,
+                 gcs_root: Optional[str] = None):
         default_headers={ 'Content-Encoding' : 'gzip' ,
                           'Content-Type' : 'application/json' }
         super().__init__(file_template,
-                         default_headers if headers is None else headers)
+                         default_headers if headers is None else headers,
+                         gcs_root)
