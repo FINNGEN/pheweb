@@ -245,6 +245,7 @@ task pheno {
     File bed_file
 	Int gene_version
     File annotation_filepath
+    File annotation_tbi_filepath = annotation_filepath + ".tbi"
 
     String base_name = sub(basename(pheno_file), file_affix, "")
     String pheno_name = sub(base_name, ".gz$", "")
