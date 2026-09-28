@@ -7,8 +7,8 @@ import {PhenotypeVariantData, PhenotypeVariantRow, UnbinnedVariant} from "./phen
 import { PhenotypeContext, PhenotypeState } from "./PhenotypeContext";
 
 const defaultSorted = [{
-  id: 'pval',
-  desc: false
+  id: 'mlogp',
+  desc: true
 }]
 
 const tableProperties = {

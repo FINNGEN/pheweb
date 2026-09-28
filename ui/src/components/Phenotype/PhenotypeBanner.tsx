@@ -16,8 +16,8 @@ const PhenotypeBanner = (props : Props) => {
    {risteysLinkFormatter(phenotype.risteysURL)}
    <table className="column_spacing">
            <tbody>
-              <tr><td><b>{phenotype?.num_cases}</b> cases</td></tr>
-              <tr><td><b>{phenotype?.num_controls}</b> controls</td></tr>
+              <tr><td><b>{phenotype?.num_cases.toLocaleString('en-US')}</b> cases</td></tr>
+              <tr><td><b>{phenotype?.num_controls.toLocaleString('en-US')}</b> controls</td></tr>
            </tbody>
         </table>
    </div>
