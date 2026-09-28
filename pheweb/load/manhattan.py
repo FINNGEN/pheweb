@@ -5,7 +5,7 @@ This script creates json files which can be used to render Manhattan plots.
 
 # TODO: combine with QQ.
 
-from ..utils import chrom_order
+from ..utils import chrom_order, pvalue_to_mlogp
 from ..conf_utils import conf
 from ..file_utils import VariantFileReader, write_json, common_filepaths
 from .load_utils import MaxPriorityQueue, parallelize_per_pheno, timeit
@@ -86,12 +86,6 @@ def make_json_file(result_file, output_file, write_as_given=False, annotation_fi
     }
     write_json(filepath=output_file, data=rv, write_as_given=write_as_given)
 
-def rounded_neglog10(pval, neglog10_pval_bin_size, neglog10_pval_bin_digits):
-    if pval == 0:
-        # this case should not happen
-        return round(math.floor(300 / neglog10_pval_bin_size) * neglog10_pval_bin_size, neglog10_pval_bin_digits)
-    return round(math.floor(-math.log10(pval) / neglog10_pval_bin_size) * neglog10_pval_bin_size, neglog10_pval_bin_digits)
-
 def get_pvals_and_pval_extents(pvals, neglog10_pval_bin_size):
     # expects that NEGLOG10_PVAL_BIN_SIZE is the distance between adjacent bins.
     pvals = sorted(pvals)
@@ -129,28 +123,25 @@ def bin_variants(variant_iterator, bin_length, neglog10_pval_bin_size, neglog10_
                    "startpos": pos_bin * bin_length,
                    "neglog10_pvals": set()}
             bins[(chrom_key, pos_bin)] = bin
-        #TODO review with juha
-        if 'mlogp' in variant:
-            bin["neglog10_pvals"].add(round(math.floor(variant['mlogp'] / neglog10_pval_bin_size) * neglog10_pval_bin_size, neglog10_pval_bin_digits))
-        else:
-            bin["neglog10_pvals"].add(rounded_neglog10(variant['pval'], neglog10_pval_bin_size, neglog10_pval_bin_digits))
-        
+        bin["neglog10_pvals"].add(round(math.floor(variant['mlogp'] / neglog10_pval_bin_size) * neglog10_pval_bin_size, neglog10_pval_bin_digits))
+
     # put most-significant variants into the priorityqueue and bin the rest
     hla_variant_pq =MaxPriorityQueue()
+    manhattan_unbin_anyway_mlogp = pvalue_to_mlogp(conf.manhattan_unbin_anyway_pval)
 
     for variant in variant_iterator:
         if variant['chrom']=="6" and variant['pos'] > conf.hla_begin and variant['pos'] < conf.hla_end:
-            hla_variant_pq.add(variant, variant['pval'])
+            hla_variant_pq.add(variant, -variant['mlogp'])
             if( len(hla_variant_pq) > conf.manhattan_hla_num_unbinned ):
                 old = hla_variant_pq.pop()
                 bin_variant(old)
             continue
         else:
-            unbinned_variant_pq.add(variant, variant['pval'])
+            unbinned_variant_pq.add(variant, -variant['mlogp'])
             if len(unbinned_variant_pq) > conf.manhattan_num_unbinned:
                 old = unbinned_variant_pq.pop()
-                if old['pval'] < conf.manhattan_unbin_anyway_pval:
-                    unbinned_variant_pq.add(old, old['pval'])
+                if old['mlogp'] > manhattan_unbin_anyway_mlogp:
+                    unbinned_variant_pq.add(old, -old['mlogp'])
                 else:
                     bin_variant(old)
 
@@ -180,7 +171,7 @@ def bin_variants(variant_iterator, bin_length, neglog10_pval_bin_size, neglog10_
     
     # unbin hla variants if they are at least as significant as the least significant variant included. bin the rest
     for v in add_hla:
-        if v['pval'] < max_p['pval']:
+        if v['mlogp'] > max_p['mlogp']:
             final_unbinned_variants.append(v)
         else:
             bin_variant(v)
@@ -212,19 +203,19 @@ def np_label_peaks(variants):
     for vs in chroms.values():
         print(f"chrom:{vs[0]['chrom']}")
 
-        #iniitalize pval,pos array
+        #iniitalize mlogp,pos array
         var_array = np.zeros((len(vs),2))
         pos_dict = {}
         for i,v in enumerate(vs):
-            var_array[i] = v['pos'],v['pval']
-            # if there are multiple variants on exact same position, keep the one with lowest p
-            if v['pos'] not in pos_dict or v['pval'] < pos_dict[v['pos']]['pval']:
+            var_array[i] = v['pos'],v['mlogp']
+            # if there are multiple variants on exact same position, keep the one with highest mlogp
+            if v['pos'] not in pos_dict or v['mlogp'] > pos_dict[v['pos']]['mlogp']:
                 pos_dict[v['pos']] = v
         while len(var_array):
             # work with arrays to check results are identical
             #returns best hit?
-            min_pval_idx = np.argmin(var_array[:,1])
-            pos = var_array[min_pval_idx][0]
+            max_mlogp_idx = np.argmax(var_array[:,1])
+            pos = var_array[max_mlogp_idx][0]
             # filter variants based on pos of best hit
             filter_mask = np.abs(var_array[:,0] - pos) > conf.within_pheno_mask_around_peak
             var_array = var_array[filter_mask]
