@@ -19,7 +19,7 @@
     "num_controls"
   ],
   "import_pheweb.output_url": [
-    "gs://r5_data_green/r5v2/"
+    "gs://r5_data_green/r5v2"
   ],
   "import_pheweb.preprocess.chrom_column": "#chrom",
   "import_pheweb.preprocess.pos_column": "pos",
