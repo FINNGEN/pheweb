@@ -56,7 +56,7 @@ const tofixed = (v,n) => {
     return typeof(v) == typeof(0) ? v.toFixed(n) : v
 }
 
-const numberCellFormatter = (props) : number => +props.value;
+const numberCellFormatter = (props) : number => props.value ? (props.value).toLocaleString('en-US') : props.value;
 export const optionalCellNumberFormatter = (props) => isNaN(+props.value) || props.value === "" ? props.value : numberCellFormatter(props);
 
 const scientificCellFormatter = (props) : string => (+props.value).toExponential(1);
@@ -807,7 +807,7 @@ const phenotypeColumns = {
                              style={{ textDecoration: "underline" }}>number of cases</span>),
         label: "number of cases",
         accessor: "num_cases",
-        Cell: props => props.value,
+        Cell: numberCellFormatter,
         filterMethod: absoluteValueFilter,
       	minWidth: 6 * emsize
       },
@@ -818,7 +818,7 @@ const phenotypeColumns = {
                              style={{ textDecoration: "underline" }}>{'number of cases previous release'}</span>),
         label: 'number of cases in previous release',
         accessor: "num_cases_prev",
-        Cell: props => props.value,
+        Cell: numberCellFormatter,
         filterMethod: absoluteValueFilter,
         minWidth: 50
       },
@@ -829,7 +829,7 @@ const phenotypeColumns = {
           <span title="number of controls" style={{ textDecoration: "underline" }}>number of controls</span>),
         label: "number of controls",
         accessor: "num_controls",
-        Cell: props => props.value,
+        Cell: numberCellFormatter,
         filterMethod: absoluteValueFilter,
 	minWidth: 6 * emsize
 
