@@ -2,7 +2,7 @@
 import abc
 import requests
 
-class GeneInfoDB(object):
+class GeneInfoDB(abc.ABC):
     @abc.abstractmethod
     def get_gene_info(self, symbol):
         """Retrieve gene basic info given gene symbol.

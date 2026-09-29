@@ -3,7 +3,7 @@ import abc
 from finngen_common_data_model.genomics import Variant
 from dataclasses import dataclass
 
-class SupplementaryStatisticsDB(object):
+class SupplementaryStatisticsDB(abc.ABC):
     @abc.abstractmethod
     def get_phenotype_statistics(self, phenotype : str) -> typing.Dict[str, typing.Dict[str, typing.Union[str,None,int,float]]]:
         """

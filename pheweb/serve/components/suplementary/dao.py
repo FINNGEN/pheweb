@@ -7,7 +7,7 @@ from .model import SupplementaryStatisticsDB
 from pheweb.serve.data_access.db_util import MysqlDAO
 from finngen_common_data_model.genomics import Variant
 
-class SupplementaryStatisticsDB(object):
+class SupplementaryStatisticsDB(abc.ABC):
     @abc.abstractmethod
     def get_phenotype_statistics(self, phenotype : str) -> typing.Dict[str, typing.Dict[str, typing.Union[str,None,int,float]]]:
         """

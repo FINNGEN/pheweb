@@ -9,7 +9,7 @@ from typing import List, Dict, Union
 import json
 from pheweb.serve.components.colocalization.finngen_common_data_model.genomics import Locus as Region
 
-class DBRegionDAO(object):
+class DBRegionDAO(abc.ABC):
 
     @abc.abstractmethod
     def get_phenotypes():

@@ -8,7 +8,7 @@ import re
 from typing import List, Dict, Union
 
 
-class PqtlColocalisationDB(object):
+class PqtlColocalisationDB(abc.ABC):
     @abc.abstractmethod
     def get_pqtl_colocalization(self, gene_name):
         """Retrieve a given gene pqtls and disease colocalizations

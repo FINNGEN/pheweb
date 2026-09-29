@@ -18,7 +18,7 @@ def merge_dictionary(accumulator : typing.Dict[str,typing.Dict[str,typing.Union[
         elif k in value:
             accumulator[k]=value[k]
 
-class VariantPhenotypeDB(object):
+class VariantPhenotypeDB(abc.ABC):
     @abc.abstractmethod
     def get_variant_phenotype(self,
                               chromosome : int,
