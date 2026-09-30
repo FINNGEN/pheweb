@@ -627,6 +627,12 @@ class ElasticAnnotationDao(AnnotationDB):
             for anno in annotation["hits"]["hits"]
         ]
 
+    def add_variant_annotations_range(self, chrom, start, end):
+        raise NotImplementedError()
+
+    def  add_single_variant_annotations(self, variant: Variant, cpra) -> Optional[Variant]:
+        raise NotImplementedError()
+
 
 class ElasticGnomadDao(GnomadDB):
     def __init__(self, host, port, variant_index):
@@ -680,6 +686,9 @@ class ElasticGnomadDao(GnomadDB):
             }
             for anno in annotation["hits"]["hits"]
         ]
+
+    def get_variant_annotations_range(self, chrom, start, end):
+        raise NotImplementedError()
 
 class MissingVariantDao(MissingVariantDB):
     def __init__(self, missing_variant_path):
@@ -1141,6 +1150,9 @@ class ExternalMatrixResultDao(ExternalResultDB):
                     print("Could not tabix variant. " + str(e))
         print("TABIX GET MULTIPHENORESULTS TOOK {} seconds".format(time.time() - t))
         return res
+
+    def get_results_region(self, phenotype, chr, start, stop):
+        raise NotImplementedError()
 
 
 class ExternalFileResultDao(ExternalResultDB):

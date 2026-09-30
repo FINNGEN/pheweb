@@ -16,7 +16,7 @@ class PqtlColocalisationDB(abc.ABC):
         return
      
     @abc.abstractmethod
-    def get_gene_colocs(self, gene_name):
+    def get_gene_colocalization(self, gene_name):
         """ Retrieve disease colocalizations for a given gene """
         return
 
