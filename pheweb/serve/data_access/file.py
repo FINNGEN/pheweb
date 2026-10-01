@@ -55,7 +55,7 @@ class FilePathResultDao():
         """
         self.file_template = file_template
         self.headers=headers
-        self.gcs_root = gcs_root.rstrip('/') if gcs_root else None
+        self.gcs_root = gcs_root or None
 
     def get_resource(self,
                      key : str,
@@ -79,7 +79,7 @@ class FilePathResultDao():
             # the file to user from the filesystem, which is more efficient
             response = send_file(file_path)
         else:
-            resolved_path = f"{self.gcs_root}/{os.path.basename(file_path)}"
+            resolved_path = os.path.join(self.gcs_root, os.path.basename(file_path))
             # disable smart_open's automatic gzip decompression-by-extension
             with smart_open(resolved_path, "rb", compression="disable") as f:
                 data = f.read()
