@@ -55,7 +55,7 @@ class FilePathResultDao():
         """
         self.file_template = file_template
         self.headers=headers
-        self.gcs_root = gcs_root or None
+        self.gcs_root = gcs_root
 
     def get_resource(self,
                      key : str,
@@ -74,11 +74,7 @@ class FilePathResultDao():
             file_path=key
         else:
             file_path=self.file_template.format(key, **parameters)
-        if self.gcs_root is None:
-            # we could use smart open for both, but this allows streaming
-            # the file to user from the filesystem, which is more efficient
-            response = send_file(file_path)
-        else:
+        if self.gcs_root:
             resolved_path = os.path.join(self.gcs_root, os.path.basename(file_path))
             # disable smart_open's automatic gzip decompression-by-extension
             with smart_open(resolved_path, "rb", compression="disable") as f:
@@ -86,6 +82,10 @@ class FilePathResultDao():
             response = send_file(io.BytesIO(data),
                                  mimetype="application/octet-stream",
                                  download_name=os.path.basename(resolved_path))
+        else:
+            # we could use smart open for both, but this allows streaming
+            # the file to user from the filesystem, which is more efficient
+            response = send_file(file_path)
         if self.headers is not None:
             for header_name,header_value in self.headers.items():
                 response.headers[header_name] = header_value
