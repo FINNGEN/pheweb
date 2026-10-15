@@ -56,7 +56,19 @@ database_conf = (
         }
     }, {
         "autoreporting": {
-            "AutoreportingDao": { "authentication_file": "/mnt/nfs/pheweb/r5/mysql.conf", "group_report_path": "/mnt/nfs/autoreporting/r5/group_reports/"}
+            "AutoreportingDao": { "authentication_file": "/mnt/nfs/pheweb/r5/mysql.conf", "group_report_path": "/mnt/nfs/autoreporting/r5/group_reports/",
+                                  # R5 group reports use older column names
+                                  "columns": { "chrom": "chr",
+                                               "pval": "lead_pval",
+                                               "lead_enrichment": "enrichment",
+                                               "lead_af_alt": "lead_AF",
+                                               "lead_most_severe_gene": "most_severe_gene",
+                                               "pos": None,
+                                               "lead_mlogp": None,
+                                               "lead_sebeta": None,
+                                               "good_cs": None,
+                                               "cs_size": None,
+                                               "cs_log_bayes_factor": None } }
         }
     }
 )

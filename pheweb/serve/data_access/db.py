@@ -1882,9 +1882,32 @@ def _safe_bool(boolstr:str) -> bool:
 
 
 class AutoreportingDao(AutorepVariantDB):
-    def __init__(self, authentication_file, group_report_path):
+    # group report columns read by get_group_report, using the current release's names
+    GROUP_REPORT_COLUMNS: Final = frozenset([
+        "chrom", "pos", "pval", "locus_id", "good_cs",
+        "lead_enrichment", "lead_af_alt", "lead_most_severe_gene",
+        "lead_mlogp", "lead_beta", "lead_sebeta",
+        "functional_variants_strict", "credible_set_variants",
+        "cs_size", "cs_log_bayes_factor",
+        "specific_efo_trait_associations_strict", "specific_efo_trait_associations_relaxed",
+        "found_associations_strict", "found_associations_relaxed",
+    ])
+
+    def __init__(self, authentication_file, group_report_path,
+                 columns: Optional[Dict[str, Optional[str]]] = None):
+        """
+        :param columns: optional mapping from a group report column name to the name
+                        used in this release's files, for releases whose columns differ
+                        from the current ones. Map a column to None when it does not exist
+                        in the release; it is then reported as NA. Columns that are not
+                        listed are read using their current name.
+        """
         self.authentication_file = authentication_file
         self.group_report_path = group_report_path
+        self.columns = columns if columns is not None else {}
+        unknown_columns = set(self.columns) - self.GROUP_REPORT_COLUMNS
+        if unknown_columns:
+            raise ValueError(f"Unknown autoreporting group report columns in config: {sorted(unknown_columns)}")
         auth_module = load_source("mysql_auth", self.authentication_file)
         self.user = getattr(auth_module, "mysql")["user"]
         self.password = getattr(auth_module, "mysql")["password"]
@@ -1936,59 +1959,67 @@ class AutoreportingDao(AutorepVariantDB):
             with open(filename) as f:
                 hdr = f.readline().strip("\n").split("\t")
                 hdi = {a:i for i,a in enumerate(hdr)}
+
+                def has_col(name):
+                    source = self.columns.get(name, name)
+                    return source is not None and source in hdi
+
+                def get_col(cols, name):
+                    # read a column by its current name, translated via the configured
+                    # column mapping; columns mapped to None are reported as NA
+                    source = self.columns.get(name, name)
+                    if source is None:
+                        return "NA"
+                    return cols[hdi[source]]
+
+                def to_float(value):
+                    return float(value) if value != "NA" else float("nan")
+
+                def to_int(value):
+                    return int(value) if value != "NA" else float("nan")
+
                 data = []
                 for _line in f:
                     cols = _line.strip("\n").split("\t")
-                    #some columns are named differently in R5
-                    if self.release == 5:
-                        record = {
-                            "chrom":cols[hdi["chr"]],
-                            "pval":float(cols[hdi["lead_pval"]]),
-                            "lead_enrichment":float(cols[hdi["enrichment"]]) if cols[hdi["enrichment"]] != "NA" else float("nan"),
-                            "lead_af_alt":float(cols[hdi["lead_AF"]]) if cols[hdi["lead_AF"]] != "NA" else float("nan"),
-                            "lead_most_severe_gene":cols[hdi["most_severe_gene"]],
-                        }
-                    else:
-                        record = {
-                            "chrom":cols[hdi["chrom"]],
-                            "pval":float(cols[hdi["pval"]]),
-                            "lead_enrichment":float(cols[hdi["lead_enrichment"]]) if cols[hdi["lead_enrichment"]] != "NA" else float("nan"),
-                            "lead_af_alt":float(cols[hdi["lead_af_alt"]]) if cols[hdi["lead_af_alt"]] != "NA" else float("nan"),
-                            "lead_most_severe_gene":cols[hdi["lead_most_severe_gene"]],
-                        }
-                    #common cols
-                    record.update(
-                        {
-                            "locus_id":cols[hdi["locus_id"]],
-                            "phenocode":phenotype,
-                            "good_cs":_safe_bool(cols[hdi["good_cs"]]),
-                            "lead_mlogp":float(cols[hdi["lead_mlogp"]]),
-                            "lead_beta":float(cols[hdi["lead_beta"]]),
-                            "functional_variants_strict":cols[hdi["functional_variants_strict"]],
-                            "credible_set_variants":cols[hdi["credible_set_variants"]],
-                            "cs_size":int(cols[hdi["cs_size"]]),
-                            "cs_log_bayes_factor":float(cols[hdi["cs_log_bayes_factor"]]) if cols[hdi["cs_log_bayes_factor"]] != "NA" else float("nan"),
-                            "lead_sebeta": cols[hdi["lead_sebeta"]],
-                            "pos":cols[hdi["pos"]],
-                        }
-                    )
+                    good_cs = get_col(cols, "good_cs")
+                    record = {
+                        "chrom":get_col(cols, "chrom"),
+                        "pval":to_float(get_col(cols, "pval")),
+                        "lead_enrichment":to_float(get_col(cols, "lead_enrichment")),
+                        "lead_af_alt":to_float(get_col(cols, "lead_af_alt")),
+                        "lead_most_severe_gene":get_col(cols, "lead_most_severe_gene"),
+                        "locus_id":get_col(cols, "locus_id"),
+                        "phenocode":phenotype,
+                        "good_cs":_safe_bool(good_cs) if good_cs != "NA" else "NA",
+                        "lead_mlogp":to_float(get_col(cols, "lead_mlogp")),
+                        "lead_beta":to_float(get_col(cols, "lead_beta")),
+                        "functional_variants_strict":get_col(cols, "functional_variants_strict"),
+                        "credible_set_variants":get_col(cols, "credible_set_variants"),
+                        "cs_size":to_int(get_col(cols, "cs_size")),
+                        "cs_log_bayes_factor":to_float(get_col(cols, "cs_log_bayes_factor")),
+                        "lead_sebeta": get_col(cols, "lead_sebeta"),
+                        "pos":get_col(cols, "pos"),
+                    }
+                    #compute lead mlogp from lead pval when it is not available, e.g. in older releases
+                    if np.isnan(record["lead_mlogp"]) and not np.isnan(record["pval"]):
+                        record["lead_mlogp"] = float(-np.log10(record["pval"])) if record["pval"] > 0 else float("inf")
                     #join trait cols
-                    if "specific_efo_trait_associations_relaxed" in hdr:
+                    if has_col("specific_efo_trait_associations_relaxed"):
                         #filter out empty and missing entries
                         merge_func = lambda a,b : ";".join(list(filter(lambda x:(x!="NA" and x != ""),[a,b])))
                         all_traits_strict = merge_func(
-                            cols[hdi["specific_efo_trait_associations_strict"]],
-                            cols[hdi["found_associations_strict"]]
+                            get_col(cols, "specific_efo_trait_associations_strict"),
+                            get_col(cols, "found_associations_strict")
                         )
                         all_traits_relaxed = merge_func(
-                            cols[hdi["specific_efo_trait_associations_relaxed"]],
-                            cols[hdi["found_associations_relaxed"]]
+                            get_col(cols, "specific_efo_trait_associations_relaxed"),
+                            get_col(cols, "found_associations_relaxed")
                         )
                         all_traits_strict = "NA" if all_traits_strict == "" else all_traits_strict
                         all_traits_relaxed = "NA" if all_traits_relaxed == "" else all_traits_relaxed
                     else:
-                        all_traits_strict = cols[hdi["found_associations_strict"]]
-                        all_traits_relaxed = cols[hdi["found_associations_relaxed"]]
+                        all_traits_strict = get_col(cols, "found_associations_strict")
+                        all_traits_relaxed = get_col(cols, "found_associations_relaxed")
                     record["all_traits_strict"] = all_traits_strict
                     record["all_traits_relaxed"] = all_traits_relaxed
                     #fill in NA for missing values
