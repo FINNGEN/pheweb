@@ -2,7 +2,7 @@ import math
 
 import pytest
 
-from pheweb.serve.data_access.db import AutoreportingDao
+from pheweb.serve.data_access.autoreporting import AutoreportingDao
 
 PHENO = "AB1_TEST"
 
