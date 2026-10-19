@@ -1,7 +1,7 @@
 import abc
 import os
-import numpy as np
 import pymysql
+import math
 from typing import List, Dict, Union, Optional, Final
 from ...load_source.load_source import load_source
 
@@ -28,7 +28,7 @@ def _safe_bool(boolstr:str) -> bool:
     elif boolstr.upper()== "TRUE":
         return True
     else:
-        raise Exception("Expected boolean string FALSE,TRUE in any casing.")
+        raise Exception(f"Expected boolean string FALSE,TRUE in any casing, got '{boolstr}'.")
 
 
 class AutoreportingDao(AutorepVariantDB):
@@ -156,8 +156,8 @@ class AutoreportingDao(AutorepVariantDB):
                         "pos":get_col(cols, "pos"),
                     }
                     #compute lead mlogp from lead pval when it is not available, e.g. in older releases
-                    if np.isnan(record["lead_mlogp"]) and not np.isnan(record["pval"]):
-                        record["lead_mlogp"] = float(-np.log10(record["pval"])) if record["pval"] > 0 else float("inf")
+                    if math.isnan(record["lead_mlogp"]) and not math.isnan(record["pval"]):
+                        record["lead_mlogp"] = float(-math.log10(record["pval"])) if record["pval"] > 0 else float("inf")
                     
                     merge_func = lambda a,b : ";".join(list(filter(lambda x:(x!="NA" and x != ""),[a,b])))
                     #join trait cols
