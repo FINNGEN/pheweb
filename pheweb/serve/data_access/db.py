@@ -39,6 +39,7 @@ from pheweb.serve.data_access.file import FilePathResultDao, ManhattanFileResult
 from pheweb.serve.data_access.db_util import MysqlDAO
 
 from .pqtl_colocalization import PqtlColocalisationDao
+from .autoreporting import AutorepVariantDB, AutoreportingDao
 from ...load_source.load_source import load_source
 
 logger = logging.getLogger(__name__)
@@ -341,21 +342,6 @@ class LofDB(abc.ABC):
         Returns: A list of dictionaries. Dictionary has 2 elements "id" which contains the gene id and "gene_data" containing dictionary with all gene data.
         """
         return
-
-
-class AutorepVariantDB(abc.ABC):
-    @abc.abstractmethod
-    def get_group_variants(self, phenotype, locus_id):
-        """Retrieve a given locuses variants for a given phenotype
-        Returns: A list of dictionaries. WIP
-        """
-        return
-
-    @abc.abstractmethod
-    def get_group_report(self, phenotype):
-        """Retrieve a given phenotype's group report
-        Returns: A list of dictionaries, with the group report columns as dictionary keys and every dictionary representing a row.
-        """
 
 
 class KnownHitsDB(abc.ABC):
@@ -1870,135 +1856,6 @@ class FineMappingMySQLDao(FineMappingDB):
             ]
         return result
 
-
-def _safe_bool(boolstr:str) -> bool:
-
-    if boolstr.upper()== "FALSE":
-        return  False
-    elif boolstr.upper()== "TRUE":
-        return True
-    else:
-        raise Exception("Expected boolean string FALSE,TRUE in any casing.")
-
-
-class AutoreportingDao(AutorepVariantDB):
-    def __init__(self, authentication_file, group_report_path):
-        self.authentication_file = authentication_file
-        self.group_report_path = group_report_path
-        auth_module = load_source("mysql_auth", self.authentication_file)
-        self.user = getattr(auth_module, "mysql")["user"]
-        self.password = getattr(auth_module, "mysql")["password"]
-        self.host = getattr(auth_module, "mysql")["host"]
-        self.db = getattr(auth_module, "mysql")["db"]
-        self.release = getattr(auth_module, "mysql")["release"]
-
-    def get_connection(self):
-        return pymysql.connect(
-            host=self.host, user=self.user, password=self.password, db=self.db
-        )
-
-    def get_group_variants(self, phenotype, locus_id):
-        try:
-            conn = self.get_connection()
-            with conn.cursor(pymysql.cursors.DictCursor) as cursori:
-                sql = "SELECT * FROM autoreporting_variants WHERE rel=%s AND phenotype=%s AND locus_id=%s"
-                cursori.execute(sql, ["r{}".format(self.release), phenotype, locus_id])
-                result = cursori.fetchall()
-            return result
-        finally:
-            conn.close()
-
-
-
-    def get_group_report(self,phenotype) -> List[Dict[str,Union[str,int,float,bool]]]:
-        """Returns the records in a group report as a list of dictionaries, one for each group.
-        Dictionary keys, with value: value identifier (key):
-        locus lead variant: locus_id
-        phenotype name: phenocode
-        cs quality: good_cs
-        chromosome : chrom
-        pvalue: pval
-        lead mlogp: lead_mlogp
-        lead beta: lead_beta
-        lead Finnish enrichment: lead_enrichment
-        lead alt allele af: lead_af_alt
-        lead most severe gene: lead_most_severe_gene
-        functional variants in cs: functional_variants_strict
-        cs variants: credible_set_variants
-        cs size: cs_size
-        cs log10bf: cs_log_bayes_factor
-        lead sebeta: lead_sebeta
-
-        """
-
-        filename = os.path.join(self.group_report_path,f"{phenotype}.top.out")
-        if os.path.exists(filename):
-            with open(filename) as f:
-                hdr = f.readline().strip("\n").split("\t")
-                hdi = {a:i for i,a in enumerate(hdr)}
-                data = []
-                for _line in f:
-                    cols = _line.strip("\n").split("\t")
-                    #some columns are named differently in R5
-                    if self.release == 5:
-                        record = {
-                            "chrom":cols[hdi["chr"]],
-                            "pval":float(cols[hdi["lead_pval"]]),
-                            "lead_enrichment":float(cols[hdi["enrichment"]]) if cols[hdi["enrichment"]] != "NA" else float("nan"),
-                            "lead_af_alt":float(cols[hdi["lead_AF"]]) if cols[hdi["lead_AF"]] != "NA" else float("nan"),
-                            "lead_most_severe_gene":cols[hdi["most_severe_gene"]],
-                        }
-                    else:
-                        record = {
-                            "chrom":cols[hdi["chrom"]],
-                            "pval":float(cols[hdi["pval"]]),
-                            "lead_enrichment":float(cols[hdi["lead_enrichment"]]) if cols[hdi["lead_enrichment"]] != "NA" else float("nan"),
-                            "lead_af_alt":float(cols[hdi["lead_af_alt"]]) if cols[hdi["lead_af_alt"]] != "NA" else float("nan"),
-                            "lead_most_severe_gene":cols[hdi["lead_most_severe_gene"]],
-                        }
-                    #common cols
-                    record.update(
-                        {
-                            "locus_id":cols[hdi["locus_id"]],
-                            "phenocode":phenotype,
-                            "good_cs":_safe_bool(cols[hdi["good_cs"]]),
-                            "lead_mlogp":float(cols[hdi["lead_mlogp"]]),
-                            "lead_beta":float(cols[hdi["lead_beta"]]),
-                            "functional_variants_strict":cols[hdi["functional_variants_strict"]],
-                            "credible_set_variants":cols[hdi["credible_set_variants"]],
-                            "cs_size":int(cols[hdi["cs_size"]]),
-                            "cs_log_bayes_factor":float(cols[hdi["cs_log_bayes_factor"]]) if cols[hdi["cs_log_bayes_factor"]] != "NA" else float("nan"),
-                            "lead_sebeta": cols[hdi["lead_sebeta"]],
-                            "pos":cols[hdi["pos"]],
-                        }
-                    )
-                    #join trait cols
-                    if "specific_efo_trait_associations_relaxed" in hdr:
-                        #filter out empty and missing entries
-                        merge_func = lambda a,b : ";".join(list(filter(lambda x:(x!="NA" and x != ""),[a,b])))
-                        all_traits_strict = merge_func(
-                            cols[hdi["specific_efo_trait_associations_strict"]],
-                            cols[hdi["found_associations_strict"]]
-                        )
-                        all_traits_relaxed = merge_func(
-                            cols[hdi["specific_efo_trait_associations_relaxed"]],
-                            cols[hdi["found_associations_relaxed"]]
-                        )
-                        all_traits_strict = "NA" if all_traits_strict == "" else all_traits_strict
-                        all_traits_relaxed = "NA" if all_traits_relaxed == "" else all_traits_relaxed
-                    else:
-                        all_traits_strict = cols[hdi["found_associations_strict"]]
-                        all_traits_relaxed = cols[hdi["found_associations_relaxed"]]
-                    record["all_traits_strict"] = all_traits_strict
-                    record["all_traits_relaxed"] = all_traits_relaxed
-                    #fill in NA for missing values
-                    for key in record:
-                        if record[key] == "":
-                            record[key] = "NA"
-
-                    data.append(record)
-            return data
-        return []
 
 class DataFactory(object):
     arg_definitions = {
