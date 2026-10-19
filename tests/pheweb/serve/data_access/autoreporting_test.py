@@ -225,6 +225,11 @@ def test_unknown_column_in_mapping_raises(tmp_path):
         make_dao(tmp_path, {"pvals": "lead_pval"})
 
 
+def test_omitting_locus_id_raises(tmp_path):
+    with pytest.raises(ValueError, match="locus_id"):
+        make_dao(tmp_path, {"locus_id": None})
+
+
 def test_lead_mlogp_computed_from_pval_when_not_available(tmp_path):
     dao, report_dir = make_dao(tmp_path, R5_COLUMNS)
     write_report(report_dir, [R5_ROW])

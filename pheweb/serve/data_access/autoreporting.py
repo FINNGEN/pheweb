@@ -42,6 +42,8 @@ class AutoreportingDao(AutorepVariantDB):
         "specific_efo_trait_associations_strict", "specific_efo_trait_associations_relaxed",
         "found_associations_strict", "found_associations_relaxed",
     ])
+    # columns that cannot be mapped to None (=cannot be omitted)
+    REQUIRED_COLUMNS: Final = frozenset(["locus_id"])
 
     def __init__(self, authentication_file, group_report_path,
                  columns: Optional[Dict[str, Optional[str]]] = None):
@@ -49,7 +51,8 @@ class AutoreportingDao(AutorepVariantDB):
         :param columns: optional mapping from a group report column name to the name
                         used in this release's files, for releases whose columns differ
                         from the current ones. Map a column to None when it does not exist
-                        in the release; it is then reported as NA. Columns that are not
+                        in the release; it is then reported as NA. Columns in
+                        REQUIRED_COLUMNS (locus_id) cannot be omitted. Columns that are not
                         listed are read using their current name.
         """
         self.authentication_file = authentication_file
@@ -58,6 +61,9 @@ class AutoreportingDao(AutorepVariantDB):
         unknown_columns = set(self.columns) - self.GROUP_REPORT_COLUMNS
         if unknown_columns:
             raise ValueError(f"Unknown autoreporting group report columns in config: {sorted(unknown_columns)}")
+        omitted_required = [c for c in self.REQUIRED_COLUMNS if self.columns.get(c, c) is None]
+        if omitted_required:
+            raise ValueError(f"Autoreporting group report columns cannot be omitted: {omitted_required}")
         auth_module = load_source("mysql_auth", self.authentication_file)
         self.user = getattr(auth_module, "mysql")["user"]
         self.password = getattr(auth_module, "mysql")["password"]
