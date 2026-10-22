@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import ReactTable from "react-table-v6";
-import { fetchData, setData, State } from "./features/chipTableSlice";
+import { chipDataStorageKey, fetchData, setData, State } from "./features/chipTableSlice";
 import { chipTableColumns, createTableColumns } from "../../common/commonTableColumn";
 import { mustacheDiv } from "../../common/commonUtilities";
-import { ConfigurationWindow } from "../Configuration/configurationModel";
+import { ConfigurationWindow, resolveURL } from "../Configuration/configurationModel";
 import commonLoading from "../../common/CommonLoading";
 
 
@@ -25,17 +25,14 @@ export const Table = (props : Props) => {
   const banner: string = config?.userInterface?.chip?.banner || default_banner;
 
   useEffect(() => {
-    if (data?.status === "idle") {
-      dispatch(fetchData(`/api/v1/chip_data`));
+    if (data?.status !== "idle") return;
+    const stored = sessionStorage.getItem(chipDataStorageKey);
+    if (stored) {
+      dispatch(setData(JSON.parse(stored)));
     } else {
-      const stored = sessionStorage.getItem(`${props?.match?.params?.data}`);
-      if (stored) {
-        dispatch(setData(JSON.parse(stored)));
-      } else if (data?.status !== "commonLoading") {
-        dispatch(fetchData(`/api/v1/chip_data`));
-      }
+      dispatch(fetchData(resolveURL(`/api/v1/chip_data`)));
     }
-  }, [props, data, dispatch]);
+  }, [data?.status, dispatch]);
 
   return !data?.data ? commonLoading
         :

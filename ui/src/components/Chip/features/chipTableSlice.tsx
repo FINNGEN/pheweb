@@ -33,6 +33,8 @@ export const isQuotaExceeded = (e: QuotaException) : boolean => {
 }
 
 
+export const chipDataStorageKey = 'chip_data'
+
 export const fetchData = createAsyncThunk('table/fetchData', async (url : string, { rejectWithValue }) => {
     const response: Response = await fetch(url)
     try {
@@ -54,7 +56,7 @@ const fulfilled = (state: State, action) => {
     state.columns = action.payload.columns
     if (action.payload.data.length < 5000){
 	try {
-	    sessionStorage.setItem(`, ${action.payload.data}}`, JSON.stringify(action.payload))
+	    sessionStorage.setItem(chipDataStorageKey, JSON.stringify(action.payload))
 	} catch(e) {
 	    if (isQuotaExceeded(e as QuotaException)) {
 		console.warn('sessionstorage quota exceeded (tableSlice), clear storage!')
@@ -87,6 +89,7 @@ export const tableSlice = createSlice<State, SliceCaseReducers<State>>({
     },
     reducers: {
 	setData: (state: State, action) => {
+	    state.status = 'done'
 	    state.data = action.payload.data
 	    state.columns = action.payload.columns
 	}
