@@ -45,7 +45,7 @@ def get_dao(current_app=app) -> CodingDAO:
 
 @coding.route('/api/v1/coding/top')
 def top_data():
-    return get_dao().top_results
+    return get_dao().get_top_results()
 
 @coding.route('/api/v1/coding/results/<query>')
 def get_results(query):

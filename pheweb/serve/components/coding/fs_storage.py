@@ -31,7 +31,7 @@ from google.cloud.exceptions import NotFound
 import pandas as pd
 from smart_open import open as smart_open
 
-from pheweb.serve.components.coding.model import CodingDAO # , CodingData
+from pheweb.serve.components.coding.model import CodingDAO, set_top_flags # , CodingData
 
 
 @functools.lru_cache()
@@ -134,6 +134,9 @@ class FileCodingDAO(CodingDAO):
     @property
     def variant_to_path(self) -> Callable[[str],str]:
         return format_path(self.plot_root, self.path_format)
+    
+    def get_top_results(self):
+        return self.top_results
 
     def get_cluster_plot(self, variant: str) -> typing.Optional[bytes]:
         """
@@ -267,28 +270,7 @@ class FileCodingDAO(CodingDAO):
             raise NotFoundException('gene not found')
 
     def _set_top_flags(self, results):
-        # figure out top variant for each pheno
-        # and top pheno for each variant
-        pheno2top = dd(lambda: ('variant', 0))
-        var2top = dd(lambda: ('pheno', 0))
-        for res in results:
-            code = res['pheno']['code']
-            variant = res['variant']
-            p_add = res['mlogp_add']
-            p_chip = res['mlogp_chip']
-            if p_add is not None and p_add > pheno2top[code][1]:
-                pheno2top[code] = (variant, p_add)
-            if p_chip is not None and p_chip > pheno2top[code][1]:
-                pheno2top[code] = (variant, p_chip)
-            if p_add is not None and p_add > var2top[variant][1]:
-                var2top[variant] = (code, p_add)
-            if p_chip is not None and p_chip > var2top[variant][1]:
-                var2top[variant] = (code, p_chip)
-        for res in results:
-            if res['variant'] == pheno2top[res['pheno']['code']][0]:
-                res['is_top_variant'] = True
-            if res['pheno']['code'] == var2top[res['variant']][0]:
-                res['is_top_pheno'] = True
+        set_top_flags(results)
 
     # TODO this is slow
     # should we do the dict-to-list conversion client side or speed it up here
