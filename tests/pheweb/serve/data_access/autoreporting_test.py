@@ -132,6 +132,14 @@ def test_na_numeric_values_are_nan(tmp_path):
         assert math.isnan(record[key]), key
 
 
+def test_empty_numeric_values_are_nan(tmp_path):
+    dao, report_dir = make_dao(tmp_path)
+    write_report(report_dir, [{**CURRENT_ROW, "lead_enrichment": "", "cs_size": ""}])
+    record = dao.get_group_report(PHENO)[0]
+    for key in ["lead_enrichment", "cs_size"]:
+        assert math.isnan(record[key]), key
+
+
 def test_trait_merge_skips_missing_entries(tmp_path):
     dao, report_dir = make_dao(tmp_path)
     write_report(report_dir, [{**CURRENT_ROW,

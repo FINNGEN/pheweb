@@ -131,10 +131,10 @@ class AutoreportingDao(AutorepVariantDB):
                     return cols[hdi[source]]
 
                 def to_float(value):
-                    return float(value) if value != "NA" else float("nan")
+                    return float(value) if value not in ("NA", "") else float("nan")
 
                 def to_int(value):
-                    return int(value) if value != "NA" else float("nan")
+                    return int(value) if value not in ("NA", "") else float("nan")
                 
                 #filter out empty and missing entries from traits
                 merge_func = lambda a,b : ";".join(list(filter(lambda x:(x!="NA" and x != ""),[a,b])))
