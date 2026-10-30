@@ -8,6 +8,7 @@ import defaultConfig from "./HLAConfig";
 import './style.css';
 import ReactTooltip from "react-tooltip";
 import HLATable from "./HLATable";
+import HelpText from "../../common/CommonHelpText";
 
 declare let window: ConfigurationWindow;
 const config: { [key: string]: any } = window?.config?.userInterface?.hla?.config || defaultConfig;
@@ -36,7 +37,7 @@ const HLA = (props) => {
       <div>
         <ReactTooltip place="left" arrowColor="transparent" offset={{top: -50}} html={true}/>
         <span><h2>{config.title}</h2></span>
-        <span className="help" data-tip={config.help}>?</span>
+        <HelpText text={config.help ?? defaultConfig.help} />
       </div>
       <Search />
       <br/>

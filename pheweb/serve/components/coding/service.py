@@ -12,11 +12,11 @@ from flask import (
     current_app as app,
     abort,
     Response,
+    request,
 )
 
-from .model import CodingDAO, JeevesContext
-from pheweb.serve.components.coding.variant import Variant
-from pheweb.serve.components.coding.exceptions import ParseException, NotFoundException
+from .model import CodingDB, JeevesContext
+from pheweb.serve.data_access.variant import Variant
 
 coding = Blueprint("pheweb_coding", __name__)
 development = Blueprint("development", __name__)
@@ -25,7 +25,7 @@ development = Blueprint("development", __name__)
 app.jeeves: JeevesContext  # type: ignore
 
 
-def get_dao(current_app=app) -> CodingDAO:
+def get_dao(current_app=app) -> CodingDB:
     """ "
     Get DAO.
 
@@ -34,7 +34,7 @@ def get_dao(current_app=app) -> CodingDAO:
     it means the coding data is not
     available.
     """
-    dao: typing.Optional[CodingDAO] = current_app.jeeves.coding_dao
+    dao: typing.Optional[CodingDB] = current_app.jeeves.coding_dao
     if dao is None:
         result = None
         abort(404, "Coding data not available")
@@ -45,24 +45,27 @@ def get_dao(current_app=app) -> CodingDAO:
 
 @coding.route('/api/v1/coding/top')
 def top_data():
-    return get_dao().top_results
+    return get_dao().get_top_results()
 
-@coding.route('/api/v1/coding/results/<query>')
-def get_results(query):
+@coding.route('/api/v1/coding/variant/<variant>')
+def get_by_variant(variant):
     try:
-        var = Variant(query)
-        index_range = get_dao().get_variant_range(var)
-        results = get_dao().get_results(index_range)
-    except (ParseException, NotFoundException):
-        try:
-            index_range = get_dao().get_gene_range(query)
-            results = get_dao().get_results(index_range, query)
-        except NotFoundException:
-            if query.startswith('rs'):
-                return jsonify({'message': 'no gene or variant found. searching with rsids does not work yet, please use gene name or chr-pos-ref-alt'}), 404
-            else:
-                return jsonify({'message': 'no gene or variant found. if you\'re looking for a gene, you can try with another name for that gene.'}), 404
-    return jsonify(results)
+        var = Variant.from_str(variant)
+    except ValueError as e:
+        return jsonify({'message': str(e)}), 400
+    return jsonify(get_dao().get_by_variant(var))
+
+@coding.route('/api/v1/coding/phenocode/<phenocode>')
+def get_by_phenotype(phenocode):
+    return jsonify(get_dao().get_by_phenotype(phenocode))
+
+@coding.route('/api/v1/coding/autocomplete')
+def get_autocomplete():
+    return jsonify(get_dao().get_autocomplete(request.args.get('query', '')))
+
+@coding.route('/api/v1/coding/gene/<gene>')
+def get_by_gene(gene):
+    return jsonify(get_dao().get_by_gene(gene))
 
 
 @coding.route('/api/v1/coding/cluster_plot/<variant>', methods=["GET"])
@@ -73,7 +76,7 @@ def get_cluster_plot(variant : str):
     :param variant: variant
     :return: response
     """
-    dao: CodingDAO = get_dao()
+    dao: CodingDB = get_dao()
     data = dao.get_cluster_plot(variant)
     if data is None:
         result = None

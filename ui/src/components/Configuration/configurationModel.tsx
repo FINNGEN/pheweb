@@ -1,6 +1,6 @@
 import { NotFoundConfiguration } from "../NotFound/notFoundModel";
 import { ChipConfiguration } from "../Chip/chipModel";
-import { CodingConfiguration } from "../Coding/codingModel";
+import { CodingConfiguration } from "../Coding/CodingModel";
 import { IndexConfiguration } from "../Index/indexModel";
 import { PhenotypeConfiguration } from "../Phenotype/phenotypeModel";
 import { AboutConfiguration } from "../About/aboutModel";
