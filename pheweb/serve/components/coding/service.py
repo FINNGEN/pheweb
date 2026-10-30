@@ -14,7 +14,7 @@ from flask import (
     Response,
 )
 
-from .model import CodingDAO, JeevesContext
+from .model import CodingDB, JeevesContext
 from pheweb.serve.components.coding.variant import Variant
 from pheweb.serve.components.coding.exceptions import ParseException, NotFoundException
 
@@ -25,7 +25,7 @@ development = Blueprint("development", __name__)
 app.jeeves: JeevesContext  # type: ignore
 
 
-def get_dao(current_app=app) -> CodingDAO:
+def get_dao(current_app=app) -> CodingDB:
     """ "
     Get DAO.
 
@@ -34,7 +34,7 @@ def get_dao(current_app=app) -> CodingDAO:
     it means the coding data is not
     available.
     """
-    dao: typing.Optional[CodingDAO] = current_app.jeeves.coding_dao
+    dao: typing.Optional[CodingDB] = current_app.jeeves.coding_dao
     if dao is None:
         result = None
         abort(404, "Coding data not available")
@@ -73,7 +73,7 @@ def get_cluster_plot(variant : str):
     :param variant: variant
     :return: response
     """
-    dao: CodingDAO = get_dao()
+    dao: CodingDB = get_dao()
     data = dao.get_cluster_plot(variant)
     if data is None:
         result = None

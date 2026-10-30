@@ -1,72 +1,54 @@
-@import url("https://fonts.googleapis.com/css?family=Open+Sans:400,600,700");
-
-div:has(> #only-chip-label) {
-  margin-left: 0px !important;
-  padding-left: 0px !important;
-}
-.coding div {
-  font-family: "Open Sans", sans-serif;
-}
-
-.coding .container {
-    margin-left: 10px;
-    margin-right: 10px;
-    width: 90% !important;
-}
-
-.coding .__react_component_tooltip {
-  pointer-events: auto !important;
-}
-
-.codingTable table {
-  width: 90%;
-  border: 0;
-}
-
-.codingTable > tbody > tr:nth-of-type(even) {
-  background: #eeeeee;
-}
-
-.coding th {
-  text-align: left;
-  white-space: nowrap;
-}
-
-.coding td {
-  white-space: nowrap;
-}
-
-.coding tr:hover {
-  font-weight: 700;
-}
-
-.coding .title {
-  font-weight: bold;
-  align-self: center;
-}
-
-.coding .buttonGroup {
-  padding-right: 20px;
-}
-
-.coding .button {
-  background-color: white;
-  cursor: pointer;
-  border-color: black;
-}
-
-.coding .input {
-  border-radius: 0px;
-  border-color: black;
-}
-
-.coding .loading {
-  background-color: #dddddd;
-}
-
 .coding .help {
   font-weight: bold;
   font-size: 1.5em;
   cursor: help;
   float: right;
+}
+
+.coding .search {
+  display: flex;
+  align-items: center;
+  padding-bottom: 10px;
+}
+
+.coding .search .disabled {
+  color: #777777;
+  cursor: not-allowed;
+}
+
+.coding .not-significant {
+  color: #777777;
+}
+
+.coding .filter-option {
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.coding .popup-label {
+  cursor: default;
+}
+
+/* popups are rendered into document.body, outside .coding */
+.coding-popup {
+  position: fixed;
+  z-index: 1000;
+  padding: 8px;
+  background: #222222;
+  color: white;
+  border-radius: 3px;
+  max-width: 600px;
+}
+
+.coding-popup a {
+  color: white;
+}
+
+.coding-popup .cluster-plot {
+  max-width: 100%;
+}
+
+.coding-popup .leads td,
+.coding-popup .leads th {
+  padding-right: 10px;
 }

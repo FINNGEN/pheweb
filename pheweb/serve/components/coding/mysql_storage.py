@@ -2,113 +2,110 @@ import math
 from contextlib import closing
 
 import pymysql
+from google.cloud.exceptions import NotFound
+from smart_open import open as smart_open
 
-from .model import CodingDAO, set_top_flags
+from .model import CodingDB
 from pheweb.serve.data_access.db_util import MysqlDAO
 
 # inf enrichment values are stored as 1e300 in coding_variants_annotated
 INF_ENRICHMENT = 1e300
 
-# coding_variants_annotated column -> anno key returned to the UI
-ANNO_COLUMNS = {
-    'chr': 'chr',
-    'pos': 'pos',
-    'ref': 'ref',
-    'alt': 'alt',
-    'info': 'INFO',
-    'af': 'AF',
-    'ac_het': 'AC_Het',
-    'ac_hom': 'AC_Hom',
-    'af_chip': 'AF_chip',
-    'ac_het_chip': 'AC_Het_chip',
-    'ac_hom_chip': 'AC_Hom_chip',
-    'most_severe': 'most_severe',
-    'gene_most_severe': 'gene_most_severe',
-    'rsid': 'rsid',
-    'enrichment': 'enrichment',
-}
+# variant is formatted like Variant: chr-pos-ref-alt with 23 as X
+RESULTS_SQL = """
+    SELECT
+        p.code AS phenocode,
+        p.name AS phenostring,
+        CONCAT(IF(a.chr = 23, 'X', a.chr), '-', a.pos, '-', a.ref, '-', a.alt) AS variant,
+        a.af,
+        a.info,
+        a.rsid,
+        a.most_severe,
+        a.gene_most_severe,
+        a.enrichment,
+        s.mlogp_add,
+        s.beta_add,
+        s.sebeta_add,
+        s.mlogp_chip_add,
+        s.beta_chip_add,
+        s.sebeta_chip_add,
+        s.mlogp_chip_rec,
+        s.beta_chip_rec,
+        s.sebeta_chip_rec,
+        -- strongest phenotype for each variant among the returned rows
+        ROW_NUMBER() OVER (
+            PARTITION BY s.variant_id ORDER BY s.max_mlogp DESC
+        ) = 1 AS is_top_pheno
+    FROM coding_summstats s
+    JOIN phenotype p ON p.id = s.phenotype_id
+    JOIN coding_variants_annotated a ON a.id = s.variant_id
+"""
 
-# coding_summstats column -> result key returned to the UI
-RESULT_COLUMNS = {
-    'mlogp_add': 'mlogp_add',
-    'beta_add': 'beta_add',
-    'sebeta_add': 'sebeta_add',
-    'mlogp_chip_add': 'mlogp_chip',
-    'beta_chip_add': 'beta_chip',
-    'sebeta_chip_add': 'sebeta_chip',
-    'mlogp_chip_rec': 'mlogp_rec',
-    'beta_chip_rec': 'beta_rec',
-    'sebeta_chip_rec': 'sebeta_rec',
-}
-
-TOP_RESULTS_SQL = (
-    "SELECT p.code, p.name, "
-    + ", ".join(f"a.{c}" for c in ANNO_COLUMNS) + ", "
-    + ", ".join(f"s.{c}" for c in RESULT_COLUMNS) + " "
-    "FROM coding_summstats s "
-    "JOIN phenotype p ON p.id = s.phenotype_id "
-    "JOIN coding_variants_annotated a ON a.id = s.variant_id "
-    "WHERE s.max_mlogp > %s"
-)
+TOP_RESULTS_SQL = RESULTS_SQL + "WHERE s.max_mlogp > %s"
 
 
-def format_variant(chr: int, pos: int, ref: str, alt: str) -> str:
-    # same format as Variant: chr-pos-ref-alt with 23 as X
-    return "{}-{}-{}-{}".format('X' if chr == 23 else chr, pos, ref, alt)
+def format_row(row: dict) -> dict:
+    """
+    Format a joined summstats + annotation row into the flat
+    row sent to the UI.
+    """
+    result = dict(row)
+    # JSON has no infinity
+    if result['enrichment'] is not None and result['enrichment'] >= INF_ENRICHMENT:
+        result['enrichment'] = 'inf'
+    result['rec_add'] = (row['mlogp_chip_rec'] - row['mlogp_add']
+                         if row['mlogp_chip_rec'] is not None and row['mlogp_add'] is not None
+                         else None)
+    result['possible_explaining_signals'] = None
+    # MySQL returns comparisons as 0/1
+    result['is_top_pheno'] = bool(row['is_top_pheno'])
+    return result
 
 
-def format_anno_value(column: str, value):
-    if value is None:
-        return 'NA'
-    if column == 'enrichment' and value >= INF_ENRICHMENT:
-        return 'inf'
-    return value
+class CodingMysqlDAO(CodingDB, MysqlDAO):
 
-
-class MySQLCodingDao(CodingDAO, MysqlDAO):
-
-    def __init__(self, authentication_file, top_threshold: float = 1e-5):
+    def __init__(self,
+                 authentication_file,
+                 plot_root: str,
+                 path_format: str = "{plot_root}{variant}.raw.png",
+                 top_threshold: float = 1e-5):
         MysqlDAO.__init__(self, authentication_file)
+        self.plot_root = plot_root
+        self.path_format = path_format
         self.top_threshold = top_threshold
         self._top_results = None
 
     def get_top_results(self):
         # the data only changes on reload, so query once and cache
         if self._top_results is None:
-            self._top_results = self._fetch_top_results(self.top_threshold)
+            self._top_results = self._fetch_results(TOP_RESULTS_SQL,
+                                                    (-math.log10(self.top_threshold),))
         return self._top_results
 
-    def _fetch_top_results(self, threshold: float):
+    def _fetch_results(self, sql: str, params: tuple):
         with closing(self.get_connection()) as conn:
             with conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                cursor.execute(TOP_RESULTS_SQL, (-math.log10(threshold),))
+                cursor.execute(sql, params)
                 rows = cursor.fetchall()
-        results = []
-        anno = {}
-        for row in rows:
-            variant = format_variant(row['chr'], row['pos'], row['ref'], row['alt'])
-            result = {'pheno': {'code': row['code'], 'name': row['name']}, 'variant': variant}
-            result.update({key: row[column] for column, key in RESULT_COLUMNS.items()})
-            result['possible_explaining_signals'] = None
-            results.append(result)
-            if variant not in anno:
-                anno[variant] = {'variant': variant}
-                anno[variant].update({key: format_anno_value(column, row[column])
-                                      for column, key in ANNO_COLUMNS.items()})
-        set_top_flags(results)
-        return {
-            'results': results,
-            'anno': anno
-        }
+        return {'results': [format_row(row) for row in rows]}
 
-    def get_variant_range(self, query):
+    def get_by_variant(self, variant):
         pass
 
-    def get_gene_range(self, query):
+    def get_by_gene(self, gene):
         pass
 
     def get_results(self, index_range, query):
         pass
-
+    
     def get_cluster_plot(self, variant):
-        pass
+        # plots are named chr_pos_ref_alt with 23 as X
+        cpra = variant.split(':')
+        if cpra[0] == '23':
+            cpra[0] = 'X'
+        path = self.path_format.format(plot_root=self.plot_root, variant='_'.join(cpra))
+        try:
+            with smart_open(path, 'rb') as file:
+                return file.read()
+        except (FileNotFoundError, NotFound):
+            return None

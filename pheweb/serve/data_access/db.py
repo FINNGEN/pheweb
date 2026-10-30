@@ -29,7 +29,7 @@ from pheweb.serve.components.colocalization.model_orm_db import ColocalizationDA
 from pheweb.serve.components.colocalization.model_sql_db import ColocalizationV2DAO
 from .variant_phenotype import  VariantPhenotypeDao
 from ..components.chip.fs_storage import FileChipDAO
-from ..components.coding.fs_storage import FileCodingDAO
+from ..components.coding.mysql_storage import CodingMysqlDAO
 from pathlib import Path
 from .drug_db import DrugDB, DrugDao
 from ..components.autocomplete.tries_dao import AutocompleterTriesDAO

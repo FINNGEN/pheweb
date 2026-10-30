@@ -8,7 +8,7 @@ import abc
 import typing
 from collections import defaultdict as dd
 from dataclasses import dataclass
-from typing import NamedTuple, List, Any
+import typing
 
 
 def set_top_flags(results):
@@ -36,9 +36,9 @@ def set_top_flags(results):
             res['is_top_pheno'] = True
 
 
-class CodingDAO(abc.ABC):
+class CodingDB(abc.ABC):
     """
-    Coding DAO.
+    Coding DB.
 
     Abstract class for coding dao.
     """
@@ -47,15 +47,11 @@ class CodingDAO(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_variant_range(self, query):
+    def get_by_variant(self, query):
         pass
     
     @abc.abstractmethod
-    def get_gene_range(self, query):
-        pass
-    
-    @abc.abstractmethod
-    def get_results(self, index_range, query):
+    def get_by_gene(self, query):
         pass
         
     @abc.abstractmethod
@@ -73,4 +69,4 @@ class JeevesContext:
     Type interface for the jeeves context.
     """
 
-    coding_dao: typing.Optional[CodingDAO]
+    coding_dao: typing.Optional[CodingDB]
