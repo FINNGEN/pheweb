@@ -8,8 +8,8 @@ from google.cloud.exceptions import NotFound
 from smart_open import open as smart_open
 
 from .model import CodingDB
-from .variant import Variant
 from pheweb.serve.data_access.db_util import MysqlDAO
+from pheweb.serve.data_access.variant import Variant
 
 # inf enrichment values are stored as 1e300 in coding_variants_annotated
 INF_ENRICHMENT = 1e300

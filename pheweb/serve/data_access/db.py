@@ -28,6 +28,7 @@ import logging
 from pheweb.serve.components.colocalization.model_orm_db import ColocalizationDAO
 from pheweb.serve.components.colocalization.model_sql_db import ColocalizationV2DAO
 from .variant_phenotype import  VariantPhenotypeDao
+from .variant import JSONifiable, Variant
 from ..components.chip.fs_storage import FileChipDAO
 from ..components.coding.mysql_storage import CodingMysqlDAO
 from ..components.hla.mysql_storage import HLAMySQLDao
@@ -44,79 +45,6 @@ from .autoreporting import AutorepVariantDB, AutoreportingDao
 from ...load_source.load_source import load_source
 
 logger = logging.getLogger(__name__)
-
-class JSONifiable(abc.ABC):
-    @abc.abstractmethod
-    def json_rep(self):
-        """
-        Return an object that can be jsonencoded.
-        """
-
-
-class Variant(JSONifiable):
-    def __init__(self, chr, pos, ref, alt):
-        try:
-            self.chr = int(chr)
-        except:
-            raise Exception("Chromosome can be only numeric! Use x=23, y=24 and MT=25")
-
-        self.pos = int(pos)
-        self.ref = ref
-        self.alt = alt
-        self.varid = "{}:{}:{}:{}".format(self.chr, self.pos, self.ref, self.alt)
-        self.annotation = {}
-
-    def add_annotation(self, name, value):
-        self.annotation[name] = value
-
-    @property
-    def id(self):
-        return self.varid
-
-    @property
-    def rsids(self):
-        if "rsids" in self.annotation:
-            return self.annotation["rsids"]
-        else:
-            return None
-
-    @rsids.setter
-    def rsids(self, value):
-        self.annotation["rsids"] = value
-
-    def get_annotation(self, name):
-        if name in self.annotation:
-            return self.annotation[name]
-        else:
-            return None
-
-    def get_annotations(self):
-        return self.annotation
-
-    def merge_annot(self, other, overwrite=True):
-        """
-        Merges annotations from another Variant object. overwrite determines if annotation with the same name is overwritten or kept
-        """
-        for k, v in other.get_annotations():
-            if k not in self.annotation or overwrite:
-                self.add_annotation(k, v)
-
-    def __eq__(self, other):
-        return (
-            self.chr == other.chr
-            and self.pos == other.pos
-            and self.ref == other.ref
-            and self.alt == other.alt
-        )
-
-    def __hash__(self):
-        return hash(self.varid)
-
-    def __repr__(self):
-        return self.varid
-
-    def json_rep(self):
-        return self.__dict__
 
 
 def optional_float(x):

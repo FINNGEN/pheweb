@@ -16,8 +16,7 @@ from flask import (
 )
 
 from .model import CodingDB, JeevesContext
-from pheweb.serve.components.coding.variant import Variant
-from pheweb.serve.components.coding.exceptions import ParseException
+from pheweb.serve.data_access.variant import Variant
 
 coding = Blueprint("pheweb_coding", __name__)
 development = Blueprint("development", __name__)
@@ -51,8 +50,8 @@ def top_data():
 @coding.route('/api/v1/coding/variant/<variant>')
 def get_by_variant(variant):
     try:
-        var = Variant(variant)
-    except ParseException as e:
+        var = Variant.from_str(variant)
+    except ValueError as e:
         return jsonify({'message': str(e)}), 400
     return jsonify(get_dao().get_by_variant(var))
 
