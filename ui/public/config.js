@@ -46,6 +46,7 @@ const userInterface = {
     page: { message: notFoundPageMessage }
   },
   hla: {},
+  coding: {},
   about: { banner: aboutBanner },
   phenotype: {
     r2_to_lead_threshold: 0.6,
