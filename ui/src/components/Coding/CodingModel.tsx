@@ -36,3 +36,12 @@ export interface CodingConfiguration {
   config? : { [key: string]: any };
   dataset? : string;
 }
+
+export namespace AutoCompleteModel {
+    export type Row = {
+        label: string
+        value: string
+        type: 'phenotype' | 'gene' | 'variant'
+    }
+    export type Data = Row[]
+}

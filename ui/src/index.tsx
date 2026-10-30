@@ -45,7 +45,8 @@ if (typeof (element) !== 'undefined' && element != null) {
             <Route exact path='/coding' component={Coding} />
             <Route exact path='/coding/variant/:variant' component={Coding} />
             <Route exact path='/coding/gene/:gene' component={Coding} />
-            <Route exact path='/coding/:query' component={Coding} />
+            <Route exact path='/coding/phenocode/:phenocode' component={Coding} />
+            <Route exact path='/coding/top' component={Coding} />
             <Route exact path='/variant/:variant' component={Variant} />
             <Route path='/pheno/:pheno' component={Pheno} />
             <Route path='/region/:phenotype/:locus' component={Region} />

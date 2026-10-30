@@ -309,3 +309,18 @@ border {}
 .bg-gray-200 {
     background-color: #e5e7eb; /* Tailwind's gray-200 */
 }
+
+/* CommonHelpText: keep the paragraph breaks of the plain text help */
+.help-text {
+    white-space: pre-line;
+    line-height: 1.5;
+    color: #444444;
+    margin-bottom: 15px;
+    max-width: 120ch;
+}
+
+@media (max-width: 767.98px) {
+    .help-text {
+        display: none;
+    }
+}

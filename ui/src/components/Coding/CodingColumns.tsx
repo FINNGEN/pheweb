@@ -81,12 +81,13 @@ const directionArrow = (row: Row) => {
   return <span style={{ visibility: "hidden" }}>&uarr;</span>;
 }
 
-const VariantCell = ({ value, original }: { value: string, original: Row }) =>
-  original.mlogp_chip_add !== null ?
-    <Popup label={value}
-           style={{ textDecoration: "underline dotted" }}
+const VariantCell = ({ value, original }: { value: string, original: Row }) => {
+  const link = <Link to={`/coding/variant/${value}`}>{value}</Link>;
+  return original.mlogp_chip_add !== null ?
+    <Popup label={link}
            content={<img alt={`cluster plot ${value}`} className="cluster-plot" src={clusterPlotURL(value)} />} /> :
-    <span title="this variant is not on chip or has not passed chip QC">{value}</span>
+    <span title="this variant is not on chip or has not passed chip QC">{link}</span>
+}
 
 const PValueCell = ({ value }: { value: number | null }) =>
   <span className={significant(value) ? "" : "not-significant"}>{value === null ? "NA" : pValueRepr(value)}</span>
@@ -232,7 +233,8 @@ export const codingTableColumns = (rows: Row[], tips: { [key: string]: string },
     {
       Header: header("variant"),
       accessor: "variant",
-      minWidth: 140,
+      // fits chr-pos-ref-alt up to ~16 characters, i.e. nearly all snvs
+      minWidth: 160,
       Cell: VariantCell,
       Filter: TextFilter(`search ${countDistinct(rows, "variant")} variants`),
       filterMethod: wordFilter,

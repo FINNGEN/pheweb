@@ -64,9 +64,9 @@ const userInterface = {
         {
           title: 'number of cases r8',
           label: 'number of cases r8',
+          formatter: 'number',
           accessor: 'num_cases_prev',
-          formatter: 'textCellFormatter',
-          filter: 'number'
+          filter: ''
         },
         { type: 'numControls' },
         { type: 'numGwSignificant' },
@@ -74,8 +74,8 @@ const userInterface = {
           title: 'genome-wide sig loci r8',
           label: 'genome-wide sig loci r8',
           accessor: 'num_gw_significant_prev',
-          formatter: 'textCellFormatter',
-          filter: 'number'
+          formatter: 'number',
+          filter: ''
         },
         { type: 'controlLambda' }
       ]
