@@ -12,11 +12,12 @@ from flask import (
     current_app as app,
     abort,
     Response,
+    request,
 )
 
 from .model import CodingDB, JeevesContext
 from pheweb.serve.components.coding.variant import Variant
-from pheweb.serve.components.coding.exceptions import ParseException, NotFoundException
+from pheweb.serve.components.coding.exceptions import ParseException
 
 coding = Blueprint("pheweb_coding", __name__)
 development = Blueprint("development", __name__)
@@ -47,21 +48,33 @@ def get_dao(current_app=app) -> CodingDB:
 def top_data():
     return get_dao().get_top_results()
 
-@coding.route('/api/v1/coding/results/<query>')
-def get_results(query):
+@coding.route('/api/v1/coding/variant/<variant>')
+def get_by_variant(variant):
     try:
-        var = Variant(query)
-        index_range = get_dao().get_variant_range(var)
-        results = get_dao().get_results(index_range)
-    except (ParseException, NotFoundException):
-        try:
-            index_range = get_dao().get_gene_range(query)
-            results = get_dao().get_results(index_range, query)
-        except NotFoundException:
-            if query.startswith('rs'):
-                return jsonify({'message': 'no gene or variant found. searching with rsids does not work yet, please use gene name or chr-pos-ref-alt'}), 404
-            else:
-                return jsonify({'message': 'no gene or variant found. if you\'re looking for a gene, you can try with another name for that gene.'}), 404
+        var = Variant(variant)
+    except ParseException as e:
+        return jsonify({'message': str(e)}), 400
+    results = get_dao().get_by_variant(var)
+    if not results['results']:
+        return jsonify({'message': 'no results found for variant {}'.format(var)}), 404
+    return jsonify(results)
+
+@coding.route('/api/v1/coding/phenocode/<phenocode>')
+def get_by_phenotype(phenocode):
+    results = get_dao().get_by_phenotype(phenocode)
+    if not results['results']:
+        return jsonify({'message': 'no results found for phenotype {}'.format(phenocode)}), 404
+    return jsonify(results)
+
+@coding.route('/api/v1/coding/autocomplete')
+def get_autocomplete():
+    return jsonify(get_dao().get_autocomplete(request.args.get('query', '')))
+
+@coding.route('/api/v1/coding/gene/<gene>')
+def get_by_gene(gene):
+    results = get_dao().get_by_gene(gene)
+    if not results['results']:
+        return jsonify({'message': 'no results found for gene {}. you can try with another name for that gene.'.format(gene)}), 404
     return jsonify(results)
 
 

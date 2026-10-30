@@ -53,7 +53,20 @@ class CodingDB(abc.ABC):
     @abc.abstractmethod
     def get_by_gene(self, query):
         pass
-        
+
+    @abc.abstractmethod
+    def get_by_phenotype(self, phenocode):
+        pass
+
+    @abc.abstractmethod
+    def get_autocomplete(self, query):
+        """
+        Suggest genes, variants and phenotypes matching a search query.
+
+        Returns [{"type": "gene" | "variant" | "phenotype", "value": ..., "label": ...}]
+        """
+        pass
+
     @abc.abstractmethod
     def get_cluster_plot(self, variant):
         pass
