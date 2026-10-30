@@ -54,17 +54,11 @@ def get_by_variant(variant):
         var = Variant(variant)
     except ParseException as e:
         return jsonify({'message': str(e)}), 400
-    results = get_dao().get_by_variant(var)
-    if not results['results']:
-        return jsonify({'message': 'no results found for variant {}'.format(var)}), 404
-    return jsonify(results)
+    return jsonify(get_dao().get_by_variant(var))
 
 @coding.route('/api/v1/coding/phenocode/<phenocode>')
 def get_by_phenotype(phenocode):
-    results = get_dao().get_by_phenotype(phenocode)
-    if not results['results']:
-        return jsonify({'message': 'no results found for phenotype {}'.format(phenocode)}), 404
-    return jsonify(results)
+    return jsonify(get_dao().get_by_phenotype(phenocode))
 
 @coding.route('/api/v1/coding/autocomplete')
 def get_autocomplete():
@@ -72,10 +66,7 @@ def get_autocomplete():
 
 @coding.route('/api/v1/coding/gene/<gene>')
 def get_by_gene(gene):
-    results = get_dao().get_by_gene(gene)
-    if not results['results']:
-        return jsonify({'message': 'no results found for gene {}. you can try with another name for that gene.'.format(gene)}), 404
-    return jsonify(results)
+    return jsonify(get_dao().get_by_gene(gene))
 
 
 @coding.route('/api/v1/coding/cluster_plot/<variant>', methods=["GET"])
