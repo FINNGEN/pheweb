@@ -1,6 +1,6 @@
 const codingConfig = {
   "title": "FinnGen freeze 10 coding variant results",
-  "help": `FinnGen freeze 10 coding variant results. By default you will see top coding variant association results (all results with a p-value < 1e-5). Search by gene name to get all results of coding variants in that gene for all analyzed binary phenotypes (more precisely variants whose most severe consequence from VEP annotation is for that gene). If you can't find your gene, try with another name.
+  "help": `FinnGen freeze 10 coding variant results. By default you will see top coding variant association results (all results with a p-value < 1e-8). Search by gene name to get all results of coding variants in that gene for all analyzed binary phenotypes (more precisely variants whose most severe consequence from VEP annotation is for that gene). If you can't find your gene, try with another name.
   
   The result table contains association statistics from additive and recessive analysis of imputed data (412,181 samples from the FinnGen chip and legacy data) and from additive analysis of chip genotyped data (328,883 samples from the FinnGen chip). 
 

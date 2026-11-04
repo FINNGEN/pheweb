@@ -146,14 +146,7 @@ def test_get_top_results(dao, cursor) -> None:
     assert [r["phenocode"] for r in result["results"]] == ["AB1_CANDIDIASIS"]
     ((sql, params),) = executed(cursor)
     assert sql == TOP_RESULTS_SQL
-    assert params == pytest.approx((5.0,))
-
-
-@pytest.mark.unit
-def test_get_top_results_cached(dao, cursor) -> None:
-    cursor.fetchall.side_effect = [[make_row()]]
-    assert dao.get_top_results() == dao.get_top_results()
-    assert dao.get_connection.call_count == 1
+    assert params == pytest.approx((8.0,))
 
 
 @pytest.mark.unit
@@ -246,8 +239,8 @@ def test_get_autocomplete_escapes_wildcards(dao, cursor) -> None:
 
 @pytest.mark.unit
 def test_get_cluster_plot(dao, tmp_path) -> None:
-    (tmp_path / "X_284258_T_C.raw.png").write_bytes(b"png")
-    (tmp_path / "1_925969_C_T.raw.png").write_bytes(b"png1")
+    (tmp_path / "X_284258_T_C.png").write_bytes(b"png")
+    (tmp_path / "1_925969_C_T.png").write_bytes(b"png1")
     assert dao.get_cluster_plot("23:284258:T:C") == b"png"
     assert dao.get_cluster_plot("1:925969:C:T") == b"png1"
 

@@ -24,6 +24,9 @@ development = Blueprint("development", __name__)
 
 app.jeeves: JeevesContext  # type: ignore
 
+# top results encoded once per worker, the data only changes when the server restarts
+_top_json: typing.Optional[bytes] = None
+
 
 def get_dao(current_app=app) -> CodingDB:
     """ "
@@ -45,7 +48,11 @@ def get_dao(current_app=app) -> CodingDB:
 
 @coding.route('/api/v1/coding/top')
 def top_data():
-    return get_dao().get_top_results()
+    global _top_json
+    if _top_json is None:
+        _top_json = app.json.dumps(get_dao().get_top_results()).encode('utf-8')
+    # flask-compress still compresses it with the best encoding the client accepts
+    return Response(_top_json, mimetype='application/json')
 
 @coding.route('/api/v1/coding/variant/<variant>')
 def get_by_variant(variant):

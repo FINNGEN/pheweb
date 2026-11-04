@@ -7,6 +7,7 @@ from flask import Flask
 from flask.testing import FlaskClient
 from werkzeug.exceptions import NotFound
 
+from pheweb.serve.components.coding import service
 from pheweb.serve.components.coding.model import CodingDB, JeevesContext
 from pheweb.serve.components.coding.service import coding, development, get_dao
 
@@ -19,7 +20,11 @@ class FakeCodingDAO(CodingDB):
     and no results otherwise.
     """
 
+    def __init__(self):
+        self.top_calls = 0
+
     def get_top_results(self):
+        self.top_calls += 1
         return {"results": [ROW]}
 
     def get_by_variant(self, variant):
@@ -45,6 +50,14 @@ def make_client(dao) -> FlaskClient:
     app.register_blueprint(development)
     app.jeeves = JeevesContext(coding_dao=dao)
     return app.test_client()
+
+
+@pytest.fixture(autouse=True)
+def reset_top_cache() -> None:
+    """The encoded top results are cached in the module, so clear them between tests."""
+    service._top_json = None
+    yield
+    service._top_json = None
 
 
 @pytest.fixture(name="client")
@@ -84,7 +97,18 @@ def test_dao_missing(bad_client) -> None:
 def test_top(client) -> None:
     response = client.get("/api/v1/coding/top")
     assert response.status_code == 200
+    assert response.mimetype == "application/json"
     assert response.get_json() == {"results": [ROW]}
+
+
+@pytest.mark.unit
+def test_top_cached() -> None:
+    dao = FakeCodingDAO()
+    with make_client(dao) as client:
+        first = client.get("/api/v1/coding/top")
+        second = client.get("/api/v1/coding/top")
+    assert first.data == second.data
+    assert dao.top_calls == 1
 
 
 @pytest.mark.unit

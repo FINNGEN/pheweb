@@ -322,15 +322,6 @@ class ResultDB(abc.ABC):
         """
         raise NotImplementedError
 
-
-class CodingDB(abc.ABC):
-    @abc.abstractmethod
-    def get_coding(self):
-        """Retrieve coding variant data
-        Returns: coding variant results and annotation
-        """
-        return
-
 class MissingVariantDB(abc.ABC):
     @abc.abstractmethod
     def get_missing_variant(self, variant: Variant) -> Optional[Dict[str,Any]]:
@@ -1552,25 +1543,6 @@ class ElasticLofDao(LofDB):
         return [
             {"id": r["_id"], "gene_data": r["_source"]} for r in result["hits"]["hits"]
         ]
-
-
-class TSVCodingDao(CodingDB):
-    def __init__(self, data):
-        df = (
-            pd.read_csv(data, encoding="utf8", sep="\t")
-            .fillna("NA")
-            .replace([np.inf], 1e6)
-        )
-        top_i = df.groupby("variant")["pval"].idxmin
-        df["is_top"] = 0
-        df.loc[top_i, "is_top"] = 1
-        df["phenoname"] = np.where(
-            df["phenoname"] == "NA", df["pheno"], df["phenoname"]
-        )
-        self.coding_data = df.to_dict(orient="records")
-
-    def get_coding(self):
-        return self.coding_data
 
 
 class TSVChipDao(ChipDB):

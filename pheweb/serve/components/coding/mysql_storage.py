@@ -125,8 +125,8 @@ class CodingMysqlDAO(CodingDB, MysqlDAO):
     def __init__(self,
                  authentication_file,
                  plot_root: str,
-                 path_format: str = "{plot_root}{variant}.raw.png",
-                 top_threshold: float = 1e-5,
+                 path_format: str = "{plot_root}{variant}.png",
+                 top_threshold: float = 1e-8,
                  gene_threshold: typing.Optional[float] = None):
         MysqlDAO.__init__(self, authentication_file)
         self.plot_root = plot_root
@@ -134,14 +134,10 @@ class CodingMysqlDAO(CodingDB, MysqlDAO):
         self.top_threshold = top_threshold
         # None returns all results for a gene
         self.gene_threshold = gene_threshold
-        self._top_results = None
 
     def get_top_results(self):
-        # the data only changes on reload, so query once and cache
-        if self._top_results is None:
-            self._top_results = self._fetch_results(TOP_RESULTS_SQL,
-                                                    (-math.log10(self.top_threshold),))
-        return self._top_results
+        # the encoded result is cached in the service
+        return self._fetch_results(TOP_RESULTS_SQL, (-math.log10(self.top_threshold),))
 
     def _fetch_results(self, sql: str, params: tuple):
         with closing(self.get_connection()) as conn:
