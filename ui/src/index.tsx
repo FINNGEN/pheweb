@@ -5,7 +5,7 @@ import NotFoundEntity from './components/NotFound/NotFoundEntity'
 import Index from './components/Index/Index'
 import LoF from './components/LOF/LOF'
 import Chip from './components/Chip/ChipIndex'
-import Coding from './components/Coding/CodingIndex'
+import Coding from './components/Coding/Coding'
 import Variant from './components/Variant/Variant'
 import Pheno from './components/Phenotype/Phenotype'
 import Region from './components/Region/Region'
@@ -43,7 +43,10 @@ if (typeof (element) !== 'undefined' && element != null) {
             <Route exact path='/lof' component={LoF} />
             <Route exact path='/chip' component={Chip} />
             <Route exact path='/coding' component={Coding} />
-            <Route exact path='/coding/:query' component={Coding} />
+            <Route exact path='/coding/variant/:variant' component={Coding} />
+            <Route exact path='/coding/gene/:gene' component={Coding} />
+            <Route exact path='/coding/phenocode/:phenocode' component={Coding} />
+            <Route exact path='/coding/top' component={Coding} />
             <Route exact path='/variant/:variant' component={Variant} />
             <Route path='/pheno/:pheno' component={Pheno} />
             <Route path='/region/:phenotype/:locus' component={Region} />

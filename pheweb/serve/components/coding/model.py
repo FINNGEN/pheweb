@@ -6,16 +6,45 @@ DAO, DTO classes and interfaces.
 """
 import abc
 import typing
+from collections import defaultdict as dd
 from dataclasses import dataclass
-from typing import NamedTuple, List, Any
+import typing
 
 
-class CodingDAO:
+class CodingDB(abc.ABC):
     """
-    Coding DAO.
+    Coding DB.
 
     Abstract class for coding dao.
     """
+    @abc.abstractmethod
+    def get_top_results(self):
+        pass
+
+    @abc.abstractmethod
+    def get_by_variant(self, query):
+        pass
+    
+    @abc.abstractmethod
+    def get_by_gene(self, query):
+        pass
+
+    @abc.abstractmethod
+    def get_by_phenotype(self, phenocode):
+        pass
+
+    @abc.abstractmethod
+    def get_autocomplete(self, query):
+        """
+        Suggest genes, variants and phenotypes matching a search query.
+
+        Returns [{"type": "gene" | "variant" | "phenotype", "value": ..., "label": ...}]
+        """
+        pass
+
+    @abc.abstractmethod
+    def get_cluster_plot(self, variant):
+        pass
 
 
 
@@ -28,4 +57,4 @@ class JeevesContext:
     Type interface for the jeeves context.
     """
 
-    coding_dao: typing.Optional[CodingDAO]
+    coding_dao: typing.Optional[CodingDB]
