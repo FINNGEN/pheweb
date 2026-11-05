@@ -14,7 +14,7 @@ declare let window: ConfigurationWindow;
 const configuration = window?.config?.userInterface?.phenotype?.credibleSet;
 
 const insideCSSorting = [{ id: 'cs_prob', desc: true }, { id: 'r2_to_lead', desc: true }];
-const outsideCSSorting = [{ id: 'mlogp', desc: true }, { id: 'pval', desc: true }];
+const outsideCSSorting = [{ id: 'mlogp', desc: true }, { id: 'pval', asc: true }];
 
 const r2leadThreshold = window?.config?.userInterface?.phenotype?.r2_to_lead_threshold;
 
