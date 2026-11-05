@@ -13,8 +13,8 @@ type LocusGroups =  [{ [locus_id: string]: LocusGroupEntry }];
 declare let window: ConfigurationWindow;
 const configuration = window?.config?.userInterface?.phenotype?.credibleSet;
 
-const insideCsSorting = [{ id: 'cs_prob', desc: true }, { id: 'r2_to_lead', desc: true }];
-const outsideCSSorting = [{ id: 'lead_mlogp', desc: true }, { id: 'pval', desc: true }];
+const insideCSSorting = [{ id: 'cs_prob', desc: true }, { id: 'r2_to_lead', desc: true }];
+const outsideCSSorting = [{ id: 'mlogp', desc: true }, { id: 'pval', desc: true }];
 
 const r2leadThreshold = window?.config?.userInterface?.phenotype?.r2_to_lead_threshold;
 
@@ -52,7 +52,7 @@ const PhenotypeCSTable = () => {
     return <ReactTable data={dataFilt || [] }
                        loading={dataFilt == null}
                        columns={csInsideTableCols}
-                       defaultSorted={insideCsSorting}
+                       defaultSorted={insideCSSorting}
                        defaultPageSize={10}
                        showPagination={true}
                        showPageSizeOptions={true}
