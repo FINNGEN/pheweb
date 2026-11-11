@@ -28,7 +28,7 @@ pipeline {
           // fails the build if the registry can not be read, so a version is never rebuilt by accident
           sh "gcloud artifacts docker tags list ${IMAGE} --format='value(tag.basename())' > registry-tags.txt"
           def built = sh(returnStatus: true, script: "grep -qxF '${env.VERSION}' registry-tags.txt") == 0
-          if (env.GIT_BRANCH != 'origin/master') {
+          if (env.GIT_BRANCH != 'origin/dev-versioning') {
             env.RELEASE = 'false'
             currentBuild.description = "not master"
           } else if (built) {
