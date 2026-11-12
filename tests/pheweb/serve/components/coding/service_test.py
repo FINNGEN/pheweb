@@ -9,7 +9,7 @@ from werkzeug.exceptions import NotFound
 
 from pheweb.serve.components.coding import service
 from pheweb.serve.components.coding.model import CodingDB, JeevesContext
-from pheweb.serve.components.coding.service import coding, development, get_dao
+from pheweb.serve.components.coding.service import coding, get_dao
 
 ROW = {"phenocode": "AB1_CANDIDIASIS", "variant": "1-925969-C-T"}
 
@@ -34,9 +34,6 @@ class FakeCodingDAO(CodingDB):
     def get_by_gene(self, gene):
         return {"results": [ROW] if gene == "SAMD11" else []}
 
-    def get_by_phenotype(self, phenocode):
-        return {"results": [ROW] if phenocode == "AB1_CANDIDIASIS" else []}
-
     def get_autocomplete(self, query):
         return [{"type": "gene", "value": query, "label": query}]
 
@@ -47,7 +44,6 @@ class FakeCodingDAO(CodingDB):
 def make_client(dao) -> FlaskClient:
     app = Flask(__name__, instance_relative_config=True)
     app.register_blueprint(coding)
-    app.register_blueprint(development)
     app.jeeves = JeevesContext(coding_dao=dao)
     return app.test_client()
 
@@ -149,17 +145,8 @@ def test_gene_no_results(client) -> None:
 
 
 @pytest.mark.unit
-def test_phenocode(client) -> None:
-    response = client.get("/api/v1/coding/phenocode/AB1_CANDIDIASIS")
-    assert response.status_code == 200
-    assert response.get_json() == {"results": [ROW]}
-
-
-@pytest.mark.unit
-def test_phenocode_no_results(client) -> None:
-    response = client.get("/api/v1/coding/phenocode/NOSUCH")
-    assert response.status_code == 200
-    assert response.get_json() == {"results": []}
+def test_phenocode_removed(client) -> None:
+    assert client.get("/api/v1/coding/phenocode/AB1_CANDIDIASIS").status_code == 404
 
 
 @pytest.mark.unit

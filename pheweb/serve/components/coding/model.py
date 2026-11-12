@@ -6,9 +6,7 @@ DAO, DTO classes and interfaces.
 """
 import abc
 import typing
-from collections import defaultdict as dd
 from dataclasses import dataclass
-import typing
 
 
 class CodingDB(abc.ABC):
@@ -30,15 +28,11 @@ class CodingDB(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_by_phenotype(self, phenocode):
-        pass
-
-    @abc.abstractmethod
     def get_autocomplete(self, query):
         """
-        Suggest genes, variants and phenotypes matching a search query.
+        Suggest genes and variants matching a search query.
 
-        Returns [{"type": "gene" | "variant" | "phenotype", "value": ..., "label": ...}]
+        Returns [{"type": "gene" | "variant", "value": ..., "label": ...}]
         """
         pass
 

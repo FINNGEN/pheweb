@@ -1,16 +1,8 @@
 import CommonDownloadTable, { DownloadTableProps } from "../../common/CommonDownloadTable";
-import commonLoading from "../../common/CommonLoading";
+import commonLoading, { hasError } from "../../common/CommonLoading";
 import React, { useMemo } from "react";
 import { CodingModel } from "./CodingModel";
 import { codingTableColumns } from "./CodingColumns";
-
-export const hasError = (errorMessage: string | null | undefined, content: JSX.Element): JSX.Element => {
-  if (errorMessage === null || errorMessage === undefined) {
-    return content
-  } else {
-    return <div>{errorMessage}</div>
-  }
-}
 
 const tableProperties = {
   defaultPageSize: 30

@@ -5,17 +5,6 @@
   float: right;
 }
 
-.coding .search {
-  display: flex;
-  align-items: center;
-  padding-bottom: 10px;
-}
-
-.coding .search .disabled {
-  color: #777777;
-  cursor: not-allowed;
-}
-
 .coding .not-significant {
   color: #777777;
 }

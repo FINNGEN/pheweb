@@ -5,6 +5,7 @@ Coding MySQL DAO test.
 The database connection is mocked, so these tests check the parameters
 passed to the queries and the formatting of the returned rows.
 """
+import math
 from unittest.mock import MagicMock
 
 import pytest
@@ -13,10 +14,11 @@ import pytest
 import pheweb.serve.data_access.db  # noqa: F401
 from pheweb.serve.components.coding.mysql_storage import (
     AUTOCOMPLETE_LIMIT,
+    DEFAULT_LARGE_GENE_MIN_VARIANTS,
+    DEFAULT_LARGE_GENE_THRESHOLD,
     GENE_AUTOCOMPLETE_SQL,
     GENE_RESULTS_SQL,
-    PHENOTYPE_AUTOCOMPLETE_SQL,
-    PHENOTYPE_RESULTS_SQL,
+    GENE_VARIANT_COUNT_SQL,
     TOP_RESULTS_SQL,
     VARIANT_AUTOCOMPLETE_SQL,
     VARIANT_RESULTS_SQL,
@@ -41,13 +43,10 @@ def make_row(**kwargs) -> dict:
         "enrichment": 1.5,
         "mlogp_add": 2.0,
         "beta_add": 0.1,
-        "sebeta_add": 0.01,
         "mlogp_chip_add": None,
         "beta_chip_add": None,
-        "sebeta_chip_add": None,
         "mlogp_chip_rec": 5.0,
         "beta_chip_rec": 0.2,
-        "sebeta_chip_rec": 0.02,
         "is_top_pheno": 1,
     }
     row.update(kwargs)
@@ -144,9 +143,8 @@ def test_get_top_results(dao, cursor) -> None:
     cursor.fetchall.side_effect = [[make_row()]]
     result = dao.get_top_results()
     assert [r["phenocode"] for r in result["results"]] == ["AB1_CANDIDIASIS"]
-    ((sql, params),) = executed(cursor)
-    assert sql == TOP_RESULTS_SQL
-    assert params == pytest.approx((8.0,))
+    assert executed(cursor) == [(TOP_RESULTS_SQL, None)]
+    assert "FROM coding_summstats_top s" in TOP_RESULTS_SQL
 
 
 @pytest.mark.unit
@@ -165,28 +163,39 @@ def test_get_by_variant_no_results(dao, cursor) -> None:
 
 @pytest.mark.unit
 def test_get_by_gene(dao, cursor) -> None:
-    cursor.fetchall.side_effect = [[make_row()]]
+    cursor.fetchall.side_effect = [[{"variants": DEFAULT_LARGE_GENE_MIN_VARIANTS - 1}], [make_row()]]
     assert len(dao.get_by_gene("SAMD11")["results"]) == 1
-    # without a gene threshold every result is returned
-    assert executed(cursor) == [(GENE_RESULTS_SQL, ("SAMD11", -1))]
+    # a small gene returns every result
+    assert executed(cursor) == [
+        (GENE_VARIANT_COUNT_SQL, ("SAMD11",)),
+        (GENE_RESULTS_SQL, ("SAMD11", -1)),
+    ]
 
 
 @pytest.mark.unit
-def test_get_by_gene_threshold(dao, cursor) -> None:
-    cursor.fetchall.side_effect = [[]]
-    dao.gene_threshold = 1e-4
-    dao.get_by_gene("SAMD11")
-    ((sql, (gene, min_mlogp)),) = executed(cursor)
+def test_get_by_gene_large(dao, cursor) -> None:
+    cursor.fetchall.side_effect = [[{"variants": DEFAULT_LARGE_GENE_MIN_VARIANTS}], []]
+    dao.get_by_gene("TTN")
+    (_, (sql, (gene, min_mlogp))) = executed(cursor)
     assert sql == GENE_RESULTS_SQL
-    assert gene == "SAMD11"
+    assert gene == "TTN"
+    assert min_mlogp == pytest.approx(-math.log10(DEFAULT_LARGE_GENE_THRESHOLD))
+
+
+@pytest.mark.unit
+def test_get_by_gene_configured(dao, cursor) -> None:
+    cursor.fetchall.side_effect = [[{"variants": 5}], []]
+    dao.large_gene_min_variants = 5
+    dao.large_gene_threshold = 1e-4
+    dao.get_by_gene("SAMD11")
+    (_, (_, (_, min_mlogp))) = executed(cursor)
     assert min_mlogp == pytest.approx(4.0)
 
 
 @pytest.mark.unit
-def test_get_by_phenotype(dao, cursor) -> None:
-    cursor.fetchall.side_effect = [[make_row()]]
-    assert len(dao.get_by_phenotype("AB1_CANDIDIASIS")["results"]) == 1
-    assert executed(cursor) == [(PHENOTYPE_RESULTS_SQL, ("AB1_CANDIDIASIS",))]
+def test_get_by_gene_unknown(dao, cursor) -> None:
+    cursor.fetchall.side_effect = [[{"variants": 0}], []]
+    assert dao.get_by_gene("NOSUCH") == {"results": []}
 
 
 @pytest.mark.unit
@@ -200,16 +209,13 @@ def test_get_autocomplete_empty(dao, query) -> None:
 def test_get_autocomplete(dao, cursor) -> None:
     cursor.fetchall.side_effect = [
         [{"gene": "CAND1"}],
-        [{"code": "AB1_CANDIDIASIS", "name": "Candidiasis"}],
     ]
     assert dao.get_autocomplete(" cand ") == [
         {"type": "gene", "value": "CAND1", "label": "CAND1"},
-        {"type": "phenotype", "value": "AB1_CANDIDIASIS", "label": "Candidiasis (AB1_CANDIDIASIS)"},
     ]
     # not a variant, so variants are not searched
     assert executed(cursor) == [
         (GENE_AUTOCOMPLETE_SQL, ("cand%", AUTOCOMPLETE_LIMIT)),
-        (PHENOTYPE_AUTOCOMPLETE_SQL, ("cand%", "%cand%", AUTOCOMPLETE_LIMIT)),
     ]
 
 
@@ -218,7 +224,6 @@ def test_get_autocomplete_variant(dao, cursor) -> None:
     cursor.fetchall.side_effect = [
         [],
         [{"variant": "X-284258-T-C"}, {"variant": "X-284272-C-T"}],
-        [],
     ]
     assert dao.get_autocomplete("chrX_2842") == [
         {"type": "variant", "value": "X-284258-T-C", "label": "X-284258-T-C"},
@@ -229,11 +234,10 @@ def test_get_autocomplete_variant(dao, cursor) -> None:
 
 @pytest.mark.unit
 def test_get_autocomplete_escapes_wildcards(dao, cursor) -> None:
-    cursor.fetchall.side_effect = [[], []]
+    cursor.fetchall.side_effect = [[]]
     dao.get_autocomplete("a_b%")
     assert executed(cursor) == [
         (GENE_AUTOCOMPLETE_SQL, ("a\\_b\\%%", AUTOCOMPLETE_LIMIT)),
-        (PHENOTYPE_AUTOCOMPLETE_SQL, ("a\\_b\\%%", "%a\\_b\\%%", AUTOCOMPLETE_LIMIT)),
     ]
 
 

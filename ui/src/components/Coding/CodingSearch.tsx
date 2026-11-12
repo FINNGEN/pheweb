@@ -5,7 +5,6 @@ import { getAutocomplete } from "./CodingAPI";
 import { AutoCompleteModel } from "./CodingModel";
 
 const routeByType: { [type in AutoCompleteModel.Row['type']]: string } = {
-    phenotype: 'phenocode',
     gene: 'gene',
     variant: 'variant',
 }
@@ -47,7 +46,7 @@ const Search = () => {
     }
     return (<form className="form-inline">
         <AsyncSelect
-            placeholder={'Search by variant, gene, or phenotype'}
+            placeholder={'Search by variant or gene'}
             onChange={onChange}
             loadOptions={loadOptions}
             menuPosition="fixed"

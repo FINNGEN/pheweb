@@ -15,13 +15,10 @@ export namespace CodingModel {
         enrichment: number | 'inf' | null
         mlogp_add: number | null
         beta_add: number | null
-        sebeta_add: number | null
         mlogp_chip_add: number | null
         beta_chip_add: number | null
-        sebeta_chip_add: number | null
         mlogp_chip_rec: number | null
         beta_chip_rec: number | null
-        sebeta_chip_rec: number | null
         rec_add: number | null
         possible_explaining_signals: string | null
         is_top_pheno: boolean
@@ -41,7 +38,7 @@ export namespace AutoCompleteModel {
     export type Row = {
         label: string
         value: string
-        type: 'phenotype' | 'gene' | 'variant'
+        type: 'gene' | 'variant'
     }
     export type Data = Row[]
 }

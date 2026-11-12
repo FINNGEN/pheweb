@@ -19,7 +19,6 @@ from .model import CodingDB, JeevesContext
 from pheweb.serve.data_access.variant import Variant
 
 coding = Blueprint("pheweb_coding", __name__)
-development = Blueprint("development", __name__)
 
 
 app.jeeves: JeevesContext  # type: ignore
@@ -61,10 +60,6 @@ def get_by_variant(variant):
     except ValueError as e:
         return jsonify({'message': str(e)}), 400
     return jsonify(get_dao().get_by_variant(var))
-
-@coding.route('/api/v1/coding/phenocode/<phenocode>')
-def get_by_phenotype(phenocode):
-    return jsonify(get_dao().get_by_phenotype(phenocode))
 
 @coding.route('/api/v1/coding/autocomplete')
 def get_autocomplete():

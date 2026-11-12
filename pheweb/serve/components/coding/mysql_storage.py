@@ -15,7 +15,7 @@ from pheweb.serve.data_access.variant import Variant
 INF_ENRICHMENT = 1e300
 
 # variant is formatted like Variant: chr-pos-ref-alt with 23 as X
-RESULTS_SQL = """
+RESULTS_SQL_TEMPLATE = """
     SELECT
         p.code AS phenocode,
         p.name AS phenostring,
@@ -28,29 +28,40 @@ RESULTS_SQL = """
         a.enrichment,
         s.mlogp_add,
         s.beta_add,
-        s.sebeta_add,
         s.mlogp_chip_add,
         s.beta_chip_add,
-        s.sebeta_chip_add,
         s.mlogp_chip_rec,
         s.beta_chip_rec,
-        s.sebeta_chip_rec,
         -- strongest phenotype for each variant among the returned rows
         ROW_NUMBER() OVER (
             PARTITION BY s.variant_id ORDER BY s.max_mlogp DESC
         ) = 1 AS is_top_pheno
-    FROM coding_summstats s
+    FROM {summstats} s
     JOIN phenotype p ON p.id = s.phenotype_id
     JOIN coding_variants_annotated a ON a.id = s.variant_id
 """
 
-TOP_RESULTS_SQL = RESULTS_SQL + "WHERE s.max_mlogp > %s"
+RESULTS_SQL = RESULTS_SQL_TEMPLATE.format(summstats="coding_summstats")
+
+# coding_summstats_top holds the top rows of coding_summstats (p < 1e-5), all of them are returned
+TOP_RESULTS_SQL = RESULTS_SQL_TEMPLATE.format(summstats="coding_summstats_top")
 
 VARIANT_RESULTS_SQL = RESULTS_SQL + "WHERE a.chr = %s AND a.pos = %s AND a.ref = %s AND a.alt = %s"
 
 GENE_RESULTS_SQL = RESULTS_SQL + "WHERE a.gene_most_severe = %s AND s.max_mlogp > %s"
 
-PHENOTYPE_RESULTS_SQL = RESULTS_SQL + "WHERE p.code = %s"
+# counts annotated variants, also those without results, so it can only overestimate the result size
+GENE_VARIANT_COUNT_SQL = """
+    SELECT COUNT(*) AS variants
+    FROM coding_variants_annotated
+    WHERE gene_most_severe = %s
+"""
+
+# each variant has results for about 2600 phenotypes, so genes with at least
+# this many variants could return over ~50k rows unless filtered
+DEFAULT_LARGE_GENE_MIN_VARIANTS = 19
+# keeps the largest gene (TTN) at ~25k rows
+DEFAULT_LARGE_GENE_THRESHOLD = 1e-2
 
 # number of suggestions per type
 AUTOCOMPLETE_LIMIT = 10
@@ -69,14 +80,6 @@ VARIANT_AUTOCOMPLETE_SQL = """
     FROM coding_variants_annotated
     WHERE variant LIKE %s
     ORDER BY variant
-    LIMIT %s
-"""
-
-PHENOTYPE_AUTOCOMPLETE_SQL = """
-    SELECT code, name
-    FROM phenotype
-    WHERE code LIKE %s OR name LIKE %s
-    ORDER BY code
     LIMIT %s
 """
 
@@ -126,20 +129,21 @@ class CodingMysqlDAO(CodingDB, MysqlDAO):
                  authentication_file,
                  plot_root: str,
                  path_format: str = "{plot_root}{variant}.png",
-                 top_threshold: float = 1e-8,
-                 gene_threshold: typing.Optional[float] = None):
+                 large_gene_min_variants: int = DEFAULT_LARGE_GENE_MIN_VARIANTS,
+                 large_gene_threshold: float = DEFAULT_LARGE_GENE_THRESHOLD):
         MysqlDAO.__init__(self, authentication_file)
         self.plot_root = plot_root
         self.path_format = path_format
-        self.top_threshold = top_threshold
-        # None returns all results for a gene
-        self.gene_threshold = gene_threshold
+        # genes with at least this many variants only return results below large_gene_threshold,
+        # smaller genes return all results
+        self.large_gene_min_variants = large_gene_min_variants
+        self.large_gene_threshold = large_gene_threshold
 
     def get_top_results(self):
         # the encoded result is cached in the service
-        return self._fetch_results(TOP_RESULTS_SQL, (-math.log10(self.top_threshold),))
+        return self._fetch_results(TOP_RESULTS_SQL)
 
-    def _fetch_results(self, sql: str, params: tuple):
+    def _fetch_results(self, sql: str, params: typing.Optional[tuple] = None):
         with closing(self.get_connection()) as conn:
             with conn.cursor(pymysql.cursors.DictCursor) as cursor:
                 cursor.execute(sql, params)
@@ -151,12 +155,18 @@ class CodingMysqlDAO(CodingDB, MysqlDAO):
                                    (variant.chr, variant.pos, variant.ref, variant.alt))
 
     def get_by_gene(self, gene: str):
-        # max_mlogp is >= 0, so -1 keeps every row
-        min_mlogp = -1 if self.gene_threshold is None else -math.log10(self.gene_threshold)
-        return self._fetch_results(GENE_RESULTS_SQL, (gene, min_mlogp))
-
-    def get_by_phenotype(self, phenocode: str):
-        return self._fetch_results(PHENOTYPE_RESULTS_SQL, (phenocode,))
+        with closing(self.get_connection()) as conn:
+            with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                cursor.execute(GENE_VARIANT_COUNT_SQL, (gene,))
+                variants = cursor.fetchall()[0]['variants']
+                if variants >= self.large_gene_min_variants:
+                    min_mlogp = -math.log10(self.large_gene_threshold)
+                else:
+                    # max_mlogp is >= 0, so -1 keeps every row
+                    min_mlogp = -1
+                cursor.execute(GENE_RESULTS_SQL, (gene, min_mlogp))
+                rows = cursor.fetchall()
+        return {'results': [format_row(row) for row in rows]}
 
     def get_autocomplete(self, query: str):
         query = query.strip()
@@ -172,12 +182,8 @@ class CodingMysqlDAO(CodingDB, MysqlDAO):
                 if prefix is not None:
                     cursor.execute(VARIANT_AUTOCOMPLETE_SQL, (escape_like(prefix) + '%', AUTOCOMPLETE_LIMIT))
                     variants = cursor.fetchall()
-                cursor.execute(PHENOTYPE_AUTOCOMPLETE_SQL, (like + '%', '%' + like + '%', AUTOCOMPLETE_LIMIT))
-                phenotypes = cursor.fetchall()
         return ([{'type': 'gene', 'value': row['gene'], 'label': row['gene']} for row in genes] +
-                [{'type': 'variant', 'value': row['variant'], 'label': row['variant']} for row in variants] +
-                [{'type': 'phenotype', 'value': row['code'], 'label': '{} ({})'.format(row['name'], row['code'])}
-                 for row in phenotypes])
+                [{'type': 'variant', 'value': row['variant'], 'label': row['variant']} for row in variants])
 
     def get_cluster_plot(self, variant):
         # plots are named chr_pos_ref_alt with 23 as X
