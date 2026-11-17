@@ -19,6 +19,8 @@ from pheweb.serve.components.coding.mysql_storage import (
     GENE_AUTOCOMPLETE_SQL,
     GENE_RESULTS_SQL,
     GENE_VARIANT_COUNT_SQL,
+    GROUP_CONCAT_MAX_LEN,
+    SET_GROUP_CONCAT_MAX_LEN_SQL,
     TOP_RESULTS_SQL,
     VARIANT_AUTOCOMPLETE_SQL,
     VARIANT_RESULTS_SQL,
@@ -47,6 +49,7 @@ def make_row(**kwargs) -> dict:
         "beta_chip_add": None,
         "mlogp_chip_rec": 5.0,
         "beta_chip_rec": 0.2,
+        "possible_explaining_signals": None,
         "is_top_pheno": 1,
     }
     row.update(kwargs)
@@ -80,6 +83,10 @@ def fixture_dao(tmp_path, cursor) -> CodingMysqlDAO:
 def executed(cursor: MagicMock) -> list:
     """Return the (sql, params) of each query run on the cursor."""
     return [c.args for c in cursor.execute.call_args_list]
+
+
+# run before the results queries so long lists of explaining signals are not cut
+SET_MAX_LEN = (SET_GROUP_CONCAT_MAX_LEN_SQL, (GROUP_CONCAT_MAX_LEN,))
 
 
 @pytest.mark.unit
@@ -134,6 +141,12 @@ def test_format_row_missing_values() -> None:
 
 
 @pytest.mark.unit
+def test_format_row_signals() -> None:
+    signals = "1:196703255:G:A,22.5854,0.329457,-0.121797,0.565745"
+    assert format_row(make_row(possible_explaining_signals=signals))["possible_explaining_signals"] == signals
+
+
+@pytest.mark.unit
 def test_format_row_inf_enrichment() -> None:
     assert format_row(make_row(enrichment=1e300))["enrichment"] == "inf"
 
@@ -143,7 +156,7 @@ def test_get_top_results(dao, cursor) -> None:
     cursor.fetchall.side_effect = [[make_row()]]
     result = dao.get_top_results()
     assert [r["phenocode"] for r in result["results"]] == ["AB1_CANDIDIASIS"]
-    assert executed(cursor) == [(TOP_RESULTS_SQL, None)]
+    assert executed(cursor) == [SET_MAX_LEN, (TOP_RESULTS_SQL, None)]
     assert "FROM coding_summstats_top s" in TOP_RESULTS_SQL
 
 
@@ -152,7 +165,7 @@ def test_get_by_variant(dao, cursor) -> None:
     cursor.fetchall.side_effect = [[make_row(variant="X-284258-T-C")]]
     result = dao.get_by_variant(Variant.from_str("X-284258-T-C"))
     assert result["results"][0]["variant"] == "X-284258-T-C"
-    assert executed(cursor) == [(VARIANT_RESULTS_SQL, (23, 284258, "T", "C"))]
+    assert executed(cursor) == [SET_MAX_LEN, (VARIANT_RESULTS_SQL, (23, 284258, "T", "C"))]
 
 
 @pytest.mark.unit
@@ -167,6 +180,7 @@ def test_get_by_gene(dao, cursor) -> None:
     assert len(dao.get_by_gene("SAMD11")["results"]) == 1
     # a small gene returns every result
     assert executed(cursor) == [
+        SET_MAX_LEN,
         (GENE_VARIANT_COUNT_SQL, ("SAMD11",)),
         (GENE_RESULTS_SQL, ("SAMD11", -1)),
     ]
@@ -176,7 +190,7 @@ def test_get_by_gene(dao, cursor) -> None:
 def test_get_by_gene_large(dao, cursor) -> None:
     cursor.fetchall.side_effect = [[{"variants": DEFAULT_LARGE_GENE_MIN_VARIANTS}], []]
     dao.get_by_gene("TTN")
-    (_, (sql, (gene, min_mlogp))) = executed(cursor)
+    (_, _, (sql, (gene, min_mlogp))) = executed(cursor)
     assert sql == GENE_RESULTS_SQL
     assert gene == "TTN"
     assert min_mlogp == pytest.approx(-math.log10(DEFAULT_LARGE_GENE_THRESHOLD))
@@ -188,7 +202,7 @@ def test_get_by_gene_configured(dao, cursor) -> None:
     dao.large_gene_min_variants = 5
     dao.large_gene_threshold = 1e-4
     dao.get_by_gene("SAMD11")
-    (_, (_, (_, min_mlogp))) = executed(cursor)
+    (_, _, (_, (_, min_mlogp))) = executed(cursor)
     assert min_mlogp == pytest.approx(4.0)
 
 

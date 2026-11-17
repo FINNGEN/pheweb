@@ -1,7 +1,7 @@
 import math
 import re
 import typing
-from contextlib import closing
+from contextlib import closing, contextmanager
 
 import pymysql
 from google.cloud.exceptions import NotFound
@@ -32,6 +32,16 @@ RESULTS_SQL_TEMPLATE = """
         s.beta_chip_add,
         s.mlogp_chip_rec,
         s.beta_chip_rec,
+        -- stronger GWAS leads that may explain the result, formatted for the UI as
+        -- ';'-separated "chr:pos:ref:alt,mlogp,r2,beta,af_alt", strongest first, NULL when there are none
+        (
+            SELECT GROUP_CONCAT(
+                CONCAT_WS(',', e.signal_variant, e.signal_mlogp, IFNULL(e.signal_r2, 'NA'),
+                          e.signal_beta, e.signal_af_alt)
+                ORDER BY e.signal_mlogp DESC, e.signal_variant SEPARATOR ';')
+            FROM coding_explaining_signals e
+            WHERE e.variant_id = s.variant_id AND e.phenotype_id = s.phenotype_id
+        ) AS possible_explaining_signals,
         -- strongest phenotype for each variant among the returned rows
         ROW_NUMBER() OVER (
             PARTITION BY s.variant_id ORDER BY s.max_mlogp DESC
@@ -42,6 +52,11 @@ RESULTS_SQL_TEMPLATE = """
 """
 
 RESULTS_SQL = RESULTS_SQL_TEMPLATE.format(summstats="coding_summstats")
+
+# the default group_concat_max_len of 1024 bytes fits only ~20 leads,
+# longer lists would be cut without an error
+GROUP_CONCAT_MAX_LEN = 1024 * 1024
+SET_GROUP_CONCAT_MAX_LEN_SQL = "SET SESSION group_concat_max_len = %s"
 
 # coding_summstats_top holds the top rows of coding_summstats (p < 1e-5), all of them are returned
 TOP_RESULTS_SQL = RESULTS_SQL_TEMPLATE.format(summstats="coding_summstats_top")
@@ -117,7 +132,6 @@ def format_row(row: dict) -> dict:
     result['rec_add'] = (row['mlogp_chip_rec'] - row['mlogp_add']
                          if row['mlogp_chip_rec'] is not None and row['mlogp_add'] is not None
                          else None)
-    result['possible_explaining_signals'] = None
     # MySQL returns comparisons as 0/1
     result['is_top_pheno'] = bool(row['is_top_pheno'])
     return result
@@ -143,11 +157,18 @@ class CodingMysqlDAO(CodingDB, MysqlDAO):
         # the encoded result is cached in the service
         return self._fetch_results(TOP_RESULTS_SQL)
 
-    def _fetch_results(self, sql: str, params: typing.Optional[tuple] = None):
+    @contextmanager
+    def _results_cursor(self):
+        """Cursor on a new connection, set up for the results queries."""
         with closing(self.get_connection()) as conn:
             with conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                cursor.execute(sql, params)
-                rows = cursor.fetchall()
+                cursor.execute(SET_GROUP_CONCAT_MAX_LEN_SQL, (GROUP_CONCAT_MAX_LEN,))
+                yield cursor
+
+    def _fetch_results(self, sql: str, params: typing.Optional[tuple] = None):
+        with self._results_cursor() as cursor:
+            cursor.execute(sql, params)
+            rows = cursor.fetchall()
         return {'results': [format_row(row) for row in rows]}
 
     def get_by_variant(self, variant: Variant):
@@ -155,17 +176,16 @@ class CodingMysqlDAO(CodingDB, MysqlDAO):
                                    (variant.chr, variant.pos, variant.ref, variant.alt))
 
     def get_by_gene(self, gene: str):
-        with closing(self.get_connection()) as conn:
-            with conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                cursor.execute(GENE_VARIANT_COUNT_SQL, (gene,))
-                variants = cursor.fetchall()[0]['variants']
-                if variants >= self.large_gene_min_variants:
-                    min_mlogp = -math.log10(self.large_gene_threshold)
-                else:
-                    # max_mlogp is >= 0, so -1 keeps every row
-                    min_mlogp = -1
-                cursor.execute(GENE_RESULTS_SQL, (gene, min_mlogp))
-                rows = cursor.fetchall()
+        with self._results_cursor() as cursor:
+            cursor.execute(GENE_VARIANT_COUNT_SQL, (gene,))
+            variants = cursor.fetchall()[0]['variants']
+            if variants >= self.large_gene_min_variants:
+                min_mlogp = -math.log10(self.large_gene_threshold)
+            else:
+                # max_mlogp is >= 0, so -1 keeps every row
+                min_mlogp = -1
+            cursor.execute(GENE_RESULTS_SQL, (gene, min_mlogp))
+            rows = cursor.fetchall()
         return {'results': [format_row(row) for row in rows]}
 
     def get_autocomplete(self, query: str):
