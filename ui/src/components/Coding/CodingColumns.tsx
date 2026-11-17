@@ -51,10 +51,11 @@ const mafFilter = (filter, row) => row[filter.id] !== null && maf(row[filter.id]
 /**
  * Popup rendered into document.body, so the table cell
  * does not clip it. Opens on hover, or on click with openOnClick.
+ * Opens to the right of the label, or to the left with openLeft.
  */
-const Popup = ({ label, content, openOnClick = false, style = {} }:
-                 { label: React.ReactNode, content: React.ReactNode, openOnClick?: boolean, style?: React.CSSProperties }) => {
-  const [position, setPosition] = useState<{ top: number, left: number } | null>(null);
+const Popup = ({ label, content, openOnClick = false, openLeft = false, style = {} }:
+                 { label: React.ReactNode, content: React.ReactNode, openOnClick?: boolean, openLeft?: boolean, style?: React.CSSProperties }) => {
+  const [position, setPosition] = useState<{ top: number, left?: number, right?: number } | null>(null);
   useEffect(() => {
     if (position === null) return;
     const close = () => setPosition(null);
@@ -63,7 +64,10 @@ const Popup = ({ label, content, openOnClick = false, style = {} }:
   }, [position]);
   const open = (e: React.MouseEvent<HTMLSpanElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    setPosition({ top: rect.bottom, left: rect.right });
+    // with openLeft, anchor the popup's right edge to the label's left edge
+    setPosition(openLeft ?
+      { top: rect.bottom, right: document.documentElement.clientWidth - rect.left } :
+      { top: rect.bottom, left: rect.right });
   };
   const handlers = openOnClick ?
     { onClick: (e: React.MouseEvent<HTMLSpanElement>) => position === null ? open(e) : setPosition(null) } :
@@ -129,7 +133,7 @@ const LeadsCell = ({ value, original }: { value: string | null, original: Row })
       </tbody>
     </table>
   </div>;
-  return <Popup label="click" openOnClick={true} style={{ color, cursor: "pointer" }} content={content} />;
+  return <Popup label="click" openOnClick={true} openLeft={true} style={{ color, cursor: "pointer" }} content={content} />;
 }
 
 const ResourcesCell = ({ original, dataset }: { original: Row, dataset: string }) => <>
