@@ -96,12 +96,12 @@ const betaCell = (mlogpKey: keyof Row) => ({ value, original }: { value: number 
 
 /**
  * Leads are ';' separated rows of
- * variant (chr:pos:ref:alt), mlogp, LD r2 to the coding variant, ?, AF
+ * variant (chr:pos:ref:alt), mlogp, LD r2 to the coding variant (NA if not in the LD panel), beta, AF
  */
 const parseLeads = (value: string) => value.split(";").map((lead) => {
   const cols = lead.split(",");
   const variant = cols[0].split(":").map((f, i) => i === 0 && f === "23" ? "X" : f).join("-");
-  return { variant, mlogp: Number(cols[1]), r2: cols[2], af: cols[4] };
+  return { variant, mlogp: Number(cols[1]), r2: cols[2], beta: cols[3], af: cols[4] };
 });
 
 /* the leads cell toggles the leads sub row, colored by how much stronger the leads are */
@@ -127,12 +127,13 @@ export const LeadsSubComponent = ({ original }: { original: Row }) => {
   return <div className="leads">
     <span>In this region there are variants that are stronger than the coding variant and may explain the association:</span>
     <table>
-      <thead><tr><th>lead variant</th><th>p-val</th><th>LD r2 to coding</th><th>AF</th></tr></thead>
+      <thead><tr><th>lead variant</th><th>p-val</th><th>LD r2 to coding</th><th>beta</th><th>AF</th></tr></thead>
       <tbody>
         {parseLeads(value).map(lead => <tr key={lead.variant}>
           <td><a target="_blank" rel="noopener noreferrer" href={`/variant/${lead.variant}`}>{lead.variant}</a></td>
           <td>{pValueRepr(lead.mlogp)}</td>
           <td>{decimal(lead.r2)}</td>
+          <td>{decimal(lead.beta)}</td>
           <td>{decimal(lead.af)}</td>
         </tr>)}
       </tbody>
