@@ -32,18 +32,24 @@ const Coding = (props: Props) => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // set to false when the route changes, so responses to the previous query are ignored
+    let current = true;
     setCodingData(null);
     setError(null);
-    const handler = () => (e: Error) => setError(`Could not load results for ${query ?? 'top results'}: ${e.message}`);
+    const sink = (data: CodingModel.Data) => { if (current) setCodingData(data); };
+    const handler = () => (e: Error) => {
+      if (current) setError(`Could not load results for ${query ?? 'top results'}: ${e.message}`);
+    };
     if (variant) {
-      getByVariant(variant, setCodingData, handler);
+      getByVariant(variant, sink, handler);
     }
     else if (gene) {
-      getByGene(gene, setCodingData, handler);
+      getByGene(gene, sink, handler);
     }
     else {
-      getTopResults(setCodingData, handler);
+      getTopResults(sink, handler);
     }
+    return () => { current = false; };
   }, [variant, gene]);
 
   return (
