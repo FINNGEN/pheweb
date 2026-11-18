@@ -37,7 +37,18 @@
   max-width: 100%;
 }
 
-.coding-popup .leads td,
-.coding-popup .leads th {
-  padding-right: 10px;
+/* leads sub row under a table row */
+.coding .leads {
+  padding: 8px 12px 12px 40px;
+  background: #f7f7f7;
+  border-bottom: 1px solid #dddddd;
+}
+
+.coding .leads table {
+  margin-top: 5px;
+}
+
+.coding .leads td,
+.coding .leads th {
+  padding-right: 15px;
 }

@@ -50,12 +50,11 @@ const mafFilter = (filter, row) => row[filter.id] !== null && maf(row[filter.id]
 
 /**
  * Popup rendered into document.body, so the table cell
- * does not clip it. Opens on hover, or on click with openOnClick.
- * Opens to the right of the label, or to the left with openLeft.
+ * does not clip it. Opens on hover.
  */
-const Popup = ({ label, content, openOnClick = false, openLeft = false, style = {} }:
-                 { label: React.ReactNode, content: React.ReactNode, openOnClick?: boolean, openLeft?: boolean, style?: React.CSSProperties }) => {
-  const [position, setPosition] = useState<{ top: number, left?: number, right?: number } | null>(null);
+const Popup = ({ label, content, style = {} }:
+                 { label: React.ReactNode, content: React.ReactNode, style?: React.CSSProperties }) => {
+  const [position, setPosition] = useState<{ top: number, left: number } | null>(null);
   useEffect(() => {
     if (position === null) return;
     const close = () => setPosition(null);
@@ -64,16 +63,10 @@ const Popup = ({ label, content, openOnClick = false, openLeft = false, style = 
   }, [position]);
   const open = (e: React.MouseEvent<HTMLSpanElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    // with openLeft, anchor the popup's right edge to the label's left edge
-    setPosition(openLeft ?
-      { top: rect.bottom, right: document.documentElement.clientWidth - rect.left } :
-      { top: rect.bottom, left: rect.right });
+    setPosition({ top: rect.bottom, left: rect.right });
   };
-  const handlers = openOnClick ?
-    { onClick: (e: React.MouseEvent<HTMLSpanElement>) => position === null ? open(e) : setPosition(null) } :
-    { onMouseEnter: open, onMouseLeave: () => setPosition(null) };
   return <>
-    <span className="popup-label" style={style} {...handlers}>{label}</span>
+    <span className="popup-label" style={style} onMouseEnter={open} onMouseLeave={() => setPosition(null)}>{label}</span>
     {position && ReactDOM.createPortal(<div className="coding-popup" style={position}>{content}</div>, document.body)}
   </>
 }
@@ -105,27 +98,39 @@ const betaCell = (mlogpKey: keyof Row) => ({ value, original }: { value: number 
  * Leads are ';' separated rows of
  * variant (chr:pos:ref:alt), mlogp, LD r2 to the coding variant, ?, AF
  */
-const LeadsCell = ({ value, original }: { value: string | null, original: Row }) => {
+const parseLeads = (value: string) => value.split(";").map((lead) => {
+  const cols = lead.split(",");
+  const variant = cols[0].split(":").map((f, i) => i === 0 && f === "23" ? "X" : f).join("-");
+  return { variant, mlogp: Number(cols[1]), r2: cols[2], af: cols[4] };
+});
+
+/* the leads cell toggles the leads sub row, colored by how much stronger the leads are */
+const LeadsExpander = ({ original, isExpanded }: { original: Row, isExpanded: boolean }) => {
+  const value = original.possible_explaining_signals;
   if (value === null) {
     return <span>NA</span>;
   }
   const compare = original.mlogp_add ?? original.mlogp_chip_add ?? 0;
-  const leads = value.split(";").map((lead) => {
-    const cols = lead.split(",");
-    const variant = cols[0].split(":").map((f, i) => i === 0 && f === "23" ? "X" : f).join("-");
-    return { variant, mlogp: Number(cols[1]), r2: cols[2], af: cols[4] };
-  });
   // if the non-coding association is much stronger, warn about it
-  const maxDiff = Math.max(0, ...leads.map(lead => lead.mlogp - compare));
+  const maxDiff = Math.max(0, ...parseLeads(value).map(lead => lead.mlogp - compare));
   const color = maxDiff > 2 ? "#aa0000" : maxDiff > 0 ? "#aaaa00" : "#000000";
+  return <span style={{ color }}>{isExpanded ? "▾ hide" : "▸ show"}</span>;
+}
+
+/* sub row under a coding result listing the leads in its region */
+export const LeadsSubComponent = ({ original }: { original: Row }) => {
+  const value = original.possible_explaining_signals;
+  if (value === null) {
+    return null;
+  }
   const decimal = (v: string) => v === "NA" ? v : Number(v).toPrecision(3);
-  const content = <div>
-    <span>in this region there are variants that are <br/>stronger than the coding variant<br/>and may explain the association:</span>
-    <table className="leads">
+  return <div className="leads">
+    <span>In this region there are variants that are stronger than the coding variant and may explain the association:</span>
+    <table>
       <thead><tr><th>lead variant</th><th>p-val</th><th>LD r2 to coding</th><th>AF</th></tr></thead>
       <tbody>
-        {leads.map(lead => <tr key={lead.variant}>
-          <td><a target="_blank" rel="noopener noreferrer" href={`https://results.finngen.fi/variant/${lead.variant}`}>{lead.variant}</a></td>
+        {parseLeads(value).map(lead => <tr key={lead.variant}>
+          <td><a target="_blank" rel="noopener noreferrer" href={`/variant/${lead.variant}`}>{lead.variant}</a></td>
           <td>{pValueRepr(lead.mlogp)}</td>
           <td>{decimal(lead.r2)}</td>
           <td>{decimal(lead.af)}</td>
@@ -133,13 +138,12 @@ const LeadsCell = ({ value, original }: { value: string | null, original: Row })
       </tbody>
     </table>
   </div>;
-  return <Popup label="click" openOnClick={true} openLeft={true} style={{ color, cursor: "pointer" }} content={content} />;
 }
 
 const ResourcesCell = ({ original, dataset }: { original: Row, dataset: string }) => <>
   <a style={original.mlogp_add !== null ? { paddingRight: "5px" } : { paddingRight: "5px", visibility: "hidden" }}
      target="_blank" rel="noopener noreferrer"
-     href={`https://results.finngen.fi/variant/${original.variant}`}>fg</a>
+     href={`/variant/${original.variant}`}>fg</a>
   <a style={{ paddingRight: "5px" }}
      target="_blank" rel="noopener noreferrer"
      href={`https://gnomad.broadinstitute.org/variant/${original.variant}?dataset=${dataset}`}>gn</a>
@@ -308,11 +312,15 @@ export const codingTableColumns = (rows: Row[], tips: { [key: string]: string },
     },
     {
       Header: header("leads"),
+      id: "leads",
       accessor: "possible_explaining_signals",
-      minWidth: 60,
-      sortable: false,
-      filterable: false,
-      Cell: LeadsCell,
+      // react-table toggles the row's SubComponent when an expander cell is clicked
+      expander: true,
+      width: 70,
+      Expander: LeadsExpander,
+      // rows without leads have nothing to expand, so swallow the click
+      getProps: (state, rowInfo) => rowInfo?.original?.possible_explaining_signals == null ?
+        { onClick: () => {}, style: { cursor: "default" } } : {},
     },
   ];
   return columns as Column<Row>[];

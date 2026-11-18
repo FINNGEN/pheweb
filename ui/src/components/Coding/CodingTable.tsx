@@ -2,7 +2,7 @@ import CommonDownloadTable, { DownloadTableProps } from "../../common/CommonDown
 import commonLoading, { hasError } from "../../common/CommonLoading";
 import React, { useMemo } from "react";
 import { CodingModel } from "./CodingModel";
-import { codingTableColumns } from "./CodingColumns";
+import { codingTableColumns, LeadsSubComponent } from "./CodingColumns";
 
 const tableProperties = {
   defaultPageSize: 30
@@ -33,6 +33,7 @@ const CodingTable = (props: Props) => {
     tableColumns,
     tableProperties,
     defaultSorted,
+    subComponent: LeadsSubComponent,
   }
   const content = (<CommonDownloadTable {...prop} />)
   return props.data == null && props.error == null ? commonLoading : hasError(props.error, content)
