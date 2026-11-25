@@ -7,7 +7,7 @@ const codingConfig = {
   You can hover over the column names to see their explanations and sort the table by the different p-values and other columns. Hover over a variant id to see the cluster plot for that variant. Click on \"only top phenotype per variant\" to see only the top association for each variant. Click on \"only chip\" to see variants that are on the chip and not in the imputation panel. 
 
 Not all variants have results for all three analyses: Additive analysis results of imputed data are available for all variants in the SiSu4.2 imputation panel with imputation INFO score > 0.6 except for variants with a very low MAC among the cases and controls of each phenotype. Recessive analysis results of imputed data are available for all variants with at least two hard-called minor allele homozygotes and imputation INFO score > 0.6. Additive analysis results of chip genotyped data are available for all variants that passed QC except for variants with a very low MAC among the cases and controls of each phenotype.`,
-  "top": "TOP RESULTS: all coding variant associations with p-value < 1e-5",
+  "top": "TOP RESULTS: all coding variant associations with p-value < 1e-5 (excluding HLA and APOE)",
   "tip": {
     "variant": "chrom-pos-ref-alt (alt is effect allele) - hover over a variant to see its cluster plot",
     "consequence": "most severe consequence from Variant Effect Predictor",
