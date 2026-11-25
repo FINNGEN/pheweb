@@ -12,7 +12,7 @@ from flask import (
     abort,
 )
 
-from pheweb.serve.data_access.db import HLADB
+from pheweb.serve.components.hla.model import HLADB
 
 from .model import JeevesContext
 
