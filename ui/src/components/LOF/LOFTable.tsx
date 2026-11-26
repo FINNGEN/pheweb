@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { LOF } from "./lofModel";
 import { createTableColumns, LOFTableColumns } from "../../common/commonTableColumn";
-import { Column } from "react-table";
+import { Column } from "react-table-v6";
 import { ConfigurationWindow } from "../Configuration/configurationModel";
 import CommonDownloadTable, { DownloadTableProps } from "../../common/CommonDownloadTable";
 import commonLoading from "../../common/CommonLoading";

@@ -4,7 +4,7 @@ import { csTableCols, csInsideTableCols, createTableColumns } from "../../common
 import { PhenotypeContext, PhenotypeState } from "./PhenotypeContext";
 import { CredibleSet, LocusGroupEntry, PhenotypeVariantRow } from "./phenotypeModel";
 import { getGroup } from "./phenotypeAPI";
-import { Column } from "react-table";
+import { Column } from "react-table-v6";
 import CommonDownloadTable, { DownloadTableProps } from "../../common/CommonDownloadTable";
 import { ConfigurationWindow } from "../Configuration/configurationModel";
 

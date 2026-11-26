@@ -3,7 +3,7 @@ import { ConfigurationWindow } from "../Configuration/configurationModel";
 import {defaultEmptyArray, flatten, mustacheDiv} from '../../common/commonUtilities';
 import { FunctionalVariants } from './geneModel';
 import { getGeneFunctionalVariants } from "./geneAPI";
-import { Column } from "react-table";
+import { Column } from "react-table-v6";
 import {
   wordFilter,
   createTableColumns,

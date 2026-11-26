@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from "react";
 import { CasualVariant, Colocalization, variantToStr } from "../../../common/commonModel";
 import ReactTable, { Cell, Column, Row } from "react-table-v6";
 import { ColocalizationContext, ColocalizationState } from "./ColocalizationContext";
-import selectTableHOC from "react-table/lib/hoc/selectTable";
+import selectTableHOC from "react-table-v6/lib/hoc/selectTable";
 import { CSVLink } from "react-csv";
 import { refreshLocusZoom } from "./ColocalizationLocusZoom";
 import { RegionContext, RegionState } from "../RegionContext";

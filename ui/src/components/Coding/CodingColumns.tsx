@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom";
 import { Link } from "react-router-dom";
-import { Column } from "react-table";
+import { Column } from "react-table-v6";
 import { createHeader, wordFilter } from "../../common/commonTableColumn";
 import { ConfigurationWindow } from "../Configuration/configurationModel";
 import { clusterPlotURL } from "./CodingAPI";

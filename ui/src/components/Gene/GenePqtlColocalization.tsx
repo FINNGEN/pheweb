@@ -2,7 +2,7 @@ import React, { useContext } from "react";
 import { GeneContext, GeneState } from "./GeneContext";
 import { ConfigurationWindow } from "../Configuration/configurationModel";
 import { PqtlColocalizations as PqtlColocalizationsModel } from "./geneModel";
-import { Column } from "react-table";
+import { Column } from "react-table-v6";
 import { createTableColumns, genePqtlTableColumns, colocSubTable } from "../../common/commonTableColumn";
 import CommonDownloadTable, { DownloadTableProps } from "../../common/CommonDownloadTable";
 import commonLoading from "../../common/CommonLoading";

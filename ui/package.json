@@ -31,7 +31,6 @@
     "react-router-dom": "^5.3.4",
     "react-scripts": "^5.0.1",
     "react-select": "^5.7.3",
-    "react-table": "^6.11.5",
     "react-table-v6": "^6.8.6",
     "react-tabs": "^3.2.3",
     "react-tooltip": "^4.5.1",
@@ -53,8 +52,15 @@
     "lint-staged": "^13.2.2",
     "prettier": "2.5.0",
     "react-redux": "^7.2.9",
-    "react-test-renderer": "^16.14.0",
-    "typescript-plugin-css-modules": "^3.4.0"
+    "react-test-renderer": "^16.14.0"
+  },
+  "overrides": {
+    "simple-update-notifier": {
+      "semver": "^7.5.2"
+    },
+    "http-proxy-agent": {
+      "@tootallnate/once": "^2.0.1"
+    }
   },
   "scripts": {
     "watch": "npm-watch",

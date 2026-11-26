@@ -3,7 +3,7 @@
 import React from "react";
 import { variantFromStr } from "./commonModel";
 import { cellNumber, cellText, variantLink } from "./commonFormatter";
-import { Cell } from "react-table";
+import { Cell } from "react-table-v6";
 
 test('get search results : trivial', () => {
   expect(cellText({ value: undefined } as unknown as Cell)).toBe('NA')

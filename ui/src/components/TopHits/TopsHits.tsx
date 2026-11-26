@@ -4,7 +4,7 @@ import {mustacheDiv, setPageTitle} from "../../common/commonUtilities";
 import { TopHitsData, TopHitsRow } from "./topHitsModel";
 import { getTopHits } from "./topHitsAPI";
 import { ConfigurationWindow } from "../Configuration/configurationModel";
-import { Column } from "react-table";
+import { Column } from "react-table-v6";
 import CommonDownloadTable, { DownloadTableProps } from "../../common/CommonDownloadTable";
 
 interface Props {}

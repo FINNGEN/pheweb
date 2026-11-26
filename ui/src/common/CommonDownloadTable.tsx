@@ -3,7 +3,7 @@ import ReactTable from "react-table-v6";
 import commonLoading from "./CommonLoading";
 import { createCSVLinkHeaders } from "./commonTableColumn";
 import { CSVLink } from "react-csv";
-import { Column, SortingRule } from "react-table";
+import { Column, SortingRule } from "react-table-v6";
 
 
 /* Abstraction is broken here see:

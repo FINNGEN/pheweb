@@ -4,7 +4,7 @@ import { mustacheDiv } from "../../common/commonUtilities";
 import CommonDownloadTable, { DownloadTableProps } from "../../common/CommonDownloadTable";
 import { LossOfFunction } from "./geneModel";
 import { getLossOfFunction } from "./geneAPI";
-import { Column } from "react-table";
+import { Column } from "react-table-v6";
 import { wordFilter, createTableColumns, geneLossOfFunctionTableColumns } from "../../common/commonTableColumn";
 import commonLoading from "../../common/CommonLoading";
 import { GeneContext, GeneState } from "./GeneContext";

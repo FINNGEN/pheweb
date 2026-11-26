@@ -1,7 +1,7 @@
 import React, { useContext } from "react";
 import { createTableColumns, phenotypeBinaryTableColumns , phenotypeQuantitativeTableColumns , pValueSentinel } from "../../common/commonTableColumn";
 import { ConfigurationWindow } from "../Configuration/configurationModel";
-import { Column } from "react-table";
+import { Column } from "react-table-v6";
 import CommonDownloadTable, { DownloadTableProps } from "../../common/CommonDownloadTable";
 import {PhenotypeVariantData, PhenotypeVariantRow, UnbinnedVariant} from "./phenotypeModel";
 import { PhenotypeContext, PhenotypeState } from "./PhenotypeContext";

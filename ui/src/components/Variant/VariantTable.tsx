@@ -1,5 +1,5 @@
 import React, { useContext, useEffect } from "react";
-import { Column } from "react-table";
+import { Column } from "react-table-v6";
 import CommonDownloadTable, { DownloadTableProps } from "../../common/CommonDownloadTable";
 import { Variant } from "../Variant/variantModel";
 import { wordFilter, createTableColumns, variantTableColumns } from "../../common/commonTableColumn";
