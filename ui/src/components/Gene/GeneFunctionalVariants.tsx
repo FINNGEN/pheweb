@@ -14,7 +14,7 @@ import CommonDownloadTable, { DownloadTableProps } from "../../common/CommonDown
 import commonLoading from "../../common/CommonLoading";
 import { finEnrichmentLabel } from "../Finngen/finngenGnomad";
 import { GeneContext, GeneState } from "./GeneContext";
-import ViewRow = FunctionalVariants.ViewRow;
+type ViewRow = FunctionalVariants.ViewRow;
 
 const default_banner : string =`
 <div class="row">

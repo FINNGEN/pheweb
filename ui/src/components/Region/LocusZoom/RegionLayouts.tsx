@@ -1,6 +1,6 @@
 import { Layout, LayoutDataLayersEntity, Layouts } from "locuszoom";
 import { RegionModel, Summary } from '../regionModel';
-import Region = Summary.Region;
+type Region = Summary.Region;
 
 import { ConfigurationWindow } from "../../Configuration/configurationModel";
 

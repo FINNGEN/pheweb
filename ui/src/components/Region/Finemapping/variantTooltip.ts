@@ -2,7 +2,7 @@ import {Summary} from "../regionModel";
 import {mustacheDiv} from "../../../common/commonUtilities";
 import {ConfigurationWindow} from "../../Configuration/configurationModel";
 import * as Handlebars from "handlebars/dist/cjs/handlebars";
-import CredibleSetSummary = Summary.CredibleSetSummary;
+type CredibleSetSummary<T extends Summary.RegionSummaryType> = Summary.CredibleSetSummary<T>;
 
 declare let window: ConfigurationWindow;
 const { config } = window;

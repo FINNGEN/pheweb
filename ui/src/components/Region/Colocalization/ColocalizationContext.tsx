@@ -3,7 +3,7 @@ import { CasualVariant, Colocalization, Locus } from "../../../common/commonMode
 import { LocusZoomData, SearchSummary } from "./ColocalizationModel";
 import { getLocusZoomData, getSearchResults, getSummary } from "./ColocalizationAPI";
 import { createParameter,Summary, RegionParams } from "../regionModel";
-import Region = Summary.Region;
+type Region = Summary.Region;
 
 import { getRegion } from "../RegionAPI";
 import { useRegionContext } from '../RegionContext';

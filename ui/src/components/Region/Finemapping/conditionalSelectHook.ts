@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import {DataSources, Plot} from "locuszoom";
 import {Summary , Locuszoom } from "../regionModel";
-import Params = Locuszoom.Params;
+type Params = Locuszoom.Params;
 import {LocusZoomContext} from "../LocusZoom/regionLocusZoomHook";
-import CredibleSetSummaryConditional = Summary.CredibleSetSummaryConditional;
+type CredibleSetSummaryConditional = Summary.CredibleSetSummaryConditional;
 
 const conditionalSelectHook = (locusZoomContext : LocusZoomContext | undefined,
                                credibleSetSummaryConditional : CredibleSetSummaryConditional | undefined) => {

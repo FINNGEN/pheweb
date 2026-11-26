@@ -1,5 +1,5 @@
 import { DataSourceKeys, Locuszoom } from "../regionModel";
-import Params = Locuszoom.Params;
+type Params = Locuszoom.Params;
 import { Data, DataSources } from "locuszoom";
 import { selectAll } from "d3";
 import "../Region.css";

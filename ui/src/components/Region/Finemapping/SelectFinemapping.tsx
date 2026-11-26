@@ -2,7 +2,7 @@ import React from "react";
 import {Summary} from "../regionModel";
 import SelectFinemappingConditional from "./SelectFinemappingConditional";
 import SelectFinemappingMethod from "./SelectFinemappingMethod";
-import CredibleSetSummaryConditional = Summary.CredibleSetSummaryConditional;
+type CredibleSetSummaryConditional = Summary.CredibleSetSummaryConditional;
 import {regionSummaryTypes} from "../regionUtilities";
 
 interface Props {

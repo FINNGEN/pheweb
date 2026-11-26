@@ -4,7 +4,7 @@ import CommonButtonSelector from "../../../common/CommonButtonSelector";
 import conditionalSelectHook from "./conditionalSelectHook";
 import {RegionContext, RegionState} from "../RegionContext";
 import {Summary} from "../regionModel";
-import CredibleSetSummaryConditional = Summary.CredibleSetSummaryConditional;
+type CredibleSetSummaryConditional = Summary.CredibleSetSummaryConditional;
 
 interface Props { credibleSetSummaryConditional: CredibleSetSummaryConditional | undefined }
 

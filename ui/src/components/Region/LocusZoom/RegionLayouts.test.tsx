@@ -1,6 +1,6 @@
 import { assoc_fields } from './RegionLayouts';
 import { Summary } from '../regionModel';
-import Region = Summary.Region;
+type Region = Summary.Region;
 
 test('check assoc fields binary', () => {
 	const expected = [
