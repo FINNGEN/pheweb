@@ -12,9 +12,7 @@
     "@types/react-csv": "^1.1.3",
     "@types/react-dom": "^16.9.19",
     "@types/react-router-dom": "^5.3.3",
-    "@types/react-table": "^7.7.14",
     "@types/react-test-renderer": "^16.9.5",
-    "@types/uuid": "^8.3.4",
     "bootstrap": "^4.6.2",
     "d3": "^6.7.0",
     "d3-tip": "^0.9.1",
@@ -23,7 +21,6 @@
     "lavaa": "github:FINNGEN/lavaa-react#eac971bed0100ec13ebb5edfd088a4568767f147",
     "locuszoom": "^0.11.0",
     "match-sorter": "^1.8.1",
-    "npm-watch": "^0.11.0",
     "react": "^16.14.0",
     "react-csv": "^2.2.2",
     "react-dom": "^16.14.0",
@@ -32,8 +29,7 @@
     "react-table-v6": "^6.8.6",
     "react-tabs": "^3.2.3",
     "react-tooltip": "^4.5.1",
-    "typescript": "^4.9.5",
-    "uuid": "^8.3.2"
+    "typescript": "^4.9.5"
   },
   "devDependencies": {
     "@testing-library/react": "^12.1.5",
@@ -43,40 +39,20 @@
     "@vitejs/plugin-react": "^4.7.0",
     "enzyme": "^3.11.0",
     "enzyme-adapter-react-16": "^1.15.7",
-    "husky": "^8.0.3",
     "jsdom": "^25.0.1",
-    "lint-staged": "^13.2.2",
     "prettier": "2.5.0",
     "react-redux": "^7.2.9",
     "react-test-renderer": "^16.14.0",
     "vite": "^6.4.6",
     "vitest": "^4.1.12"
   },
-  "overrides": {
-    "simple-update-notifier": {
-      "semver": "^7.5.2"
-    }
-  },
   "scripts": {
-    "watch": "npm-watch",
     "test": "vitest",
     "start": "vite",
     "build": "tsc --noEmit && vite build && cp -R build/* ../pheweb/serve/static/",
     "preview": "vite preview",
-    "check-types": "tsc --noemit",
-    "prepare": "cd .. && husky install ui/.husky"
+    "check-types": "tsc --noemit"
   },
   "author": "",
-  "license": "ISC",
-  "watch": {
-    "build": {
-      "patterns": [
-        "src"
-      ],
-      "extensions": "js,jsx,tsx"
-    }
-  },
-  "lint-staged": {
-    "**/*": "prettier --write --ignore-unknown"
-  }
+  "license": "ISC"
 }

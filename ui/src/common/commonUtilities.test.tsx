@@ -12,7 +12,6 @@ import {
     capitalizeFirstLetter
 } from './commonUtilities';
 import { configure, mount } from "enzyme";
-import { v4 } from "uuid";
 
 import Adapter from "enzyme-adapter-react-16";
 import { variantToPheweb } from './commonModel';
@@ -51,7 +50,7 @@ test("get", async () => {
 });
 
 test("mustacheDiv", () => {
-  const uuid = v4();
+  const uuid = crypto.randomUUID();
   const wrapper = mount(mustacheDiv("<i>{{uuid}}</i>", { uuid }));
   expect(wrapper.text()).toContain(uuid);
 });
@@ -66,7 +65,7 @@ test("mustacheDiv 23", () => {
 });
 
 test("mustacheDiv isX", () => {
-    const uuid = v4();
+    const uuid = crypto.randomUUID();
     const isX1 = mount(mustacheDiv("{{#unless (isX chr)}}{{ uuid }}{{/unless}}", { "chr" : "23" , "uuid" : uuid }));
     expect(isX1.text()).toBe("");
     const isX2 = mount(mustacheDiv("{{#unless (isX chr)}}{{ uuid }}{{/unless}}", { "chr" : 23  , "uuid" : uuid}));
@@ -78,13 +77,13 @@ test("mustacheDiv isX", () => {
 })
 
 test("mustacheSpan", () => {
-  const uuid = v4();
+  const uuid = crypto.randomUUID();
   const wrapper = mount(mustacheSpan("<i>{{uuid}}</i>", { uuid }));
   expect(wrapper.text()).toContain(uuid);
 });
 
 test("mustacheText", () => {
-  const uuid = v4();
+  const uuid = crypto.randomUUID();
   expect(mustacheText("{{uuid}}", { uuid })).toContain(uuid);
 });
 
@@ -95,25 +94,25 @@ test("flatten empty", () => {
 });
 
 test("flatten singleton", () => {
-  const uuid = v4();
+  const uuid = crypto.randomUUID();
   expect(flatten<string>([[uuid]])).toStrictEqual([uuid]);
 });
 
 test("flatten list flattens", () => {
-  const uuid1 = v4();
-  const uuid2 = v4();
+  const uuid1 = crypto.randomUUID();
+  const uuid2 = crypto.randomUUID();
   expect(flatten<string>([[uuid1],[uuid2]])).toStrictEqual([uuid1,uuid2]);
 });
 
 
 test("default empty array defaults", () => {
-  const uuid1 = v4();
+  const uuid1 = crypto.randomUUID();
   expect(defaultEmptyArray([],[uuid1])).toStrictEqual([uuid1]);
 });
 
 test("default empty array does not default", () => {
-  const uuid1 = v4();
-  const uuid2 = v4();
+  const uuid1 = crypto.randomUUID();
+  const uuid2 = crypto.randomUUID();
   expect(defaultEmptyArray([uuid1],[uuid2])).toStrictEqual([uuid1]);
 });
 

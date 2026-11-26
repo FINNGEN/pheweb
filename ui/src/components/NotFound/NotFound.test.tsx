@@ -1,7 +1,6 @@
 import React from "react";
 import NotFoundEntity from "./NotFoundEntity";
 import { configure, mount } from "enzyme";
-import { v4 } from "uuid";
 import { ConfigurationWindow } from "../Configuration/configurationModel";
 
 import Adapter from "enzyme-adapter-react-16";
@@ -11,7 +10,7 @@ configure({ adapter: new Adapter() });
 declare let window: ConfigurationWindow;
 
 test("not found includes search term", () => {
-  const uuid = v4();
+  const uuid = crypto.randomUUID();
   const search = `?query=${uuid}`;
   const Temp = NotFoundEntity("entity");
   const wrapper = mount(<Temp location={{ search }} />);
@@ -27,8 +26,8 @@ test("not found missing search term", () => {
 });
 
 test("not found includes search term : configured", () => {
-  const uuid = v4();
-  const salt = v4();
+  const uuid = crypto.randomUUID();
+  const salt = crypto.randomUUID();
 
   window.config = {
     userInterface: { notFound: { page: { message: `{{query}} : ${salt}` } } },
