@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { ConfigurationWindow } from '../../components/Configuration/configurationModel'
 import { mustacheSpan } from '../../common/commonUtilities'
 import Search from './Search'
@@ -22,16 +22,18 @@ const Nav = () => {
     hasChip = userInterface?.chip !== undefined,
     hasHLA = userInterface?.hla !== undefined,
     hasAbout = userInterface?.about !== undefined;
+  // the collapsed menu on narrow screens, bootstrap shows it with the show class
+  const [expanded, setExpanded] = useState(false);
 
   return <nav className="navbar navbar-expand-lg navbar-light nav-bg">
     <a className="navbar-brand" href="/">{ logo }</a>
     <a className="navbar-brand" href="/"> <span className='logo-header'>{ title }</span></a>
-    <button className="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor01"
-            aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
+    <button className="navbar-toggler" type="button" onClick={() => setExpanded(!expanded)}
+            aria-controls="navbarColor01" aria-expanded={expanded} aria-label="Toggle navigation">
       <span className="navbar-toggler-icon"></span>
     </button>
 
-    <div className="collapse navbar-collapse" id="navbarColor01">
+    <div className={`collapse navbar-collapse${expanded ? ' show' : ''}`} id="navbarColor01">
       <Search/>
       <ul className="navbar-nav ml-auto">
         {show(hasLOF)(navLink('/lof','LOF'))}

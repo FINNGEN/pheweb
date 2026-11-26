@@ -1,5 +1,4 @@
 import d3Tip from 'd3-tip'
-import $ from 'jquery'
 import * as d3 from 'd3'
 import { mustacheText } from '../../common/commonUtilities'
 import { numberFormatter, scientificFormatter } from '../../common/commonFormatter'
@@ -378,7 +377,7 @@ const createGWASPlot = (phenotypeCode : string,
 
 
   }
-  $(renderPlot);
+  renderPlot();
 }
 interface Reshaped {
   cpra? : string
