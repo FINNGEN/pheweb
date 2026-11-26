@@ -32,7 +32,6 @@
     "react-table-v6": "^6.8.6",
     "react-tabs": "^3.2.3",
     "react-tooltip": "^4.5.1",
-    "regenerator-runtime": "^0.13.11",
     "typescript": "^4.9.5",
     "uuid": "^8.3.2"
   },
