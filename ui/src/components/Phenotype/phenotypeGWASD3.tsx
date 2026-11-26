@@ -1,5 +1,4 @@
 import d3Tip from 'd3-tip'
-import _ from 'underscore'
 import $ from 'jquery'
 import * as d3 from 'd3'
 import { mustacheText } from '../../common/commonUtilities'
@@ -79,7 +78,7 @@ const generateChromosomeOffsets = (variantBins : VariantBin[],
   variantBins.forEach(update_chrom_extents)
   unbinnedVariants.forEach(update_chrom_extents)
 
-  const chroms = _.sortBy(Object.keys(chrom_extents), parseInt)
+  const chroms = Object.keys(chrom_extents).sort((a, b) => parseInt(a) - parseInt(b))
 
   const chrom_genomic_start_positions = {}
   chrom_genomic_start_positions[chroms[0]] = 0
@@ -309,7 +308,7 @@ const createGWASPlot = (phenotypeCode : string,
         return variantBins[parent_i].color
       })
     bins.selectAll('circle.binned_variant_line')
-      .data(_.property('neglog10_pval_extents'))
+      .data((d) => d.neglog10_pval_extents)
       .enter()
       .append('line')
       .attr('class', 'binned_variant_line')
