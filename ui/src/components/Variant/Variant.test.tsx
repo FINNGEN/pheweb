@@ -28,7 +28,7 @@ test('rsidMapping', async () => {
 });
 
 test('rsidMappingFail', async () => {
-	global.console = { ...global.console, warn: jest.fn() , log : jest.fn };
+	jest.spyOn(console, "warn").mockImplementation(() => {}); jest.spyOn(console, "log").mockImplementation(() => {});
 	const rsid : string = "rsTHIS_SHOULD_NOT_WORK";
 	const mapping : RSIDMapping= await rsidMapping(rsid);
 	expect(mapping).toBe(undefined);
@@ -223,7 +223,7 @@ test('can handle fetch failure', async () => {
 		};
 	 const variant : string = "9-97776641-A-G";
 	 const expected = [];
-	global.console = { ...global.console, warn: jest.fn() };
+	jest.spyOn(console, "warn").mockImplementation(() => {});
 	const actual : BioBankURL[]| null = await testGenerate(variantFromStr(variant),createVariantSummary(data));
 	expect(actual).toStrictEqual(expected);
 	expect(console.warn).toBeCalled();

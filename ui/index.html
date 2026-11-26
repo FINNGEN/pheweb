@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- configuration -->
     <link href="https://cdn.jsdelivr.net/npm/locuszoom@0.10.2/dist/locuszoom.css" rel="stylesheet">
-    <script src="%REACT_APP_CONFIG_URL%" type="text/javascript"></script>
+    <script src="%VITE_CONFIG_URL%" type="text/javascript"></script>
     <script type="text/javascript">
       if(typeof config !== 'undefined') {
 	  window.config = config
@@ -37,5 +37,6 @@
   </head>
   <body>
     <div id="root"></div>
+    <script type="module" src="/src/index.tsx"></script>
   </body>
 </html>
