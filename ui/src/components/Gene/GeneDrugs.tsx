@@ -4,7 +4,7 @@ import { ConfigurationWindow } from "../Configuration/configurationModel";
 import { getGeneDrugs } from "./geneAPI";
 import CommonDownloadTable, { DownloadTableProps } from "../../common/CommonDownloadTable";
 import commonLoading from "../../common/CommonLoading";
-import { Column } from "react-table";
+import { Column } from "react-table-v6";
 import { createTableColumns, geneDrugListTableColumns } from "../../common/commonTableColumn";
 import { GeneDrugs as GeneDrugsModel } from "./geneModel";
 import { GeneContext, GeneState } from "./GeneContext";

@@ -1,5 +1,4 @@
 import { createCORSPromise, Data } from "locuszoom";
-import { defer, when } from "q";
 import { isFinngenServer } from "../../Finngen/finngenUtilities";
 import { Clinvar } from "./RegionModel"
 declare let LocusZoom : { Data : any };
@@ -83,9 +82,7 @@ ClinvarDataSource.prototype.fetchRequest = function(state: any, chain: any, fiel
       const data = JSON.parse(resp as string);
 
       if (+data.esearchresult.count === 0) {
-        const res = defer();
-        res.resolve("{ \"noresults\":\"\",\"pos\":" + state.start + " }");
-        return res.promise;
+        return Promise.resolve("{ \"noresults\":\"\",\"pos\":" + state.start + " }");
       }
 
     if (data.esearchresult.idlist != null) {
@@ -107,10 +104,8 @@ ClinvarDataSource.prototype.fetchRequest = function(state: any, chain: any, fiel
       .then(clinvarlESearchCollect)
       .then(JSON.stringify);
     } else {
-      const resultFailed = defer();
       console.warn("Failed to query clinvar" + JSON.stringify(data, null, 4));
-      resultFailed.reject("Failed to query clinvar" + JSON.stringify(data, null, 4));
-      return resultFailed;
+      return Promise.reject("Failed to query clinvar" + JSON.stringify(data, null, 4));
     }
     }
   );
@@ -253,7 +248,7 @@ Data.Source.prototype.getData = function(state, fields, outnames, trans) {
     if (self.dependentSource && chain && chain.body && !chain.body.length) {
       // A "dependent" source should not attempt to fire a request if there is no data for it to act on.
       // Therefore, it should simply return the previous data chain.
-      return when(chain);
+      return Promise.resolve(chain);
     }
 
     self.getRequest(state, chain, fields);
@@ -359,7 +354,8 @@ FG_LDDataSource.prototype.fetchRequest = function(state, chain, fields) {
     "Content-Type": "application/json"
   };
 
-  return url ? createCORSPromise("GET", url, {}, headers) : defer();
+  // without a url resolve empty, parseResponse then skips the ld
+  return url ? createCORSPromise("GET", url, {}, headers) : Promise.resolve();
 
 };
 

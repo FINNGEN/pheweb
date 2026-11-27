@@ -1,34 +1,29 @@
 import React from "react";
+import { render } from "@testing-library/react";
 import NotFoundEntity from "./NotFoundEntity";
-import { configure, mount } from "enzyme";
-import { v4 } from "uuid";
 import { ConfigurationWindow } from "../Configuration/configurationModel";
-
-import Adapter from "enzyme-adapter-react-16";
-
-configure({ adapter: new Adapter() });
 
 declare let window: ConfigurationWindow;
 
 test("not found includes search term", () => {
-  const uuid = v4();
+  const uuid = crypto.randomUUID();
   const search = `?query=${uuid}`;
   const Temp = NotFoundEntity("entity");
-  const wrapper = mount(<Temp location={{ search }} />);
-  const text = wrapper.text();
+  const wrapper = render(<Temp location={{ search }} />);
+  const text = wrapper.container.textContent;
   //expect(text).toContain(uuid);
 });
 
 test("not found missing search term", () => {
   const search = `noquery`;
   const Temp = NotFoundEntity("entity");
-  const wrapper = mount(<Temp location={{ search }} />);
-  //expect(wrapper.text()).toContain("empty query");
+  const wrapper = render(<Temp location={{ search }} />);
+  //expect(wrapper.container.textContent).toContain("empty query");
 });
 
 test("not found includes search term : configured", () => {
-  const uuid = v4();
-  const salt = v4();
+  const uuid = crypto.randomUUID();
+  const salt = crypto.randomUUID();
 
   window.config = {
     userInterface: { notFound: { page: { message: `{{query}} : ${salt}` } } },
@@ -36,7 +31,7 @@ test("not found includes search term : configured", () => {
 
   const search = `?query=${uuid}`;
   const Temp = NotFoundEntity("entity");
-  const wrapper = mount(<Temp location={{ search }} />);
-  //expect(wrapper.text()).toContain(uuid);
-  //expect(wrapper.text()).toContain(salt);
+  const wrapper = render(<Temp location={{ search }} />);
+  //expect(wrapper.container.textContent).toContain(uuid);
+  //expect(wrapper.container.textContent).toContain(salt);
 });

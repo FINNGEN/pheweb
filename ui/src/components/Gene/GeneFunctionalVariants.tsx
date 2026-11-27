@@ -3,7 +3,7 @@ import { ConfigurationWindow } from "../Configuration/configurationModel";
 import {defaultEmptyArray, flatten, mustacheDiv} from '../../common/commonUtilities';
 import { FunctionalVariants } from './geneModel';
 import { getGeneFunctionalVariants } from "./geneAPI";
-import { Column } from "react-table";
+import { Column } from "react-table-v6";
 import {
   wordFilter,
   createTableColumns,
@@ -14,7 +14,7 @@ import CommonDownloadTable, { DownloadTableProps } from "../../common/CommonDown
 import commonLoading from "../../common/CommonLoading";
 import { finEnrichmentLabel } from "../Finngen/finngenGnomad";
 import { GeneContext, GeneState } from "./GeneContext";
-import ViewRow = FunctionalVariants.ViewRow;
+type ViewRow = FunctionalVariants.ViewRow;
 
 const default_banner : string =`
 <div class="row">

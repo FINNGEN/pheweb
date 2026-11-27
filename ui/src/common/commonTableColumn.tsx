@@ -1,4 +1,4 @@
-import { Column, HeaderProps, Renderer } from "react-table";
+import { Column, HeaderProps, Renderer } from "react-table-v6";
 import React from "react";
 import ReactDOMServer from "react-dom/server";
 import { CasualVariant, Colocalization, variantFromStr, variantToPheweb, variantToStr } from './commonModel';

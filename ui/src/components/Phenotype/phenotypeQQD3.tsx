@@ -1,6 +1,5 @@
 import { QQPlotParam } from "./phenotypeModel";
 import * as d3 from "d3";
-import _ from 'underscore'
 
 const QQCITrumpetPoints = [
   [8.41463191637995e-08, 2.06937091984728e-07, 1.42026694351221e-09],
@@ -137,7 +136,7 @@ export const createQQPlot = (mafRanges : QQPlotParam[]) => {
     .tickSizeOuter(0)
     .tickPadding(7)
     .tickFormat(d3.format('d')) //integers
-    .tickValues(_.range(expMax))
+    .tickValues(d3.range(expMax))
     /*prevent unlabeled, non-integer ticks.
       https://stackoverflow.com/questions/3895478/does-javascript-have-a-method-like-range-to-generate-a-range-within-the-supp
      */
@@ -152,7 +151,7 @@ export const createQQPlot = (mafRanges : QQPlotParam[]) => {
     .tickSizeOuter(0)
     .tickPadding(7)
     .tickFormat(d3.format('d')) //integers
-    .tickValues(_.range(obsMax)) //prevent unlabeled, non-integer ticks.
+    .tickValues(d3.range(obsMax)) //prevent unlabeled, non-integer ticks.
   qq_plot.append('g')
     .attr('class', 'y axis')
     .call(yAxis)

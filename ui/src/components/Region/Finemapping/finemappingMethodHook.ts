@@ -2,7 +2,7 @@ import {LocusZoomContext} from "../LocusZoom/regionLocusZoomHook";
 import {useEffect, useState} from "react";
 import {Locuszoom, Summary} from "../regionModel";
 import {DataSources, Plot} from "locuszoom";
-import Params = Locuszoom.Params;
+type Params = Locuszoom.Params;
 import {Locus, locusToStr} from "../../../common/commonModel";
 
 const finemappingMethodHook = (locusZoomContext : LocusZoomContext, locus : Locus) => {

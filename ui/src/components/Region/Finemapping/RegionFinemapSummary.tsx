@@ -1,7 +1,7 @@
 import React, {Fragment, useContext, useState} from "react";
 import {RegionContext, RegionState} from "../RegionContext";
 import {Summary} from "../regionModel";
-import CredibleSetSummary = Summary.CredibleSetSummary;
+type CredibleSetSummary<T extends Summary.RegionSummaryType> = Summary.CredibleSetSummary<T>;
 import {capitalizeFirstLetter, partition, range, toSorted} from "../../../common/commonUtilities";
 import SelectFinemapping from "./SelectFinemapping";
 import CredibleSetVariant from "./CredibleSetVariant";

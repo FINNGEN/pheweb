@@ -2,7 +2,7 @@ import React from "react";
 import {Summary} from "../regionModel";
 import VariantLink from "./VariantLink";
 import {variantTooltip} from "./variantTooltip";
-import CredibleSetSummary = Summary.CredibleSetSummary;
+type CredibleSetSummary<T extends Summary.RegionSummaryType> = Summary.CredibleSetSummary<T>;
 
 
 interface Props {

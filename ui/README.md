@@ -25,6 +25,9 @@ Set the root property under application to your rest end point
 
 # Run UI
 
+The UI is built with [Vite](https://vite.dev) and needs Node 20
+(see `.nvmrc`, `nvm use` picks it up).
+
 Pull recent version
 
 ```git pull```
@@ -37,15 +40,14 @@ Install npm libraries
 
 ```npm install```
 
-Start front end
+Start front end on http://localhost:3000
 
 ```npm start```
 
+Run tests
 
-# Troubleshooting
+```npm test```
 
-Error: error:0308010C:digital envelope routines::unsupported
+Build and copy into `../pheweb/serve/static`
 
-```
-export NODE_OPTIONS=--openssl-legacy-provider
-```
+```npm run build```

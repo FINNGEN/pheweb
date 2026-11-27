@@ -13,7 +13,7 @@ import {
 } from './commonTableColumn';
 import React from "react"
 import { CasualVariant, Colocalization, variantFromStr } from './commonModel';
-import { Row } from 'react-table';
+import { Row } from 'react-table-v6';
 
 test("locus id1", () => {
   const locus_id1 = variantFromStr("chr1_1_A_G");

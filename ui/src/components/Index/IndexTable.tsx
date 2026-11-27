@@ -6,7 +6,7 @@ import { Phenotype } from "./../../common/commonModel";
 import { getPhenotypes } from "./indexAPI";
 import { mustacheDiv } from "../../common/commonUtilities";
 import CommonDownloadTable, { DownloadTableProps } from "../../common/CommonDownloadTable";
-import { Column } from "react-table";
+import { Column } from "react-table-v6";
 interface Props { }
 
 declare let window: ConfigurationWindow;

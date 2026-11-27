@@ -1,4 +1,4 @@
-import { Cell } from "react-table";
+import { Cell } from "react-table-v6";
 import { Variant } from "./commonModel";
 import React from "react";
 import * as Handlebars from "handlebars/dist/cjs/handlebars";

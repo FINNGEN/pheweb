@@ -52,7 +52,7 @@ const Search = () => {
         },
         []
     )
-    return (<form className="form-inline">
+    return (<form className="d-flex flex-wrap align-items-center">
         <Select
             placeholder={'Search by variant, gene, or phenotype'}
             onChange={onChange}

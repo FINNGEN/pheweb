@@ -1,5 +1,5 @@
 import {Summary} from "./regionModel";
-import RegionSummaryType = Summary.RegionSummaryType;
+type RegionSummaryType = Summary.RegionSummaryType;
 import {Locus} from "../../common/commonModel";
 
 export const regionSummaryTypes =  (regionSummary: Summary.RegionSummary): Summary.RegionSummaryType[] => (Object.keys(countCredibleSetTypes(regionSummary.credible_sets)) as Summary.RegionSummaryType[]);

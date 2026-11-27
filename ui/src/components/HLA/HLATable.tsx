@@ -1,7 +1,7 @@
 import CommonDownloadTable, { DownloadTableProps} from "../../common/CommonDownloadTable";
 import { HLAModel } from "./HLAModel";
 import { hlaTableColumns } from "../../common/commonTableColumn";
-import { Column } from "react-table";
+import { Column } from "react-table-v6";
 import commonLoading from "../../common/CommonLoading";
 import React from "react";
 

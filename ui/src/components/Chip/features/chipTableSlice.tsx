@@ -1,6 +1,5 @@
 import { ActionReducerMapBuilder, createAsyncThunk, createSlice, SliceCaseReducers } from "@reduxjs/toolkit";
 import { ChipData } from "../chipModel";
-import "regenerator-runtime/runtime";
 import { NoInfer } from "@reduxjs/toolkit/dist/tsHelpers";
 
 export type State = {

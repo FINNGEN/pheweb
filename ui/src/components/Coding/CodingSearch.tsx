@@ -44,7 +44,7 @@ const Search = () => {
             history.push(path)
         }
     }
-    return (<form className="form-inline">
+    return (<form className="d-flex flex-wrap align-items-center">
         <AsyncSelect
             placeholder={'Search by variant or gene'}
             onChange={onChange}

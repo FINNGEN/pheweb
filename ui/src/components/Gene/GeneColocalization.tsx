@@ -2,7 +2,7 @@ import React, { useContext } from "react";
 import { GeneContext, GeneState } from "./GeneContext";
 import { ConfigurationWindow } from "../Configuration/configurationModel";
 import { GeneColocalizations as GeneColocalizationsModel   } from './geneModel';
-import { Column } from "react-table";
+import { Column } from "react-table-v6";
 import { createTableColumns, geneColocTableColumns, phenoColocSubTable } from "../../common/commonTableColumn";
 import CommonDownloadTable, { DownloadTableProps } from "../../common/CommonDownloadTable";
 import commonLoading from "../../common/CommonLoading";

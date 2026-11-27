@@ -2,7 +2,7 @@ import React, { useContext } from "react";
 import { mustacheDiv } from "../../common/commonUtilities";
 import { ConfigurationWindow } from "../Configuration/configurationModel";
 import { GenePhenotypes } from "./geneModel";
-import { Column } from "react-table";
+import { Column } from "react-table-v6";
 import { wordFilter, createTableColumns, genePhenotypeTableColumns } from "../../common/commonTableColumn";
 import CommonDownloadTable, { DownloadTableProps } from "../../common/CommonDownloadTable";
 import { finEnrichmentLabel } from "../Finngen/finngenGnomad";

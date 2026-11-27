@@ -1,5 +1,5 @@
 import { TableColumnConfiguration } from "../../common/commonTableColumn";
-import { SortingRule } from "react-table";
+import { SortingRule } from "react-table-v6";
 import { Phenotype } from '../../common/commonModel';
 
 export interface IndexConfiguration {
