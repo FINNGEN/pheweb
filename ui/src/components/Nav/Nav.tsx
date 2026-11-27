@@ -25,7 +25,8 @@ const Nav = () => {
   // the collapsed menu on narrow screens, bootstrap shows it with the show class
   const [expanded, setExpanded] = useState(false);
 
-  return <nav className="navbar navbar-expand-lg navbar-light nav-bg">
+  // px-3: bootstrap 5 dropped the navbar's own horizontal padding
+  return <nav className="navbar navbar-expand-lg navbar-light nav-bg px-3">
     <a className="navbar-brand" href="/">{ logo }</a>
     <a className="navbar-brand" href="/"> <span className='logo-header'>{ title }</span></a>
     <button className="navbar-toggler" type="button" onClick={() => setExpanded(!expanded)}
@@ -35,7 +36,7 @@ const Nav = () => {
 
     <div className={`collapse navbar-collapse${expanded ? ' show' : ''}`} id="navbarColor01">
       <Search/>
-      <ul className="navbar-nav ml-auto">
+      <ul className="navbar-nav ms-auto">
         {show(hasLOF)(navLink('/lof','LOF'))}
         {show(hasCoding)(navLink('/coding','Coding'))}
         {show(hasHLA)(navLink('/hla/top','HLA'))}

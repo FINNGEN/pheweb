@@ -53,7 +53,7 @@ const customStyles = {
     height: 10
   }),
 }
-const Search = () => <form className="form-inline">
+const Search = () => <form className="d-flex flex-wrap align-items-center">
   <AsyncSelect
     placeholder={'Search for a variant, gene, or phenotype'}
     onChange={onChange}

@@ -12,7 +12,7 @@
     "@types/react-dom": "^16.9.19",
     "@types/react-router-dom": "^5.3.3",
     "@types/react-test-renderer": "^16.9.5",
-    "bootstrap": "^4.6.2",
+    "bootstrap": "^5.3.9",
     "d3": "^6.7.0",
     "d3-tip": "^0.9.1",
     "handlebars": "^4.7.7",

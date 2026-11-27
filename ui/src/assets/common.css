@@ -4,6 +4,11 @@ body { font-family:'Open Sans',sans-serif; }
 
 a { color: #4B1DD9; }
 
+/* bootstrap 5 underlines links by default, keep the bootstrap 4 look
+ * of underlining only on hover. body a, as bootstrap is imported after this file */
+body a { text-decoration: none; }
+body a:hover { text-decoration: underline; }
+
 table.column_spacing td {
     padding-right: 10px;
 }
